@@ -41,7 +41,7 @@ exports.CenteredVonDyck = class CenteredVonDyck
   constructor: (n, m) ->
     #a^n = b^m = (abab) = e
 
-    @a = M.rot 1, 2, (Math.PI*2/n)
+    @a = M.rot 0, 1, (Math.PI*2/n)
 
     cosh_r = 1.0 / (Math.tan(Math.PI/n) * Math.tan(Math.PI/m))
     if cosh_r < 1.0

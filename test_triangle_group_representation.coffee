@@ -50,7 +50,7 @@ describe "CenteredVonDyck(5,4)", ->
     assert.ok M.approxEq powm(g.a, 5), M.eye()
     assert.ok M.approxEq powm(g.b, 4), M.eye()
 
-    ab = M.mul(g.a, M.inv(g.b))
+    ab = M.mul(g.a, g.b)
     
     assert.ok not M.approxEq ab, M.eye()
     assert.ok M.approxEq powm(ab,2), M.eye()
