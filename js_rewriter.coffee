@@ -136,17 +136,18 @@ exports.JsCodeGenerator = class JsCodeGenerator
     get: -> @out.join ""
     reset: -> @out = []
     line: ( text)->
-        if not @debug and text.startswith("console.log"):
+        if not @debug and text.match /^console.log/
             return
         
-        if not @pretty and text.startswith("//"):
+        if not @pretty and text.match /^\/\//
             return
         
-        if @pretty or "//" in text:
-            @out.push("    "*@ident)
+        if @pretty or text.match(/\/\//)
+          for i in [0...@ident]
+            @out.push "    "
             
         @out.push(text)
-        @out.push("\n" if @pretty else " ")
+        @out.push(if @pretty then "\n" else " ")
         
     block: (callback)->
         @line("{")
