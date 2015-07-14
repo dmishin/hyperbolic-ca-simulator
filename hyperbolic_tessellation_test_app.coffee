@@ -6,7 +6,7 @@ E = (id) -> document.getElementById id
 canvas = E "canvas"
 context = canvas.getContext "2d"
 
-tessellation = new Tessellation 5, 5
+tessellation = new Tessellation 7,3
 tfm = M.eye()
 
 

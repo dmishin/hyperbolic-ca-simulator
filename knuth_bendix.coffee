@@ -215,7 +215,7 @@ simplifyRules = (S_, lessOrEqual)->
             S.add(v,w)
     return S
 
-knuthBendix = (S0, lessOrEqual=shortLex, maxIters = 1000, maxRulesetSize = 1000, onIteration=null)->
+exports.knuthBendix = (S0, lessOrEqual=shortLex, maxIters = 1000, maxRulesetSize = 1000, onIteration=null)->
     #"""Main funciton of the Knuth-Bendix completion algorithm.
     #arguments:
     #S - original rewrite table
