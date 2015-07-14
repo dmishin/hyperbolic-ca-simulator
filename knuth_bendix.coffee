@@ -8,6 +8,7 @@
 
 print = (s ... ) -> console.log( s.join(" ") )
 
+#COnvert "less or equal" function to the JS-compatible comparator function
 le2cmp = ( leFunc ) ->
   (a,b) ->
     if a is b
@@ -35,10 +36,10 @@ exports.RewriteRuleset = class RewriteRuleset
       items.sort le2cmp(shortLex)
       return items
 
-    suffices: -> [ k for k of @rules ]
+    suffices: -> (k for k of @rules)
     
     size: -> @suffices().length
-    items: -> [ [k, v] for k, v of @rules ]
+    items: -> ( [k, v] for k, v of @rules )
 
 
     __equalOneSided: (other) ->
@@ -62,7 +63,7 @@ exports.RewriteRuleset = class RewriteRuleset
         for v, w of @rules
             [v, w] = sortPairReverse(v, w, lessOrEq)
             #v is biggest now
-            if v not in SS
+            if not SS[v]?
                 SS[v] = w
             else
                 #resolve conflict by chosing the lowest of 2.
@@ -71,9 +72,9 @@ exports.RewriteRuleset = class RewriteRuleset
 
     __ruleLengths: ()->
       lens = {}
-      for k in @rules
-        lens[k] = null
-      lenslist = [parseInt(k, 10) for k of lens]
+      for k of @rules
+        lens[k.length] = null
+      lenslist = (parseInt(k, 10) for k of lens)
       lenslist.sort()
       return lenslist
     
@@ -91,19 +92,21 @@ exports.RewriteRuleset = class RewriteRuleset
             
             for suffixLen in lengths
                 suffix = s.substring(s.length-suffixLen)
+                #console.log "suf: #{suffix}, len: #{suffixLen}"
                 rewriteAs = rules[suffix]
                 if rewriteAs?
                     #Rewrite found!
+                    #console.log "   Rewrite found: #{suffix}, #{rewriteAs}"
                     s = s.substring(0, s.length - suffixLen)
-                    for xx in rewriteAs
-                      xs.push xx
+                    for i in [rewriteAs.length-1 .. 0] by -1
+                      xs.push rewriteAs[i]
                     continue
         return s
 
     rewrite: ( s )-> @appendRewrite( "", s )
     
 
-shortLex = (s1, s2)->
+exports.shortLex = shortLex = (s1, s2)->
     #"""Shortlex less or equal comparator"""
     if s1.length > s2.length
         return false
@@ -111,7 +114,7 @@ shortLex = (s1, s2)->
         return true
     return s1 <= s2
 
-overlap = (s1, s2)->
+exports.overlap = overlap = (s1, s2)->
     #"""Two strings: s1, s2.
     #Reutnrs x,y,z such as:
     #s1 = xy
@@ -128,12 +131,12 @@ overlap = (s1, s2)->
     for i in [istart ... s1.length]
         s1_i = s1[i]
         if s1_i is s2_0
-            console.log "Comparing #{s1.substring(i+1)} and #{s2.substring(1, s1.length-i)}"
+            #console.log "Comparing #{s1.substring(i+1)} and #{s2.substring(1, s1.length-i)}"
             if s1.substring(i+1) is s2.substring(1, s1.length-i)
                 return [s1.substring(0,i), s1.substring(i), s2.substring(s1.length-i)]
     return [s1, "", s2]
 
-splitBy = (s1, s2)->
+exports.splitBy = splitBy = (s1, s2)->
     #"""Split sequence s1 by sequence s2.
     #Returns True and prefix + postfix, or just False and None None
     #"""

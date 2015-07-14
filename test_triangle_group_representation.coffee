@@ -55,8 +55,15 @@ describe "CenteredVonDyck(5,4)", ->
     assert.ok not M.approxEq ab, M.eye()
     assert.ok M.approxEq powm(ab,2), M.eye()
 
-  it "must have stable point at (0,0,1)", ->
+  it "must have stable point of A at (0,0,1)", ->
     v0 = [0.0, 0.0, 1.0]
     assert.ok M.approxEqv v0, v0
     assert.ok M.approxEqv v0, M.mulv(g.a, v0)
-    assert.ok not M.approxEqv v0, M.mulv(g.b, v0)    
+    assert.ok not M.approxEqv v0, M.mulv(g.b, v0)
+    
+  it "must provide coordinates of stable point of B", ->
+    v1 = [g.sinh_r, 0, g.cosh_r]
+    assert.ok M.approxEqv v1, v1
+    assert.ok M.approxEqv v1, M.mulv(g.b, v1)
+    assert.ok not M.approxEqv v1, M.mulv(g.a, v1)
+            

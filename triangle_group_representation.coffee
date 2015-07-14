@@ -1,4 +1,4 @@
-M = require "./matrix3"
+M = require "./matrix3.coffee"
 {} = M
 
 
@@ -42,13 +42,13 @@ exports.CenteredVonDyck = class CenteredVonDyck
     #a^n = b^m = (abab) = e
 
     @a = M.rot 0, 1, (Math.PI*2/n)
-
-    cosh_r = 1.0 / (Math.tan(Math.PI/n) * Math.tan(Math.PI/m))
-    if cosh_r < 1.0
-      throw new Error("von Dyck group is not hyperbolic!")
-    sinh_r = Math.sqrt( cosh_r**2 - 1 )
-
-    @b = M.mul( M.mul(M.hrot(0, 2, sinh_r), M.rot(0, 1, Math.PI*2/m)), M.hrot(0, 2, -sinh_r) )
     @n = n
     @m = m
+
+    @cosh_r = 1.0 / (Math.tan(Math.PI/n) * Math.tan(Math.PI/m))
+    if @cosh_r <= 1.0
+      throw new Error("von Dyck group is not hyperbolic!")
+    @sinh_r = Math.sqrt( @cosh_r**2 - 1 )
+
+    @b = M.mul( M.mul(M.hrot(0, 2, @sinh_r), M.rot(0, 1, Math.PI*2/m)), M.hrot(0, 2, -@sinh_r) )
     
