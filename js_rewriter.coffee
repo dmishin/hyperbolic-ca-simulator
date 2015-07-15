@@ -198,21 +198,20 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
         @rewriteTable = rewriteTable
         @suffixTree = reverseSuffixTable(rewriteTable)
         
-    generate: ->
+    generateAppendRewriteOnce: ->
         @line("(function(chain, stack )")
         @block =>
-            @line("while( stack.length > 0)")
+            @line "if (stack.length === 0) {throw new Error('empty stack');}"
+            @line("var _e = stack.pop();")
+            @line("var element = _e[0], power = _e[1];")
+            @line("if (chain === null)")
             @block =>
-                @line("var _e = stack.pop();");
-                @line("var element = _e[0], power = _e[1];");
-                @line("if (chain === null)")
-                @block =>
-                    @line("//empty chain")
-                    @line('console.log("Append to empth chain:"+_e);');
-                    @line("var order=(element==='a')?#{@_nodeOrder('a')}:#{@_nodeOrder('b')};")
-                    @line("var lowestPow=(element==='a')?#{@_lowestPower('a')}:#{@_lowestPower('b')};")
-                    @line('chain = new nodeConstructors[element](((power - lowestPow)%order+order)%order+lowestPow, chain);')
-                @generateMain()
+                @line("//empty chain")
+                @line('console.log("Append to empth chain:"+_e);');
+                @line("var order=(element==='a')?#{@_nodeOrder('a')}:#{@_nodeOrder('b')};")
+                @line("var lowestPow=(element==='a')?#{@_lowestPower('a')}:#{@_lowestPower('b')};")
+                @line('chain = new nodeConstructors[element](((power - lowestPow)%order+order)%order+lowestPow, chain);')
+            @generateMain()
             @line("return chain;")
         @line(")")
         return @get()
@@ -377,10 +376,24 @@ reverseSuffixTable = (ruleset, ignorePowers = true)->
         table["original"] = gSuffix
     return revTable
 
+
+exports.repeatRewrite = repeatRewrite = (appendRewriteOnce) -> (chain, stack) ->
+  while stack.length > 0
+    chain = appendRewriteOnce chain, stack
+  return chain
+
+exports.canAppend = (appendRewriteOnce) -> (chain, element, power) ->
+  stack = [[element, power]]
+  appendRewriteOnce(chain, stack)
+  return stack.length is 0
+  
 exports.makeAppendRewrite= makeAppendRewrite = (s)->
   g = new CodeGenerator(s)
   g.debug=false
-  appendRewrite = eval g.generate()
+  
+  appendRewriteOnce = eval g.generateAppendRewriteOnce()
+  appendRewrite = repeatRewrite appendRewriteOnce
+      
   throw new Error("Failed to compilation gave nothing?") unless appendRewrite?
   return appendRewrite
 
