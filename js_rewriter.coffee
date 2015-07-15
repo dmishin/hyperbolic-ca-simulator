@@ -1,20 +1,50 @@
 #Generates JS code that effectively rewrites
+{RewriteRuleset}= require "./knuth_bendix.coffee"
 
 groupPowers = ( elemsWithPowers )->
-    ### List (elem, power::int) -> List (elem, power::int)###
+    ### List (elem, power::int) -> List (elem, power::int)
+    ###
     grouped = []
     for [elem, power] in elemsWithPowers
-        if not grouped
-            grouped.push( (elem, power) )
-        elif grouped[-1][0] is elem
-            newPower = grouped[-1][1] + power
-            if newPower != 0:
-                grouped[-1] = (elem, newPower)
-            else:
+        if grouped.length is 0
+            grouped.push( [elem, power] )
+        else if grouped[grouped.length-1][0] is elem
+            newPower = grouped[grouped.length-1][1] + power
+            if newPower isnt 0
+                grouped[grouped.length-1][1] = newPower
+            else
                 grouped.pop()
-        else:
-            grouped.push( (elem, power) )
+        else
+            grouped.push( [elem, power] )
     return grouped
+
+exports.groupByPower = groupByPower = (s)->
+    last = null
+    lastPow = null
+    result = []
+    for i in [0...s.length]
+        x = s[i]
+        if last is null
+            last = x
+            lastPow = 1
+        else
+            if x is last
+                lastPow += 1
+            else
+                result.push [last, lastPow]
+                last = x
+                lastPow = 1
+    if last isnt null
+        result.push [last, lastPow]
+    return result
+
+
+exports.groupPowersVd = groupPowersVd = (s)->
+    for [x, p] in groupByPower(s)
+        if x.toUpperCase() is x
+            [x.toLowerCase(), -p]
+        else
+            [x, p]
 
 ###
 #Every string is a sequence of powers of 2 operators: A and B.
@@ -85,55 +115,61 @@ groupPowers = ( elemsWithPowers )->
 #    
 ###
 
+NodeA = (p, tail) ->
+  @p = p
+  @t = tail
+  return
 
-declarations ="""
-var NodeA = function NodeA( p, tail ){ this.p = p; this.t=tail; };
-var NodeB = function NodeB( p, tail ){ this.p = p; this.t=tail; };
+NodeB = (p, tail) ->
+  @p = p
+  @t = tail
+  return
 
-NodeA.prototype.letter = "a";
-NodeB.prototype.letter = "b";
-
-exports.chainEquals = chainEquals = function chainEquals(a, b){
-    if (ais=null || bisnull) return (ais=null) && (bis=null);
-    return (a.letter is= b.letter) && (a.p is= b.p) && chainEquals(a.t, b.t);
-};
-var showNode = exports.showNode = function showNode(node){
-    if (node is= null){
-	return "";
-    }else{
-	return showNode(node.t) + node.letter + ((node.pis1)?"":("^"+node.p));
-    }
-};
-
-var nodeConstructors = {a: NodeA, b: NodeB};
-
-exports.NodeA = NodeA;
-exports.NodeB = NodeB;
-exports.nodeConstructors = nodeConstructors;
-
-exports.pushSimple = appendSimple = function appendSimple(chain, stack){
-    while (stack.length > 0){
-        var _ep = stack.pop();
-        var e=_ep[0], p=_ep[1];
-        chain = new nodeConstructors[e](p, chain);
-    }
-    return chain;
-};
+NodeA::letter = 'a'
+NodeB::letter = 'b'
 
 
-//function mod( x, n ){ return (x%n+n)%n; };
-"""
+exports.chainEquals = chainEquals = (a, b) ->
+  if a is null or b is null
+    a is null and b is null
+  else
+    a.letter is b.letter and a.p is b.p and chainEquals(a.t, b.t)
 
 
-otherElem = {'a':'b', 'b':'a'}.get
+showNode = exports.showNode = (node) ->
+  if node is null
+    ''
+  else
+    showNode(node.t) + node.letter + (if node.p is 1 then '' else "^#{node.p}")
+
+nodeConstructors = 
+  a: NodeA
+  b: NodeB
+  
+exports.NodeA = NodeA
+exports.NodeB = NodeB
+exports.nodeConstructors = nodeConstructors
+
+appendSimple = appendSimple = (chain, stack) ->
+  while stack.length > 0
+    [e, p] = stack.pop()
+    chain = new (nodeConstructors[e])(p, chain)
+  return chain
+
+otherElem = (e) -> {'a':'b', 'b':'a'}[e]
 
 exports.JsCodeGenerator = class JsCodeGenerator
-    constructor: ( self, debug=true, pretty=true )->
+    constructor: ( debug=true, pretty=true )->
         @out = []
         @ident = 0
         @debug = debug
         @pretty = pretty
-    get: -> @out.join ""
+    get: ->
+      if @ident isnt 0
+        throw new RuntimeError "Attempt to get generated code while not finished"
+      code = @out.join ""
+      @reset()
+      return code
     reset: -> @out = []
     line: ( text)->
         if not @debug and text.match /^console.log/
@@ -156,41 +192,40 @@ exports.JsCodeGenerator = class JsCodeGenerator
         @ident -= 1
         @line("}")
     
-exports.CodeGenerator = class CodeGenerator(JsCodeGenerator)
-    constructor: ( self, rewriteTable, out, debug=true, pretty=true )->
-        JsCodeGenerator.__init__( out, debug=debug, pretty=pretty)
+exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
+    constructor: ( rewriteTable, out, debug=true, pretty=true )->
+        super debug, pretty
         @rewriteTable = rewriteTable
         @suffixTree = reverseSuffixTable(rewriteTable)
         
     generate: ->
-        @out.push(declarations)
-    
-        @line("var appendRewrite = function appendRewrite( chain, stack )")
-        @block ->
+        @line("(function(chain, stack )")
+        @block =>
             @line("while( stack.length > 0)")
-            @block ->
+            @block =>
                 @line("var _e = stack.pop();");
                 @line("var element = _e[0], power = _e[1];");
-                @line("if (chain is= null)")
-                @block ->
+                @line("if (chain === null)")
+                @block =>
                     @line("//empty chain")
                     @line('console.log("Append to empth chain:"+_e);');
-                    @line("var order=(elementis="a")?#{@_nodeOrder('a')}:#{@_nodeOrder('b')};")
-                    @line("var lowestPow=(elementis="a")?#{@_lowestPower('a')}:#{@_lowestPower('b')};")
+                    @line("var order=(element==='a')?#{@_nodeOrder('a')}:#{@_nodeOrder('b')};")
+                    @line("var lowestPow=(element==='a')?#{@_lowestPower('a')}:#{@_lowestPower('b')};")
                     @line('chain = new nodeConstructors[element](((power - lowestPow)%order+order)%order+lowestPow, chain);')
                 @generateMain()
             @line("return chain;")
-        @line(";")
+        @line(")")
+        return @get()
                 
     generateMain: ->
-        @line('else if (chain.letteris="a")')
-        @block ->
+        @line('else if (chain.letter==="a")')
+        @block =>
             @line('console.log("Append to chain ending with A:"+_e);')
             @generatePowerAccumulation("a")
             @generateRewriterFrom("b")
             
-        @line('else if (chain.letteris="b")')
-        @block ->
+        @line('else if (chain.letter==="b")')
+        @block =>
             @line('console.log("Append to chain ending with B:"+_e);')
             @generatePowerAccumulation("b")
             @generateRewriterFrom("a")
@@ -198,26 +233,26 @@ exports.CodeGenerator = class CodeGenerator(JsCodeGenerator)
         @line('else throw new Error("Chain neither a nor b?");')
 
     generatePowerAccumulation: ( letter)->
-        @line('if (element is "#{letter}")')
-        @block ->
-            @line( 'console.log("    element is #{letter}");')
+        @line("if (element === \"#{letter}\")")
+        @block =>
+            @line( "console.log(\"    element === #{letter}\");")
             lowestPow = @_lowestPower(letter)
             order = @_nodeOrder(letter)
-            @line( 'var newPower = ((chain.p + power - #{lowestPow})%#{order}+#{order})%#{order}+#{lowestPow};')
+            @line( "var newPower = ((chain.p + power - #{lowestPow})%#{order}+#{order})%#{order}+#{lowestPow};")
             
-            @line('if (newPower is= 0)')
-            @block ->
+            @line('if (newPower === 0)')
+            @block =>
                 @line( 'console.log("      power reduced to 0, new chain="+showNode(chain));')
                 @line( 'chain = chain.t;')
             @line('else')
-            @block ->
+            @block =>
                 nodeClass=@_nodeClass(letter) 
-                @line('chain = new #{nodeClass}(newPower, chain.t);')
+                @line("chain = new #{nodeClass}(newPower, chain.t);")
                 
     generateRewriterFrom: ( newElement)->
         ###Generate rewriters, when `newElement` is added, and it is not the same as the last element of the chain###
         @line("else")
-        @block ->
+        @block =>
             @line("//Non-trivial rewrites, when new element is #{newElement}")
             nodeConstructor=@_nodeClass(newElement)
             @line("chain = new #{nodeConstructor}(power, chain);")
@@ -226,137 +261,147 @@ exports.CodeGenerator = class CodeGenerator(JsCodeGenerator)
     generateRewriteBySuffixTree: ( newElement, suffixTree, chain)->
 
         first = true
-        for (elem, elemPower), subTable in sorted( suffixTree.items() ):
-            if elem != newElement: continue
+        for e_p_str, subTable of suffixTree
+            e_p = JSON.parse e_p_str
+            @line "// e_p = #{JSON.stringify e_p}"
+            [elem, elemPower] = e_p
+            if elem isnt newElement
+              continue
             
-            if not first:
+            if not first
                 @line("else")
-            else:
+            else
                 first = false
-            isLeaf = "rewrite" in subTable
-            if isLeaf:
-                compOperator = "<=" if elemPower < 0 else ">="
+            isLeaf = subTable["rewrite"]?
+            if isLeaf
+                compOperator = if elemPower < 0 then "<=" else ">="
                 suf = subTable["original"]
-                @line( '//reached suffix: #{suf}' )
-                @line( 'if (#{chain}.p#{compOperator}#{elemPower})')
-
-                @block ->
+                @line( "//reached suffix: #{suf}" )
+                @line( "if (#{chain}.p#{compOperator}#{elemPower})")
+                @line "// before call leaf: ep = #{elemPower}"
+                @block =>
                     @generateLeafRewrite(elem, elemPower, subTable["rewrite"], chain)
                     
-            else:
-                @line("if (#{chain}.p is #{elemPower})")
-                @block ->
-                    @line("if (#{chain}.t)".)
-                    @block ->
+            else
+                @line("if (#{chain}.p === #{elemPower})")
+                @block =>
+                    @line("if (#{chain}.t)")
+                    @block =>
                         @generateRewriteBySuffixTree( otherElem(newElement), subTable, chain+".t")
 
         
     generateLeafRewrite: ( elem, elemPower, rewrite, chain)->
+        throw new Error("power?") unless elemPower? 
         @line("//Leaf: rewrite this to #{rewrite}")
+        @line("//elem: #{elem}, power: #{elemPower}: rewrite this to #{rewrite}")
         @line("//Truncate chain...")
         @line("chain = #{chain};")
         @line("//Append rewrite")
-        @line("stack.push(" + \
-                  ", ".join( '["#{e}", #{p}]'
-                             for [e, p] in groupPowers(rewrite[::-1]+[(elem, -elemPower)]) ) +\
-                  ");")
+
+        revRewrite = rewrite[..]
+        revRewrite.reverse()
+        revRewrite.push [elem, -elemPower]
+
+        sPowers = ( "[\"#{e}\",#{p}]" for [e, p] in groupPowers(revRewrite) ).join(",")
+        @line("stack.push(#{sPowers});")
         
     _nodeClass: ( letter)->
-        return "Node"+letter.upper()
-
-
+        {"a": "NodeA", "b":"NodeB"}[letter]
         
     _powerRewriteRules: ->
-        for key, rewrite in @rewriteTable.items():
-            gKey = list(groupPowersVd(key))
-            gRewrite = list(groupPowersVd(rewrite))
-            if len(gKey) is 1 and len(gRewrite) is 1:
-                x, p = gKey[0]
-                x_, p1 = gRewrite[0]
-                if x is x_:
-                    yield x, p, p1
+        result = []
+        for [key, rewrite] in @rewriteTable.items()
+            gKey = groupPowersVd(key)
+            gRewrite = groupPowersVd(rewrite)
+            if gKey.length is 1 and gRewrite.length is 1
+                [x, p] = gKey[0]
+                [x_, p1] = gRewrite[0]
+                if x is x_
+                    result.push [x, p, p1]
+        return result
 
 
     _lowestPower: ( letter)->
         ###search for rules of type a^n -> a^m###
-        v = min( (p1, p2) for x, p1, p2 in @_powerRewriteRules()
-                 if x is letter)
-        p1, p2 = v 
-        return p1 + 1
-    
+        powers = (p1 for [x, p1, p2] in @_powerRewriteRules() when x is letter)
+        return Math.min( powers... ) + 1
         
     _nodeOrder: ( letter)->
-        p1, p2 = min( (p1, p2) for x, p1, p2 in @_powerRewriteRules()
-                      if x is letter)
-        return abs(p2 - p1)
+        orders = (Math.abs(p1-p2) for [x, p1, p2] in @_powerRewriteRules() when x is letter)
+        if orders.length is 0
+          throw new Error("No power rewrites for #{letter}")
+        return Math.min( orders... )
 
-    generateRewriterTest: ( source, expected)->
-        gSource, gExpected = map(groupPowersVd, [source, expected])
-        seq2js: (s)-?
-            return "[" + ",".join('["#{e}",#{p}]'
-                                  for [e,p] in list(s)[::-1]) + "]"            
-        @line("(function()")
-        @block ->
-            sourceText = seq2js(gSource)
-            @line("var result = appendRewrite( null, #{sourceText});")
-            expectedText = seq2js(gExpected)
-            @line("var expected = appendSimple( null, #{expectedText});")
-            @line("if (chainEquals(result, expected))")
-            @block ->
-                @line('console.log("Test #{source}->#{expected} passed");')
-            @line("else")
-            @block ->
-                @line('console.log("Test #{source}->#{expected} failed");')
-                @line('console.log("   expected result:"+showNode(expected));')
-                @line('console.log("   received result:"+showNode(result));')
-        @line(")();")
+testRewriter = (appendRewrite, sSource, sExpected)->  
+  gSource = groupPowersVd sSource
+  gExpected = groupPowersVd sExpected
+  
+  reversed = (s)->
+      rs = s[..]
+      rs.reverse()
+      return rs
+
+  result = appendRewrite( null, reversed(gSource) )
+  expected = appendSimple( null, reversed(gExpected));
+  
+  if chainEquals(result, expected)
+    console.log("Test #{sSource}->#{sExpected} passed")
+  else
+    console.log("Test #{sSource}->#{sExpected} failed")
+    console.log("   expected result:"+showNode(expected))
+    console.log("   received result:"+showNode(result))
 
 
 reverseSuffixTable = (ruleset, ignorePowers = true)->
     revTable = {}
     
-    for suffix, rewrite in ruleset.items():
-        gSuffix = list(groupPowersVd(suffix))
-        gRewrite = list(groupPowersVd(rewrite))
+    for [suffix, rewrite] in ruleset.items()
+        gSuffix = groupPowersVd(suffix)
+        gRewrite = groupPowersVd(rewrite)
 
-        if ignorePowers:
-            if len(gSuffix)is 1 and len(gRewrite)is1 and gSuffix[0][0] is gRewrite[0][0]:
+        if ignorePowers
+            if gSuffix.length is 1 and gRewrite.length is 1 and gSuffix[0][0] is gRewrite[0][0]
                 continue
-            if len(gSuffix) is 2 and len(gRewrite)is0:
+            if gSuffix.length is 2 and gRewrite.length is 0
                 continue
-        
         table = revTable
-        for e_p in gSuffix[::-1]:
-            if e_p in table:
-                table = table[e_p]
-            else:
+        for e_p in gSuffix by -1
+            e_p_str = JSON.stringify e_p
+            if table.hasOwnProperty e_p_str
+                table = table[e_p_str]
+            else
                 table1 = {}
-                table[e_p] = table1
+                table[e_p_str] = table1
                 table = table1
         table["rewrite"] = gRewrite
         table["original"] = gSuffix
     return revTable
-        
+
+exports.makeAppendRewrite= makeAppendRewrite = (s)->
+  g = new CodeGenerator(s)
+  g.debug=false
+  appendRewrite = eval g.generate()
+  throw new Error("Failed to compilation gave nothing?") unless appendRewrite?
+  return appendRewrite
+
+exports.truncateA = truncateA = (chain)->
+  while (chain isnt null) and (chain.letter is "b")
+    chain = chain.t
+  return chain
+  
+exports.truncateB = truncateA = (chain)->
+  while (chain isnt null) and (chain.letter is "a")
+    chain = chain.t
+  return chain
+  
 main = ->
-    table = {('b', 'a'): ('A', 'B'), ('b', 'B'): (), ('B', 'A', 'B'): ('a',), ('B', 'B', 'B'): ('b',), ('B', 'b'): (), ('a', 'B', 'B'): ('B', 'A', 'b'), ('A', 'B', 'A'): ('b',), ('A', 'A', 'A'): ('a',), ('A', 'a'): (), ('b', 'A', 'A'): ('A', 'B', 'a'),
- ('a', 'b'): ('B', 'A'), ('a', 'B', 'A'): ('A', 'A', 'b'), ('b', 'A', 'B'): ('B', 'B', 'a'), ('b', 'b'): ('B', 'B'), ('a', 'A'): (), ('a', 'a'): ('A', 'A')}
+    table = {'ba': 'AB', 'bB': '', 'BAB': 'a', 'BBB': 'b', 'Bb': '', 'aBB': 'BAb', 'ABA': 'b', 'AAA': 'a', 'Aa': '', 'bAA': 'ABa', 'ab': 'BA', 'aBA': 'AAb', 'bAB': 'BBa', 'bb': 'BB', 'aA': '', 'aa': 'AA'}
     s = new RewriteRuleset(table)
 
-        g = new CodeGenerator(s, ofile,
-                          #debug=false, pretty=false
-        )
-        g.debug=false
-        g.generate()
-        
-        g.debug=true
-        g.line("console.log('isisisisisisisisisisisisisis');")
-        for s, t in table.items():
-            g.generateRewriterTest(s,t)
-            
-#        ofile.write(###\
-# console.log(showNode(appendRewrite( null, [['a',1], ['b',1]])));
-#        ###)
-    #print (reverseSuffixTable (s))
-    
+    appendRewrite = makeAppendRewrite s 
+
+    for [s, t] in s.items()
+       testRewriter(appendRewrite, s,t)
+    return
     
 main()
