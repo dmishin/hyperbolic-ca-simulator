@@ -17,6 +17,7 @@ exports.Tessellation = class Tessellation
       angle = alpha*i
       [sinh_r*Math.cos(angle), sinh_r*Math.sin(angle), cosh_r]
 
+  
   makeCellShapePoincare: (cellTransformMatrix, context) ->
     context.beginPath()
     for vertex, i in @cellShape

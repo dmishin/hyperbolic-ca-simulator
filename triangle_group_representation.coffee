@@ -29,6 +29,17 @@ exports.TriangleGroup = class TriangleGroup
       "Trg(#{@pqr[0]},#{@pqr[1]},#{@pqr[2]})"%self.pqr
 
 
+###  array of matrix powers
+###
+powers = (matrix, n) ->
+  #current power
+  m_n= M.eye()
+  
+  pows = [m_n]
+  for i in [1...n]
+    m_n = M.mul matrix, m_n
+    pows.push m_n
+  return pows
 
 ###
 # Impoementation of VD groups of order (n, m, 2)
@@ -51,4 +62,16 @@ exports.CenteredVonDyck = class CenteredVonDyck
     @sinh_r = Math.sqrt( @cosh_r**2 - 1 )
 
     @b = M.mul( M.mul(M.hrot(0, 2, @sinh_r), M.rot(0, 1, Math.PI*2/m)), M.hrot(0, 2, -@sinh_r) )
+
+    @aPowers = powers @a, n
+    @bPowers = powers @b, m
     
+
+  aPower: (i) -> @aPowers[ ((i%@n)+@n)%n ]
+  bPower: (i) -> @bPowers[ ((i%@m)+@m)%m ]
+  generatorPower: (g, i)->
+    if generator is 'a'
+      @aPower i
+    else if g is 'b'
+      @bPower i
+    else throw new Error("Unknown generator: #{g}")

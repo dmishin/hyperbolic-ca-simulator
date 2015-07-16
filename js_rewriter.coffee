@@ -1,5 +1,6 @@
 #Generates JS code that effectively rewrites
 {RewriteRuleset}= require "./knuth_bendix.coffee"
+{NodeA, NodeB, chainEquals, appendSimple, nodeConstructors, newNode} = require "./vondyck_chain.coffee"
 
 groupPowers = ( elemsWithPowers )->
     ### List (elem, power::int) -> List (elem, power::int)
@@ -115,47 +116,6 @@ exports.groupPowersVd = groupPowersVd = (s)->
 #    
 ###
 
-NodeA = (p, tail) ->
-  @p = p
-  @t = tail
-  return
-
-NodeB = (p, tail) ->
-  @p = p
-  @t = tail
-  return
-
-NodeA::letter = 'a'
-NodeB::letter = 'b'
-
-
-exports.chainEquals = chainEquals = (a, b) ->
-  if a is null or b is null
-    a is null and b is null
-  else
-    a.letter is b.letter and a.p is b.p and chainEquals(a.t, b.t)
-
-
-showNode = exports.showNode = (node) ->
-  if node is null
-    ''
-  else
-    showNode(node.t) + node.letter + (if node.p is 1 then '' else "^#{node.p}")
-
-nodeConstructors = 
-  a: NodeA
-  b: NodeB
-  
-exports.NodeA = NodeA
-exports.NodeB = NodeB
-exports.nodeConstructors = nodeConstructors
-
-appendSimple = appendSimple = (chain, stack) ->
-  while stack.length > 0
-    [e, p] = stack.pop()
-    chain = new (nodeConstructors[e])(p, chain)
-  return chain
-
 otherElem = (e) -> {'a':'b', 'b':'a'}[e]
 
 exports.JsCodeGenerator = class JsCodeGenerator
@@ -210,7 +170,7 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
                 @line('console.log("Append to empth chain:"+_e);');
                 @line("var order=(element==='a')?#{@_nodeOrder('a')}:#{@_nodeOrder('b')};")
                 @line("var lowestPow=(element==='a')?#{@_lowestPower('a')}:#{@_lowestPower('b')};")
-                @line('chain = new nodeConstructors[element](((power - lowestPow)%order+order)%order+lowestPow, chain);')
+                @line('chain = newNode( element, ((power - lowestPow)%order+order)%order+lowestPow, chain);')
             @generateMain()
             @line("return chain;")
         @line(")")
@@ -397,16 +357,6 @@ exports.makeAppendRewrite= makeAppendRewrite = (s)->
   throw new Error("Failed to compilation gave nothing?") unless appendRewrite?
   return appendRewrite
 
-exports.truncateA = truncateA = (chain)->
-  while (chain isnt null) and (chain.letter is "b")
-    chain = chain.t
-  return chain
-  
-exports.truncateB = truncateA = (chain)->
-  while (chain isnt null) and (chain.letter is "a")
-    chain = chain.t
-  return chain
-  
 main = ->
     table = {'ba': 'AB', 'bB': '', 'BAB': 'a', 'BBB': 'b', 'Bb': '', 'aBB': 'BAb', 'ABA': 'b', 'AAA': 'a', 'Aa': '', 'bAA': 'ABa', 'ab': 'BA', 'aBA': 'AAb', 'bAB': 'BBa', 'bb': 'BB', 'aA': '', 'aa': 'AA'}
     s = new RewriteRuleset(table)
