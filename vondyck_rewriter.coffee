@@ -296,8 +296,9 @@ reverseSuffixTable = (ruleset, ignorePowers = true)->
     
     for [suffix, rewrite] in ruleset.items()
         gSuffix = groupPowersVd(suffix)
+        gSuffix.reverse()
         gRewrite = groupPowersVd(rewrite)
-
+        gRewrite.reverse()
         if ignorePowers
             if gSuffix.length is 1 and gRewrite.length is 1 and gSuffix[0][0] is gRewrite[0][0]
                 continue

@@ -54,6 +54,8 @@ tfm = M.eye()
 
 cells = new NodeHashMap
 
+coordsWithPaths = []
+
 cell = null
 for nei in mooreNeighborhood cell, tessellation.group.n, tessellation.group.m, appendRewrite
   for nei2 in mooreNeighborhood nei, tessellation.group.n, tessellation.group.m, appendRewrite
@@ -61,6 +63,20 @@ for nei in mooreNeighborhood cell, tessellation.group.n, tessellation.group.m, a
       console.log "already present! #{showNode nei2}"
     else
       cells.put nei2, 1
+      cellCenter = M.mulv nodeMatrixRepr(nei2, tessellation.group), [0,0,1]
+      found = false
+      for [z, paths], i in coordsWithPaths
+        if M.approxEqv z, cellCenter
+          console.log "Path #{showNode nei2} already has equals:"
+          for p, j in paths
+            console.log "  #{j+1}) #{showNode p}"
+          paths.push nei2
+          found = true
+          break
+      if not found
+        console.log "First occurence of #{showNode nei2}"
+        coordsWithPaths.push [cellCenter, [nei2]]
+          
 
 console.log "Population is #{cells.count}"    
   
