@@ -103,7 +103,7 @@ exports.nodeMatrixRepr = nodeMatrixRepr = (node, generatorMatrices) ->
     if m isnt null
       m
     else
-      node.mtx = M.mul generatorMatrices.generatorPower(node.letter, node.p), nodeMatrixRepr(node.t, generatorMatrices)
+      node.mtx = M.mul nodeMatrixRepr(node.t, generatorMatrices), generatorMatrices.generatorPower(node.letter, node.p)
     
 
 
@@ -184,3 +184,4 @@ exports.NodeHashMap = class NodeHashMap
     return    
     
     
+  

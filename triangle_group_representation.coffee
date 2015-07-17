@@ -67,10 +67,10 @@ exports.CenteredVonDyck = class CenteredVonDyck
     @bPowers = powers @b, m
     
 
-  aPower: (i) -> @aPowers[ ((i%@n)+@n)%n ]
-  bPower: (i) -> @bPowers[ ((i%@m)+@m)%m ]
+  aPower: (i) -> @aPowers[ ((i%@n)+@n)%@n ]
+  bPower: (i) -> @bPowers[ ((i%@m)+@m)%@m ]
   generatorPower: (g, i)->
-    if generator is 'a'
+    if g is 'a'
       @aPower i
     else if g is 'b'
       @bPower i

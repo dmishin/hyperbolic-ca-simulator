@@ -6,7 +6,6 @@ len2 = (x,y) -> x*x + y*y
 exports.Tessellation = class Tessellation
   constructor: (n,m) ->
     @group = new CenteredVonDyck n, m
-
     @cellShape = @_generateNGon n, @group.sinh_r, @group.cosh_r
 
 
@@ -122,4 +121,6 @@ exports.Tessellation = class Tessellation
       else
         context.lineTo xx, yy
     context.closePath()
-    
+
+
+        
