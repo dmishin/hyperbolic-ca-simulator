@@ -214,7 +214,9 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
         @block =>
             @line("//Non-trivial rewrites, when new element is #{newElement}")
             nodeConstructor=@_nodeClass(newElement)
-            @line("chain = new #{nodeConstructor}(power, chain);")
+            o = @_nodeOrder newElement
+            mo = @_lowestPower newElement
+            @line("chain = new #{nodeConstructor}((((power - #{mo})%#{o}+#{o})%#{o}+#{mo}), chain);")            
             @generateRewriteBySuffixTree(newElement, @suffixTree, 'chain')
             
     generateRewriteBySuffixTree: ( newElement, suffixTree, chain)->
@@ -296,9 +298,9 @@ reverseSuffixTable = (ruleset, ignorePowers = true)->
     
     for [suffix, rewrite] in ruleset.items()
         gSuffix = groupPowersVd(suffix)
-        gSuffix.reverse()
+        #gSuffix.reverse()
         gRewrite = groupPowersVd(rewrite)
-        gRewrite.reverse()
+        #gRewrite.reverse()
         if ignorePowers
             if gSuffix.length is 1 and gRewrite.length is 1 and gSuffix[0][0] is gRewrite[0][0]
                 continue
@@ -332,7 +334,9 @@ exports.makeAppendRewrite= makeAppendRewrite = (s)->
   g = new CodeGenerator(s)
   g.debug=false
   
-  appendRewriteOnce = eval g.generateAppendRewriteOnce()
+  rewriterCode = g.generateAppendRewriteOnce()
+  console.log rewriterCode
+  appendRewriteOnce = eval rewriterCode
   throw new Error("Rewriter failed to compile") unless appendRewriteOnce?
   
   appendRewrite = repeatRewrite appendRewriteOnce    
