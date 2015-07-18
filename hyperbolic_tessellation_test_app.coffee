@@ -86,7 +86,8 @@ console.log "Population is #{cells.count}"
                         
 
 context.save()
-context.scale 200, 200
+s = Math.min( canvas.width, canvas.height ) / 2
+context.scale s, s
 context.translate 1, 1
 
 drawCells cells, M.eye(), tessellation, context
