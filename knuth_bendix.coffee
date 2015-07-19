@@ -79,8 +79,9 @@ exports.RewriteRuleset = class RewriteRuleset
       return lenslist
     
     appendRewrite: ( s, xs_)->
-        #"""Append elements of the array xs_ (reversed) to the string s, running all rewrite rules"""
+        #"""Append elements of the string xs_ to the string s, running all rewrite rules"""
         rules = @rules
+        return s if xs_.length is 0
         
         xs = xs_.split("")
         xs.reverse()

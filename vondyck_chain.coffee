@@ -31,6 +31,7 @@ exports.NodeA = class NodeA extends Node
   letter: 'a'
   letterCode: 0
   constructor: (@p, @t)->
+    @l = if @t is null then 1 else @t.l+1
     @h = null
     @mtx = null #support for calculating matrix representations
     
@@ -38,6 +39,7 @@ exports.NodeB = class NodeB extends Node
   letter: 'b'
   letterCode: 1
   constructor: (@p, @t)->
+    @l = if @t is null then 1 else @t.l+1
     @h = null
     @mtx = null
     
@@ -108,14 +110,37 @@ exports.nodeMatrixRepr = nodeMatrixRepr = (node, generatorMatrices) ->
 
 
 ### Hash function of the node
-###
+####
 exports.nodeHash = nodeHash = (node) ->
   if node is null
     0
   else
     node.hash()
-  
 
+### Reverse compare 2 chains by shortlex algorithm
+###
+exports.reverseShortlexLess = reverseShortlexLess = (c1, c2) ->
+  if c1 is null
+    return c2 isnt null
+  else
+    #c1 not null
+    if c2 is null
+      return false
+    else
+      #neither is null
+      if c1.l isnt c2.l
+        return c1.l < c2.l
+      #both are equal length
+      while c1 isnt null
+        if c1.letter isnt c2.letter
+          return c1.letter < c2.letter
+        if c1.p isnt c2.p
+          return c1.p < c2.p
+        #go upper
+        c1 = c1.t
+        c2 = c2.t
+      #exactly equal
+      return false
 
 #Hash map that uses chain as key
 exports.NodeHashMap = class NodeHashMap
@@ -150,12 +175,12 @@ exports.NodeHashMap = class NodeHashMap
     
   get: (chain) ->
     idx = nodeHash(chain) & @sizeMask
-    #console.log "### geting for #{showNode chain}"
+    # console.log "geting for #{showNode chain}"
     for key_value in @table[idx]
       if chainEquals key_value[0], chain
-        #console.log "###   found something"
+        #console.log "   found something"
         return key_value[1]
-    #console.log "###   not found"
+    #console.log "   not found"
     return null
     
   remove: (chain) ->

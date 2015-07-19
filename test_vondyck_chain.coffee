@@ -1,5 +1,5 @@
 assert = require "assert"
-{nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, NodeHashMap} = require "./vondyck_chain.coffee"
+{reverseShortlexLess, nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, NodeHashMap, reverseShortlexLess} = require "./vondyck_chain.coffee"
 M = require "./matrix3.coffee"
 {CenteredVonDyck} = require "./triangle_group_representation.coffee"
 
@@ -147,3 +147,30 @@ describe "nodeMatrixRepr", ->
   
   it "should return unity matrix for empty node", ->
     assert M.approxEq nodeMatrixRepr(null, group), M.eye()
+
+describe "reverseShortlexLess", ->
+  chain_a = newNode('a',1,null)
+  chain_B = newNode('b',-1,null)
+  chain_Baa = newNode('b',-1,newNode('a',2,null))
+  it "should return false for equal chains", ->
+    assert not reverseShortlexLess null, null
+    assert not reverseShortlexLess chain_a, chain_a
+    assert not reverseShortlexLess chain_B, chain_B
+    assert not reverseShortlexLess chain_Baa, chain_Baa
+    
+  it "should compare chains of different len", ->
+    assert reverseShortlexLess null, chain_a
+    assert reverseShortlexLess null, chain_B
+    assert reverseShortlexLess null, chain_Baa
+
+    assert not reverseShortlexLess chain_a, null
+    assert not reverseShortlexLess chain_B, null
+    assert not reverseShortlexLess chain_Baa, null
+
+    assert reverseShortlexLess chain_a, chain_Baa
+    assert not reverseShortlexLess chain_Baa, chain_a
+                
+
+  it "should compare chains of same len", ->
+    assert reverseShortlexLess chain_a, chain_B
+    assert not reverseShortlexLess chain_B, chain_a

@@ -1,6 +1,6 @@
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
-{NodeHashMap, nodeMatrixRepr, newNode, showNode, truncateA} = require "./vondyck_chain.coffee"
-{makeAppendRewrite, vdRule} = require "./vondyck_rewriter.coffee"
+{NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals} = require "./vondyck_chain.coffee"
+{makeAppendRewrite, makeAppendRewriteRef, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
 
@@ -31,10 +31,14 @@ mooreNeighborhood = (chain, n, m, appendRewrite)->
   for powerA in [0...n] by 1
     for powerB in [1...m-1] by 1
       #adding truncateA to eliminate final rotation of the chain.
-      neigh = truncateA appendRewrite chain, if powerA
+      nStep = if powerA
             [['b', powerB], ['a', powerA]]
         else
             [['b', powerB]]
+      neigh = eliminateFinalA appendRewrite(chain, nStep), appendRewrite, n
+      console.log "Append #{JSON.stringify nStep} to #{showNode chain} gives #{showNode neigh}"
+      if chainEquals neigh, newNode('a', -1, null)
+        throw new Error "Stop. bad result."
       neighbors.push neigh
   return neighbors
 
@@ -47,8 +51,7 @@ tessellation = new Tessellation 5,4
 console.log "Running knuth-bendix algorithm...."
 rewriteRuleset = knuthBendix vdRule tessellation.group.n, tessellation.group.m
 console.log "Finished"
-console.log JSON.stringify rewriteRuleset
-appendRewrite = makeAppendRewrite rewriteRuleset
+appendRewrite = makeAppendRewriteRef rewriteRuleset
 
 tfm = M.eye()
 
@@ -70,6 +73,7 @@ for nei in mooreNeighborhood cell, tessellation.group.n, tessellation.group.m, a
           console.log "Path #{showNode nei2} already has equals:"
           for p, j in paths
             console.log "  #{j+1}) #{showNode p}"
+            #throw new Error "Stop"
           paths.push nei2
           found = true
           break
@@ -79,6 +83,7 @@ for nei in mooreNeighborhood cell, tessellation.group.n, tessellation.group.m, a
           
 
 console.log "Population is #{cells.count}"    
+console.log JSON.stringify rewriteRuleset
   
 #cells.put null, 1
 #cells.put newNode('a', 1, newNode('b',1,null)), 1

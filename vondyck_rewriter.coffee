@@ -1,6 +1,6 @@
 #Generates JS code that effectively rewrites
 {RewriteRuleset}= require "./knuth_bendix.coffee"
-{NodeA, NodeB, chainEquals, appendSimple, nodeConstructors, newNode} = require "./vondyck_chain.coffee"
+{NodeA, NodeB, chainEquals, appendSimple, nodeConstructors, newNode, reverseShortlexLess, showNode} = require "./vondyck_chain.coffee"
 
 groupPowers = ( elemsWithPowers )->
     ### List (elem, power::int) -> List (elem, power::int)
@@ -375,3 +375,53 @@ exports.vdRule = vdRule = (n, m, k=2)->
     r[repeat( 'B', m )] = ""
     r[repeat( 'b', m )] = ""
     return new RewriteRuleset r
+
+exports.string2chain = string2chain = (s) ->
+  #last element of the string is chain head
+  chain = null
+  grouped = groupPowersVd s
+  grouped.reverse()
+  appendSimple null, grouped
+
+exports.chain2string = chain2string = (chain)->
+  s = ""
+  while chain isnt null
+    e = chain.letter
+    p = chain.p
+    if p < 0
+      e = e.toUpperCase()
+      p = -p
+      
+    s = repeat(e, p) + s
+    chain = chain.t
+  return s
+
+##Creates reference rewriter, using strings internally.
+# Slow, but better tested than the compiled.
+exports.makeAppendRewriteRef = (rewriteRule) ->
+  (chain, stack) ->
+    sChain = chain2string chain
+    ungroupedStack = []
+    for [e, p] in stack
+      if p < 0
+        p = -0
+        e = e.toUpperCase()
+        
+      for i in [0...p] by 1
+        ungroupedStack.push e
+    #done
+    ungroupedStack.reverse()
+    console.log "Ref rewriter: chain=#{sChain}, stack=#{ungroupedStack.join('')}"    
+    string2chain rewriteRule.appendRewrite sChain, ungroupedStack.join('')
+
+
+exports.eliminateFinalA = eliminateFinalA = (chain, appendRewrite, orderA) ->
+  bestChain = chain
+  for i in [1...orderA]
+    chain_i = appendRewrite chain, [['a', i]]
+    if reverseShortlexLess chain_i, bestChain
+      bestChain = chain_i
+  console.log "EliminateA: got #{showNode chain}, produced #{showNode bestChain}"
+  return bestChain
+  
+  
