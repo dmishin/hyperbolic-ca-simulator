@@ -1,6 +1,6 @@
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
 {NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals} = require "./vondyck_chain.coffee"
-{makeAppendRewrite, makeAppendRewriteRef, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
+{makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
 
@@ -51,7 +51,7 @@ tessellation = new Tessellation 5,4
 console.log "Running knuth-bendix algorithm...."
 rewriteRuleset = knuthBendix vdRule tessellation.group.n, tessellation.group.m
 console.log "Finished"
-appendRewrite = makeAppendRewriteRef rewriteRuleset
+appendRewrite = makeAppendRewriteVerified rewriteRuleset
 
 tfm = M.eye()
 

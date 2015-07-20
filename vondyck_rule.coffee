@@ -4,7 +4,7 @@
 #compute the rewriter
 #
 
-r = vdRule 15, 15
+r = vdRule 5, 4
 
 r1 = knuthBendix r
 

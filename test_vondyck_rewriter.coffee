@@ -1,7 +1,7 @@
 assert = require "assert"
-
-{string2chain, chain2string} = require "./vondyck_rewriter.coffee"
-{chainEquals, newNode} = require "./vondyck_chain.coffee"
+{RewriteRuleset} = require  "./knuth_bendix.coffee"
+{string2chain, chain2string, makeAppendRewriteRef, makeAppendRewrite} = require "./vondyck_rewriter.coffee"
+{chainEquals, newNode, showNode} = require "./vondyck_chain.coffee"
 
 describe "string2chain", ->
   it "must convert empty string", ->
@@ -31,4 +31,58 @@ describe "chain2string", ->
     assert.equal chain2string(c), "aaBBBA"
 
 
+describe "Compiled rewriter", ->
+  rewriteTable = new RewriteRuleset {
+     aaBaa: 'AAbAA'
+     ABaBA: 'bAAb'
+     bb: 'BB'
+     bAB: 'BBa'
+     aaa: 'AA'
+     AAA: 'aa'
+     ab: 'BA'
+     aBB: 'BAb'
+     ba: 'AB'
+     Bb: ''
+     bB: ''
+     Aa: ''
+     aA: ''
+     BBB: 'b'
+     BAB: 'a'
+     ABA: 'b'
+     aaBA: 'AAb'
+     ABaa: 'bAA'
+     aaBaBA: 'AAbAAb'
+     bAAbAA: 'ABaBaa' }
+  n=5
+  m=4
+
+
+  refRewriter = makeAppendRewriteRef rewriteTable
+  compiledRewriter = makeAppendRewrite rewriteTable
+
+  doTest = ( stack ) ->
+    #console.log "should stringify #{JSON.stringify stack}"
+    #console.log "#{showNode chainRef} != #{showNode chain}"
+    chainRef = refRewriter null, stack[..]
+    chain = compiledRewriter null, stack[..]
+    assert chainEquals(chainRef, chain), "AR('', #{JSON.stringify stack}) -> #{showNode chainRef} (ref) != #{showNode chain}"
+    return
+
+  walkChains = (stack, depth, callback) ->
+    callback stack
+    for a in [1...n]
+      stack.push ['a',a]
+      callback stack
+      
+      for b in [1...m]
+        stack.push ['b', b]
+        callback stack
+        if depth > 0
+          walkChains stack, depth-1, callback
+        stack.pop()
+      stack.pop()
+    return
+    
+  it "must produce same result as reference rewriter", ->
+    walkChains [], 3, doTest
     

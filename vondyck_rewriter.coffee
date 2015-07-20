@@ -332,10 +332,10 @@ exports.canAppend = (appendRewriteOnce) -> (chain, element, power) ->
   
 exports.makeAppendRewrite= makeAppendRewrite = (s)->
   g = new CodeGenerator(s)
-  g.debug=false
+  g.debug=true
   
   rewriterCode = g.generateAppendRewriteOnce()
-  console.log rewriterCode
+  #console.log rewriterCode
   appendRewriteOnce = eval rewriterCode
   throw new Error("Rewriter failed to compile") unless appendRewriteOnce?
   
@@ -398,7 +398,7 @@ exports.chain2string = chain2string = (chain)->
 
 ##Creates reference rewriter, using strings internally.
 # Slow, but better tested than the compiled.
-exports.makeAppendRewriteRef = (rewriteRule) ->
+exports.makeAppendRewriteRef = makeAppendRewriteRef= (rewriteRule) ->
   (chain, stack) ->
     sChain = chain2string chain
     ungroupedStack = []
@@ -411,7 +411,7 @@ exports.makeAppendRewriteRef = (rewriteRule) ->
         ungroupedStack.push e
     #done
     ungroupedStack.reverse()
-    console.log "Ref rewriter: chain=#{sChain}, stack=#{ungroupedStack.join('')}"    
+    #console.log "Ref rewriter: chain=#{sChain}, stack=#{ungroupedStack.join('')}"    
     string2chain rewriteRule.appendRewrite sChain, ungroupedStack.join('')
 
 
@@ -421,7 +421,24 @@ exports.eliminateFinalA = eliminateFinalA = (chain, appendRewrite, orderA) ->
     chain_i = appendRewrite chain, [['a', i]]
     if reverseShortlexLess chain_i, bestChain
       bestChain = chain_i
-  console.log "EliminateA: got #{showNode chain}, produced #{showNode bestChain}"
+  #console.log "EliminateA: got #{showNode chain}, produced #{showNode bestChain}"
   return bestChain
   
+
+exports.makeAppendRewriteVerified = (rewriteRule) ->
+
+  #Reference rewriter
+  appendRewriteRef = makeAppendRewriteRef rewriteRule
+  #compiled rewriter
+  appendRewrite = makeAppendRewrite rewriteRule
   
+  (chain, stack) ->
+    console.log ("========= before verification =======")
+    refValue = appendRewriteRef chain, stack[..]
+    value = appendRewrite chain, stack[..]
+
+    if not chainEquals refValue, value
+      for [k, v] in rewriteRule.items()
+        console.log "  #{k} -> #{v}"
+      throw new Error "rewriter verification failed. args: chain = #{showNode chain}, stack: #{JSON.stringify stack}, refValue: #{showNode refValue}, value: #{showNode value}"
+    return value
