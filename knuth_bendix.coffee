@@ -103,7 +103,7 @@ exports.RewriteRuleset = class RewriteRuleset
                       xs.push rewriteAs[i]
                     continue
         return s
-
+    has: (key) -> @rules.hasOwnProperty key
     rewrite: ( s )-> @appendRewrite( "", s )
     
 

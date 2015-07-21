@@ -121,7 +121,7 @@ otherElem = (e) -> {'a':'b', 'b':'a'}[e]
 mod = (x,y) -> (x%y+y)%y
 
 exports.JsCodeGenerator = class JsCodeGenerator
-    constructor: ( debug=true, pretty=true )->
+    constructor: ( debug=false, pretty=false )->
         @out = []
         @ident = 0
         @debug = debug
@@ -134,8 +134,8 @@ exports.JsCodeGenerator = class JsCodeGenerator
       return code
     reset: -> @out = []
     line: ( text)->
-        if not @debug and text.match /^console.log/
-            return
+        if not @debug and text.match /^console\.log/
+          return
         
         if not @pretty and text.match /^\/\//
             return
@@ -146,7 +146,9 @@ exports.JsCodeGenerator = class JsCodeGenerator
             
         @out.push(text)
         @out.push(if @pretty then "\n" else " ")
-        
+    if_: ( conditionText ) -> @line "if(#{conditionText})"
+    op: (expressionText) -> @line "#{expressionText};"
+    
     block: (callback)->
         @line("{")
         @ident += 1
@@ -155,7 +157,7 @@ exports.JsCodeGenerator = class JsCodeGenerator
         @line("}")
 
 exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
-    constructor: ( rewriteTable, out, debug=true, pretty=true )->
+    constructor: ( rewriteTable, out, debug=false, pretty=false )->
         super debug, pretty
 
         powerRewrites = powerRewriteRules rewriteTable
@@ -182,7 +184,7 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
         @line("(function(chain, stack )")
         @block =>
             @line "if (stack.length === 0) {throw new Error('empty stack');}"
-            @line("var _e = stack.pop(), element = _e[0], power = _e[1];")
+            @op("var _e = stack.pop(), element = _e[0], power = _e[1]")
             @line("if (chain === null)")
             @block =>
                 @line("//empty chain")
@@ -220,7 +222,7 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
             order = @elementOrder[letter]
             @line( "var newPower = ((chain.p + power - #{lowestPow})%#{order}+#{order})%#{order}+#{lowestPow};")
             
-            @line "chain = chain.t"
+            @line "chain = chain.t;"
             
             @line('if (newPower !== 0)')
             @block =>
@@ -365,10 +367,10 @@ exports.canAppend = (appendRewriteOnce) -> (chain, element, power) ->
   
 exports.makeAppendRewrite= makeAppendRewrite = (s)->
   g = new CodeGenerator(s)
-  g.debug=true
+  g.debug=false
   
   rewriterCode = g.generateAppendRewriteOnce()
-  console.log rewriterCode
+  #console.log rewriterCode
   appendRewriteOnce = eval rewriterCode
   throw new Error("Rewriter failed to compile") unless appendRewriteOnce?
   
@@ -506,13 +508,22 @@ exports.extendLastPowerRewriteTable = extendLastPowerRewriteTable = (rewriteRule
       #and generate new strings      
       newSuffix = ungroupPowersVd(gSuffix).join ''
       newRewrite = ungroupPowersVd(collectPowers gRewrite).join ''
-      
-      rewriteRule.add newSuffix, newRewrite
+
+      unless tailInRewriteTable rewriteRule, newSuffix
+        rewriteRule.add newSuffix, newRewrite
       #console.log "Adding new extended rule: #{newSuffix} -> #{newRewrite}"
       #TODO: don't add rules whose suffices are already in the table.
       
   return rewriteRule
-      
+
+#Returns True, if string tail (of nonzero length) is present in the rewrite table
+tailInRewriteTable = (rewriteTable, s) ->
+  for suffixTailLen in [1 ... s.length] by 1
+    suffixTail = s.substring s.length - suffixTailLen
+    if rewriteTable.has suffixTail
+      return true
+  return false
+            
 exports.makeAppendRewriteVerified = (rewriteRule) ->
 
   #Reference rewriter
