@@ -154,16 +154,14 @@ exports.NodeHashMap = class NodeHashMap
     
     @sizeMask = initialSize - 1
       
-    
-  put: (chain, value) ->
+  putAccumulate: (chain, value, accumulateFunc)->
     idx = nodeHash(chain) & @sizeMask
     cell = @table[idx]
 
     for key_value in cell
       if chainEquals(key_value[0], chain)
         #Update existing value
-        #console.log "##Updating value of #{showNode chain} to #{value}, index is #{idx}"
-        key_value[1] = value
+        key_value[1] = accumulateFunc key_value[1], value
         return
         
     #console.log "##Adding new #{showNode chain} to #{value}, index is #{idx}"
@@ -172,6 +170,8 @@ exports.NodeHashMap = class NodeHashMap
     if @count > @maxFillRatio*@table.length
       @_growTable()
     return this
+        
+  put: (chain, value) -> @putAccumulate chain, value, (x,y)->y
     
   get: (chain) ->
     idx = nodeHash(chain) & @sizeMask
