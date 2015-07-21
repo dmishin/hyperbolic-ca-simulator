@@ -53,22 +53,18 @@ exports.evaluateTotalisticAutomaton = evaluateTotalisticAutomaton = (cells, getN
 #  list of chains to append
 exports.farNeighborhood = farNeighborhood = (center, r, appendRewrite, n, m) ->
   cells = new NodeHashMap
+  cells.put center, true
   getNeighbors = mooreNeighborhood n, m, appendRewrite
+  getCellList = (cells) ->
+    cellList = []
+    cells.forItems (cell, state) ->
+      cellList.push cell
+    return cellList
 
-
-  walk = ( cell, level ) ->
-    return if cells.get cell
-    cells.put cell, true
-    if level < r
+  for i in [0...r] by 1
+    for cell in getCellList cells
       for nei in getNeighbors cell
-        walk(nei, level+1)
-    return
+        cells.put nei, true
 
-  walk null, 0
-  
-  cellList = []
-  cells.forItems (cell, state) ->
-    cellList.push cell
-    
-  return cellList
+  getCellList cells  
 
