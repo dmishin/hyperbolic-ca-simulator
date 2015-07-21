@@ -2,7 +2,7 @@
 {NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
-
+{mooreNeighborhood, evaluateTotalisticAutomaton, farNeighborhood} = require "./field.coffee"
 
 M = require "./matrix3.coffee"
 
@@ -12,6 +12,15 @@ E = (id) -> document.getElementById id
 colors = ["red", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
 
 
+drawVisibleCells = (visibleCells, cells, viewMatrix, tessellation, context) ->
+  for cell in visibleCells
+    if cells.get cell
+      mtx = M.mul viewMatrix, nodeMatrixRepr(cell, tessellation.group)
+      context.fillStyle = "black"
+      tessellation.makeCellShapePoincare( mtx, context )
+      context.fill()
+  return      
+  
 drawCells = (cells, viewMatrix, tessellation, context) ->
   iColor = 0
   cells.forItems  (chain, value) ->
@@ -22,45 +31,6 @@ drawCells = (cells, viewMatrix, tessellation, context) ->
     tessellation.makeCellShapePoincare( mtx, context )
     context.fill()
     iColor += 1
-
-mooreNeighborhood = (n, m, appendRewrite)->(chain)->
-  #reutrns Moore (vertex) neighborhood of the cell.
-  # it contains N cells of von Neumann neighborhood
-  #    and N*(M-3) cells, sharing single vertex.
-  # In total, N*(M-2) cells.
-  neighbors = []
-  for powerA in [0...n] by 1
-    for powerB in [1...m-1] by 1
-      #adding truncateA to eliminate final rotation of the chain.
-      nStep = if powerA
-            [['b', powerB], ['a', powerA]]
-        else
-            [['b', powerB]]
-      neigh = eliminateFinalA appendRewrite(chain, nStep), appendRewrite, n
-      neighbors.push neigh
-  return neighbors
-
-neighborsSum = (cells, getNeighborhood)->
-  sums = new NodeHashMap
-  plus = (x,y)->x+y
-  cells.forItems (cell, value)->
-    if value isnt 1
-      throw new Error "Value of #{showNode cell} is not 1: #{value}"
-    for neighbor in getNeighborhood cell
-      sums.putAccumulate neighbor, value, plus
-  return sums
-
-evaluateWithNeighbors = (cells, getNeighborhood, nextStateFunc)->
-  newCells = new NodeHashMap
-  sums = neighborsSum cells, getNeighborhood
-  
-  sums.forItems (cell, neighSum)->
-    #console.log "#{showNode cell}, sum=#{neighSum}"
-    cellState = cells.get(cell) ? 0
-    nextState = nextStateFunc cellState, neighSum
-    if nextState isnt 0
-      newCells.put cell, nextState
-  return newCells
 
 # ============================================  app code ===============
 canvas = E "canvas"
@@ -74,6 +44,11 @@ appendRewrite = makeAppendRewrite rewriteRuleset
 
 getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, appendRewrite
 
+
+viewCenter = null
+visibleCells = farNeighborhood viewCenter, 5, appendRewrite, tessellation.group.n, tessellation.group.m
+console.log "Visible field contains #{visibleCells.length} cells"
+
 tfm = M.eye()
 cells = new NodeHashMap
 cells.put null, 1
@@ -84,7 +59,7 @@ doReset = ->
   redraw()
 
 doStep = ->
-  cells = evaluateWithNeighbors cells, getNeighbors, (state, sum)->
+  cells = evaluateTotalisticAutomaton cells, getNeighbors, (state, sum)->
     if state is 0
       if sum in [1, 15]
         return 1
@@ -100,9 +75,8 @@ redraw = ->
   s = Math.min( canvas.width, canvas.height ) / 2
   context.scale s, s
   context.translate 1, 1
-  drawCells cells, tfm, tessellation, context
-  context.restore()
-  
+  drawVisibleCells visibleCells, cells, tfm, tessellation, context
+  context.restore()  
   console.log "Redraw. Population is #{cells.count}"
 
 redraw()

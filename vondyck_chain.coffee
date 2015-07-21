@@ -44,15 +44,20 @@ exports.NodeB = class NodeB extends Node
     @mtx = null
     
 exports.chainEquals = chainEquals = (a, b) ->
-  if a is null or b is null
-    a is null and b is null
-  else
-    a.letter is b.letter and a.p is b.p and chainEquals(a.t, b.t)
+  while true
+    return true if a is b 
+    if a is null or b is null
+      return false #a is null and b is null
+      
+    if (a.letter isnt b.letter) or (a.p isnt b.p)
+      return false
+    a = a.t
+    b = b.t
 
 
 showNode = exports.showNode = (node) ->
   if node is null
-    ''
+    'e'
   else
     showNode(node.t) + node.letter + (if node.p is 1 then '' else "^#{node.p}")
 
@@ -170,9 +175,9 @@ exports.NodeHashMap = class NodeHashMap
     if @count > @maxFillRatio*@table.length
       @_growTable()
     return this
-        
+          
   put: (chain, value) -> @putAccumulate chain, value, (x,y)->y
-    
+
   get: (chain) ->
     idx = nodeHash(chain) & @sizeMask
     # console.log "geting for #{showNode chain}"
