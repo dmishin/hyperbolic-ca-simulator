@@ -2,7 +2,7 @@
 {RewriteRuleset}= require "./knuth_bendix.coffee"
 {NodeA, NodeB, chainEquals, appendSimple, nodeConstructors, newNode, reverseShortlexLess, showNode} = require "./vondyck_chain.coffee"
 
-groupPowers = ( elemsWithPowers )->
+collectPowers = ( elemsWithPowers )->
     ### List (elem, power::int) -> List (elem, power::int)
     ###
     grouped = []
@@ -39,7 +39,7 @@ exports.groupByPower = groupByPower = (s)->
         result.push [last, lastPow]
     return result
 
-
+#collect powers, assuming convention that uppercase letters degignate negative powers
 exports.groupPowersVd = groupPowersVd = (s)->
     for [x, p] in groupByPower(s)
         if x.toUpperCase() is x
@@ -118,6 +118,8 @@ exports.groupPowersVd = groupPowersVd = (s)->
 
 otherElem = (e) -> {'a':'b', 'b':'a'}[e]
 
+mod = (x,y) -> (x%y+y)%y
+
 exports.JsCodeGenerator = class JsCodeGenerator
     constructor: ( debug=true, pretty=true )->
         @out = []
@@ -151,41 +153,60 @@ exports.JsCodeGenerator = class JsCodeGenerator
         callback()
         @ident -= 1
         @line("}")
-    
+
 exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
     constructor: ( rewriteTable, out, debug=true, pretty=true )->
         super debug, pretty
+
+        powerRewrites = powerRewriteRules rewriteTable
+
+        rangeA = elementPowerRange(powerRewrites, 'a')
+        rangeB = elementPowerRange(powerRewrites, 'b')
+        
+        @minPower =
+          'a': rangeA[0]
+          'b': rangeB[0]
+        @elementOrder =
+          'a': elementOrder powerRewrites, 'a'
+          'b': elementOrder powerRewrites, 'b'
+          
+        #extend rewrite table with new rules
+        rewriteTable = rewriteTable.copy()
+        extendLastPowerRewriteTable rewriteTable, 'a', rangeA[0], rangeA[1]
+        extendLastPowerRewriteTable rewriteTable, 'b', rangeB[0], rangeB[1]
+        
         @rewriteTable = rewriteTable
         @suffixTree = reverseSuffixTable(rewriteTable)
-        
+
     generateAppendRewriteOnce: ->
         @line("(function(chain, stack )")
         @block =>
             @line "if (stack.length === 0) {throw new Error('empty stack');}"
-            @line("var _e = stack.pop();")
-            @line("var element = _e[0], power = _e[1];")
+            @line("var _e = stack.pop(), element = _e[0], power = _e[1];")
             @line("if (chain === null)")
             @block =>
                 @line("//empty chain")
                 @line('console.log("Append to empth chain:"+_e);');
-                @line("var order=(element==='a')?#{@_nodeOrder('a')}:#{@_nodeOrder('b')};")
-                @line("var lowestPow=(element==='a')?#{@_lowestPower('a')}:#{@_lowestPower('b')};")
-                @line('chain = newNode( element, ((power - lowestPow)%order+order)%order+lowestPow, chain);')
-            @generateMain()
+                @line("var order=(element==='a')?#{@elementOrder['a']}:#{@elementOrder['b']};")
+                @line("var lowestPow=(element==='a')?#{@minPower['a']}:#{@minPower['b']};")
+                @line('chain = newNode( element, mod(power-lowestPow, order)+lowestPow, chain);')
+            @line 'else'
+            @block =>
+              @generateMain()
             @line("return chain;")
         @line(")")
         return @get()
                 
     generateMain: ->
-        @line('else if (chain.letter==="a")')
+        @line('if (chain.letter==="a")')
         @block =>
-            @line('console.log("Append to chain ending with A:"+_e);')
+            @line('console.log("Append "+JSON.stringify(_e)+" to chain ending with A:"+showNode(chain));')
             @generatePowerAccumulation("a")
             @generateRewriterFrom("b")
             
         @line('else if (chain.letter==="b")')
         @block =>
-            @line('console.log("Append to chain ending with B:"+_e);')
+            @line('console.log("Append "+JSON.stringify(_e)+" to chain ending with B:"+showNode(chain));')
             @generatePowerAccumulation("b")
             @generateRewriterFrom("a")
             
@@ -194,19 +215,23 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
     generatePowerAccumulation: ( letter)->
         @line("if (element === \"#{letter}\")")
         @block =>
-            @line( "console.log(\"    element === #{letter}\");")
-            lowestPow = @_lowestPower(letter)
-            order = @_nodeOrder(letter)
+            @line( "console.log(\"    element is #{letter}\");")
+            lowestPow = @minPower[letter]
+            order = @elementOrder[letter]
             @line( "var newPower = ((chain.p + power - #{lowestPow})%#{order}+#{order})%#{order}+#{lowestPow};")
             
-            @line('if (newPower === 0)')
-            @block =>
-                @line( 'console.log("      power reduced to 0, new chain="+showNode(chain));')
-                @line( 'chain = chain.t;')
-            @line('else')
+            @line "chain = chain.t"
+            
+            @line('if (newPower !== 0)')
             @block =>
                 nodeClass=@_nodeClass(letter) 
-                @line("chain = new #{nodeClass}(newPower, chain.t);")
+                @line('console.log("    new power is "+newPower);')
+                #and append modified power to the stack
+                @line "stack.push(['#{letter}', newPower]);"
+            if @debug
+              @line('else')
+              @block =>
+                @line( 'console.log("      power reduced to 0, new chain="+showNode(chain));')
                 
     generateRewriterFrom: ( newElement)->
         ###Generate rewriters, when `newElement` is added, and it is not the same as the last element of the chain###
@@ -214,8 +239,8 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
         @block =>
             @line("//Non-trivial rewrites, when new element is #{newElement}")
             nodeConstructor=@_nodeClass(newElement)
-            o = @_nodeOrder newElement
-            mo = @_lowestPower newElement
+            o = @elementOrder[newElement]
+            mo = @minPower[newElement]
             @line("chain = new #{nodeConstructor}((((power - #{mo})%#{o}+#{o})%#{o}+#{mo}), chain);")            
             @generateRewriteBySuffixTree(newElement, @suffixTree, 'chain')
             
@@ -253,9 +278,9 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
         
     generateLeafRewrite: ( elem, elemPower, rewrite, chain)->
         throw new Error("power?") unless elemPower? 
-        @line("//Leaf: rewrite this to #{rewrite}")
+        @line("console.log( 'Leaf: rewrite this to #{rewrite}');")
         @line("//elem: #{elem}, power: #{elemPower}: rewrite this to #{rewrite}")
-        @line("//Truncate chain...")
+        @line("console.log( 'Truncate chain from ' + showNode(chain) + ' to ' + showNode(#{chain}) + ' with additional elem: #{elem}^#{-elemPower}' );")
         @line("chain = #{chain};")
         @line("//Append rewrite")
 
@@ -263,35 +288,43 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
         revRewrite.reverse()
         revRewrite.push [elem, -elemPower]
 
-        sPowers = ( "[\"#{e}\",#{p}]" for [e, p] in groupPowers(revRewrite) ).join(",")
+        sPowers = ( "[\"#{e}\",#{p}]" for [e, p] in collectPowers(revRewrite) ).join(",")
         @line("stack.push(#{sPowers});")
         
     _nodeClass: ( letter)->
         {"a": "NodeA", "b":"NodeB"}[letter]
-        
-    _powerRewriteRules: ->
-        result = []
-        for [key, rewrite] in @rewriteTable.items()
-            gKey = groupPowersVd(key)
-            gRewrite = groupPowersVd(rewrite)
-            if gKey.length is 1 and gRewrite.length is 1
-                [x, p] = gKey[0]
-                [x_, p1] = gRewrite[0]
-                if x is x_
-                    result.push [x, p, p1]
-        return result
+
+#extracts from table rules, rewriting single powers                
+powerRewriteRules = (rewriteTable) ->
+  result = []
+  for [key, rewrite] in rewriteTable.items()
+      gKey = groupPowersVd(key)
+      gRewrite = groupPowersVd(rewrite)
+      if gKey.length is 1 and gRewrite.length is 1
+          [x, p] = gKey[0]
+          [x_, p1] = gRewrite[0]
+          if x is x_
+              result.push [x, p, p1]
+  return result
+
+#for given lsit of power rewrites, return range of allowed powers for element
+# (range bounds are inclusive)
+elementPowerRange = ( powerRewrites, letter )->
+  ###search for rules of type a^n -> a^m###
+  powers = (p1 for [x, p1, p2] in powerRewrites when x is letter)
+  if powers.length is 0
+    throw new Error("No power rewrites for #{letter}")
+  minPower = Math.min( powers... ) + 1
+  maxPower = Math.max( powers... ) - 1
+  return [minPower, maxPower]
+    
+elementOrder = ( powerRewrites, letter)->
+    orders = (Math.abs(p1-p2) for [x, p1, p2] in powerRewrites when x is letter)
+    if orders.length is 0
+      throw new Error("No power rewrites for #{letter}")
+    return Math.min( orders... )
 
 
-    _lowestPower: ( letter)->
-        ###search for rules of type a^n -> a^m###
-        powers = (p1 for [x, p1, p2] in @_powerRewriteRules() when x is letter)
-        return Math.min( powers... ) + 1
-        
-    _nodeOrder: ( letter)->
-        orders = (Math.abs(p1-p2) for [x, p1, p2] in @_powerRewriteRules() when x is letter)
-        if orders.length is 0
-          throw new Error("No power rewrites for #{letter}")
-        return Math.min( orders... )
 
 reverseSuffixTable = (ruleset, ignorePowers = true)->
     revTable = {}
@@ -335,7 +368,7 @@ exports.makeAppendRewrite= makeAppendRewrite = (s)->
   g.debug=true
   
   rewriterCode = g.generateAppendRewriteOnce()
-  #console.log rewriterCode
+  console.log rewriterCode
   appendRewriteOnce = eval rewriterCode
   throw new Error("Rewriter failed to compile") unless appendRewriteOnce?
   
@@ -396,20 +429,24 @@ exports.chain2string = chain2string = (chain)->
     chain = chain.t
   return s
 
+#take list of pairs: [element, power] and returns list of single elements,
+# assuming convention that negative power is uppercase letter.
+ungroupPowersVd = (stack) ->
+  ungroupedStack = []
+  for [e, p] in stack
+    if p < 0
+      p = -p
+      e = e.toUpperCase()        
+    for i in [0...p] by 1
+      ungroupedStack.push e
+  return ungroupedStack  
+
 ##Creates reference rewriter, using strings internally.
 # Slow, but better tested than the compiled.
 exports.makeAppendRewriteRef = makeAppendRewriteRef= (rewriteRule) ->
   (chain, stack) ->
     sChain = chain2string chain
-    ungroupedStack = []
-    for [e, p] in stack
-      if p < 0
-        p = -0
-        e = e.toUpperCase()
-        
-      for i in [0...p] by 1
-        ungroupedStack.push e
-    #done
+    ungroupedStack = ungroupPowersVd stack
     ungroupedStack.reverse()
     #console.log "Ref rewriter: chain=#{sChain}, stack=#{ungroupedStack.join('')}"    
     string2chain rewriteRule.appendRewrite sChain, ungroupedStack.join('')
@@ -423,8 +460,59 @@ exports.eliminateFinalA = eliminateFinalA = (chain, appendRewrite, orderA) ->
       bestChain = chain_i
   #console.log "EliminateA: got #{showNode chain}, produced #{showNode bestChain}"
   return bestChain
-  
 
+#Takes some rewrite ruleset and extends it by adding new rules with increased power of last element
+# Example:
+#  Original table:
+#    b^2 a^1 -> XXX
+#  Extended table
+#    b^2 a^2 -> XXXa
+#    b^2 a^3 -> XXXa^2
+#    ... 
+#    b^2 a^maxPower -> XXXa^{maxPower-1}
+#
+#  if power is negative, it is extended to minPower.
+#  This function modifies existing rewrite table.
+exports.extendLastPowerRewriteTable = extendLastPowerRewriteTable = (rewriteRule, element, minPower, maxPower) ->
+  throw new Error "min power must be non-positive" if minPower > 0
+  throw new Error "max power must be non-negative" if maxPower < 0
+  
+  #newRules = []
+  for [suffix, rewrite] in rewriteRule.items()
+    gSuffix = groupPowersVd suffix
+    throw new Error('empty suffix!?') if gSuffix.length is 0
+    continue if gSuffix[gSuffix.length-1][0] isnt element
+    
+    gRewrite = groupPowersVd rewrite
+    
+    power = gSuffix[gSuffix.length-1][1]
+    step = if power > 0 then 1 else -1
+    lastPower =  if power > 0 then maxPower else minPower
+
+    #prepare placeholder item. 0 will be replaced with additional power
+    gRewrite.push [element, 0]
+    
+    #console.log "SUFFIX  PLACEHOLDER: #{JSON.stringify gSuffix}"
+    #console.log "REWRITE PLACEHOLDER: #{JSON.stringify gRewrite}"
+    
+    for p in [power+step .. lastPower] by step
+      #Update power...
+      gSuffix[gSuffix.length-1][1] = p
+      gRewrite[gRewrite.length-1][1] =  p - power
+      
+      #console.log "   Upd: SUFFIX  PLACEHOLDER: #{JSON.stringify gSuffix}"
+      #console.log "   Upd: REWRITE PLACEHOLDER: #{JSON.stringify gRewrite}"
+      
+      #and generate new strings      
+      newSuffix = ungroupPowersVd(gSuffix).join ''
+      newRewrite = ungroupPowersVd(collectPowers gRewrite).join ''
+      
+      rewriteRule.add newSuffix, newRewrite
+      #console.log "Adding new extended rule: #{newSuffix} -> #{newRewrite}"
+      #TODO: don't add rules whose suffices are already in the table.
+      
+  return rewriteRule
+      
 exports.makeAppendRewriteVerified = (rewriteRule) ->
 
   #Reference rewriter

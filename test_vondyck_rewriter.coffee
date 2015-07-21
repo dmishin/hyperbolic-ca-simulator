@@ -1,6 +1,6 @@
 assert = require "assert"
 {RewriteRuleset} = require  "./knuth_bendix.coffee"
-{string2chain, chain2string, makeAppendRewriteRef, makeAppendRewrite} = require "./vondyck_rewriter.coffee"
+{string2chain, chain2string, makeAppendRewriteRef, makeAppendRewrite, extendLastPowerRewriteTable} = require "./vondyck_rewriter.coffee"
 {chainEquals, newNode, showNode} = require "./vondyck_chain.coffee"
 
 describe "string2chain", ->
@@ -60,12 +60,12 @@ describe "Compiled rewriter", ->
   refRewriter = makeAppendRewriteRef rewriteTable
   compiledRewriter = makeAppendRewrite rewriteTable
 
-  doTest = ( stack ) ->
+  doTest = ( stack, chain0=null ) ->
     #console.log "should stringify #{JSON.stringify stack}"
     #console.log "#{showNode chainRef} != #{showNode chain}"
-    chainRef = refRewriter null, stack[..]
-    chain = compiledRewriter null, stack[..]
-    assert chainEquals(chainRef, chain), "AR('', #{JSON.stringify stack}) -> #{showNode chainRef} (ref) != #{showNode chain}"
+    chainRef = refRewriter chain0, stack[..]
+    chain = compiledRewriter chain0, stack[..]
+    assert chainEquals(chainRef, chain), "#{showNode chain0} ++ #{JSON.stringify stack} -> #{showNode chainRef} (ref) != #{showNode chain}"
     return
 
   walkChains = (stack, depth, callback) ->
@@ -83,6 +83,36 @@ describe "Compiled rewriter", ->
       stack.pop()
     return
     
-  it "must produce same result as reference rewriter", ->
-    walkChains [], 3, doTest
+  #it "must produce same result as reference rewriter", ->
+  #  walkChains [], 3, doTest
+  #chain = ba^-2b, stack: [["a",1]], refValue: a^-1b^-1ab^-1, value: ba^2b^-1
+  doTest [["a",1]], newNode('b',1, newNode('a',-2, newNode('b',1,null)))
+
+describe "extendLastPowerRewriteTable", ->    
+  it "must extend positive powers", ->
+    r = new RewriteRuleset { 'ab': 'Ba', 'ba': 'B' }
+    r1 = extendLastPowerRewriteTable r.copy(), 'a', -3, 3
     
+    r1_expected = new RewriteRuleset
+      'ab': 'Ba',
+      'ba': 'B',
+      #new ruels:
+      'baa': 'Ba',
+      'baaa': 'Baa'
+
+    assert not r.equals(r1), "Extended ruleset is not equal to original, #{JSON.stringify r1} != #{JSON.stringify r}"
+    assert r1.equals(r1_expected), "Extended ruleset is equal to expected, #{JSON.stringify r1} != #{JSON.stringify r1_expected}"
+
+  it "must extend negative powers", ->
+    r = new RewriteRuleset { 'ab': 'Ba', 'bA': 'B' }
+    r1 = extendLastPowerRewriteTable r.copy(), 'a', -3, 3
+    
+    r1_expected = new RewriteRuleset
+      'ab': 'Ba',
+      'bA': 'B',
+      #new ruels:
+      'bAA': 'BA',
+      'bAAA': 'BAA'
+
+    assert not r.equals(r1), "Extended ruleset is not equal to original, #{JSON.stringify r1} != #{JSON.stringify r}"
+    assert r1.equals(r1_expected), "Extended ruleset is equal to expected, #{JSON.stringify r1} != #{JSON.stringify r1_expected}"
