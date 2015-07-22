@@ -13,12 +13,15 @@ colors = ["red", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
 
 
 drawVisibleCells = (visibleCells, cells, viewMatrix, tessellation, context) ->
+  context.fillStyle = "black"
+  context.lineWidth = 1.0/400.0
   for cell in visibleCells
+    mtx = M.mul viewMatrix, nodeMatrixRepr(cell, tessellation.group)
+    tessellation.makeCellShapePoincare( mtx, context )
     if cells.get cell
-      mtx = M.mul viewMatrix, nodeMatrixRepr(cell, tessellation.group)
-      context.fillStyle = "black"
-      tessellation.makeCellShapePoincare( mtx, context )
       context.fill()
+    else
+      context.stroke()
   return      
   
 drawCells = (cells, viewMatrix, tessellation, context) ->
@@ -36,7 +39,7 @@ drawCells = (cells, viewMatrix, tessellation, context) ->
 canvas = E "canvas"
 context = canvas.getContext "2d"
 
-tessellation = new Tessellation 3,7
+tessellation = new Tessellation 7,3
 console.log "Running knuth-bendix algorithm...."
 rewriteRuleset = knuthBendix vdRule tessellation.group.n, tessellation.group.m
 console.log "Finished"
