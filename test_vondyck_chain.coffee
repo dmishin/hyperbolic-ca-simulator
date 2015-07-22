@@ -101,7 +101,43 @@ describe "NodeHashMap", ->
     assert.equal m.get(a1), "a1"
     assert.equal m.get(b2), "b2"
     assert.equal m.get(a1b1), "a1b1"
-  
+
+  it "should remove cells without corrupting data", ->
+    m = new NodeHashMap
+    c1 = null
+    c2 = newNode 'a', 2, null
+    c3 = newNode 'b', 3, null
+    c4 = newNode 'a', -1, c3
+    cells = [c1,c2,c3,c4]
+
+    for cell, index in cells
+      m.put cell, index
+
+    #check that data works fine
+    for cell, index in cells
+      assert.equal m.get(cell), index
+
+    #now delete something
+
+    m.remove c2
+    expected = [0, null, 2,3]
+    for cell, index in cells
+      assert.equal m.get(cell), expected[index]
+
+    m.remove c3
+    expected = [0, null, null,3]
+    for cell, index in cells
+      assert.equal m.get(cell), expected[index]
+
+    m.remove c4
+    expected = [0, null, null,null]
+    for cell, index in cells
+      assert.equal m.get(cell), expected[index]
+                
+    m.remove c1
+    expected = [null, null, null,null]
+    for cell, index in cells
+      assert.equal m.get(cell), expected[index]
 
   it "should support growing the table", ->
 
