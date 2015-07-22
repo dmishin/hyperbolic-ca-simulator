@@ -257,7 +257,7 @@ setGridImpl = (n, m)->
   xytFromCell = xyt2cell tessellation.group, appendRewrite
 
   transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
-                  
+  visibleCells = farNeighborhood viewCenter, 5, appendRewrite, tessellation.group.n, tessellation.group.m                  
   
 redraw()
     
