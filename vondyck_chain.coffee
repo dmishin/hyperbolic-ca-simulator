@@ -153,10 +153,11 @@ exports.NodeHashMap = class NodeHashMap
     @maxFillRatio = 0.7
     
     @sizeMask = initialSize - 1
-      
+
+  _index: (chain) -> nodeHash(chain) & @sizeMask
+    
   putAccumulate: (chain, value, accumulateFunc)->
-    idx = nodeHash(chain) & @sizeMask
-    cell = @table[idx]
+    cell = @table[@_index chain]
 
     for key_value in cell
       if chainEquals(key_value[0], chain)
@@ -164,7 +165,6 @@ exports.NodeHashMap = class NodeHashMap
         key_value[1] = accumulateFunc key_value[1], value
         return
         
-    #console.log "##Adding new #{showNode chain} to #{value}, index is #{idx}"
     cell.push [chain, value]
     @count += 1
     if @count > @maxFillRatio*@table.length
@@ -174,9 +174,8 @@ exports.NodeHashMap = class NodeHashMap
   put: (chain, value) -> @putAccumulate chain, value, (x,y)->y
     
   get: (chain) ->
-    idx = nodeHash(chain) & @sizeMask
     # console.log "geting for #{showNode chain}"
-    for key_value in @table[idx]
+    for key_value in @table[@_index chain]
       if chainEquals key_value[0], chain
         #console.log "   found something"
         return key_value[1]
@@ -184,10 +183,10 @@ exports.NodeHashMap = class NodeHashMap
     return null
     
   remove: (chain) ->
-    idx = nodeHash(chain) & @sizeMask
-    for key_value, index in @table[idx]
+    tableCell = @table[@_index chain]
+    for key_value, index in tableCell
       if chainEquals key_value[0], chain
-        @table.splice(index,1)
+        tableCell.splice index, 1
         @count -= 1
         return true
     return false
