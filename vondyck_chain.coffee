@@ -114,15 +114,16 @@ exports.nodeMatrixRepr = nodeMatrixRepr = (node, generatorMatrices) ->
     
 
 
-### Hash function of the node
-####
+# Hash function of the node
+#
 exports.nodeHash = nodeHash = (node) ->
   if node is null
     0
   else
     node.hash()
 
-### Reverse compare 2 chains by shortlex algorithm
+###
+# Reverse compare 2 chains by shortlex algorithm
 ###
 exports.reverseShortlexLess = reverseShortlexLess = (c1, c2) ->
   if c1 is null
