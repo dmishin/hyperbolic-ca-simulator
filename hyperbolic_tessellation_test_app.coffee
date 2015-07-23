@@ -18,13 +18,23 @@ colors = ["red", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
 drawVisibleCells = (visibleCells, cells, viewMatrix, tessellation, context) ->
   context.fillStyle = "black"
   context.lineWidth = 1.0/400.0
+
+  #first borders
+  context.beginPath()
   for cell in visibleCells
-    mtx = M.mul viewMatrix, nodeMatrixRepr(cell, tessellation.group)
-    tessellation.makeCellShapePoincare( mtx, context )
+    unless cells.get cell
+      mtx = M.mul viewMatrix, nodeMatrixRepr(cell, tessellation.group)
+      tessellation.makeCellShapePoincare( mtx, context )    
+  context.stroke()
+
+  #then cells
+  context.beginPath()
+  for cell in visibleCells
     if cells.get cell
-      context.fill()
-    else
-      context.stroke()
+      mtx = M.mul viewMatrix, nodeMatrixRepr(cell, tessellation.group)
+      tessellation.makeCellShapePoincare( mtx, context )
+      
+  context.fill()
   return      
   
 drawCells = (cells, viewMatrix, tessellation, context) ->
@@ -192,7 +202,7 @@ parseTransitionFunction = (str, n, m) ->
 # ============================================  app code ===============
 canvas = E "canvas"
 context = canvas.getContext "2d"
-
+minVisibleSize = 1/100
 tessellation = new Tessellation 7,3
 console.log "Running knuth-bendix algorithm...."
 rewriteRuleset = knuthBendix vdRule tessellation.group.n, tessellation.group.m
@@ -203,10 +213,11 @@ getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, app
 xytFromCell = xyt2cell tessellation.group, appendRewrite
 
 viewCenter = null
-visibleCells = visibleNeighborhood tessellation, appendRewrite, 1.0/400.0 #farNeighborhood viewCenter, 5, appendRewrite, tessellation.group.n, tessellation.group.m
+visibleCells = visibleNeighborhood tessellation, appendRewrite, minVisibleSize #farNeighborhood viewCenter, 5, appendRewrite, tessellation.group.n, tessellation.group.m
 console.log "Visible field contains #{visibleCells.length} cells"
 
 transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
+dragHandler = null
 
 tfm = M.eye()
 cells = new NodeHashMap
@@ -222,18 +233,18 @@ doStep = ->
   redraw()
 
 redraw = ->
-  context.clearRect 0, 0, canvas.width, canvas.height
-  context.save()
   s = Math.min( canvas.width, canvas.height ) / 2
-  context.scale s, s
-  context.translate 1, 1
-  drawVisibleCells visibleCells, cells, tfm, tessellation, context
-  context.restore()  
-  console.log "Redraw. Population is #{cells.count}"
-  E("population").innerHTML = ""+cells.count
+  window.requestAnimationFrame ->
+    context.clearRect 0, 0, canvas.width, canvas.height
+    context.save()
+    context.scale s, s
+    context.translate 1, 1
+    drawVisibleCells visibleCells, cells, tfm, tessellation, context
+    context.restore()  
+  #console.log "Redraw. Population is #{cells.count}"
+  #E("population").innerHTML = ""+cells.count
 
-doCanvasClick = (e) ->
-  [x,y] = getCanvasCursorPosition e, canvas
+toggleCellAt = (x,y) ->
   s = Math.min( canvas.width, canvas.height ) * 0.5
   xp = x/s - 1
   yp = y/s - 1
@@ -250,6 +261,33 @@ doCanvasClick = (e) ->
     else
       cells.put cell, 1
     redraw()
+    
+doCanvasClick = (e) ->
+  e.preventDefault()
+  [x,y] = getCanvasCursorPosition e, canvas
+  #toggleCellAt x, y
+  cx = canvas.width*0.5
+  cy = canvas.height*0.5
+  r = Math.min(cx, cy)
+
+  dx = x-cx
+  dy = y-cy
+  if dx*dx + dy*dy <= r*r*0.8*0.8
+    dragHandler = new MovingDragger x, y
+  else
+    dragHandler = new RotatingDragger x, y
+
+doCanvasMouseMove = (e) ->
+  if dragHandler isnt null
+    e.preventDefault()
+    dragHandler.mouseMoved e
+
+doCanvasMouseUp = (e) ->
+  if dragHandler isnt null
+    e.preventDefault()
+    dragHandler?.mouseUp e
+    dragHandler = null
+            
 doSetRule =  ->
   try
     ruleElem = E 'rule-entry'
@@ -287,7 +325,7 @@ setGridImpl = (n, m)->
   xytFromCell = xyt2cell tessellation.group, appendRewrite
 
   transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
-  visibleCells = visibleNeighborhood tessellation, appendRewrite, 1.0/400.0
+  visibleCells = visibleNeighborhood tessellation, appendRewrite, minVisibleSize
 ###
 #
 ###
@@ -309,21 +347,56 @@ moveView = (dx, dy) ->
 rotateView = (angle) ->
   s = Math.sin angle
   c = Math.cos angle
-  rotMatrix = [c, -s, 0.0,
-               s,  c, 0.0,
+  rotMatrix = [c, s, 0.0,
+               -s,  c, 0.0,
                0,  0, 1.0]
-  tfm = M.mul moveMatrix, tfm
+  tfm = M.mul rotMatrix, tfm
   redraw()        
   
 redraw()
+class MovingDragger
+  constructor: (@x0, @y0) ->
+  mouseMoved: (e)->
+    [x, y] = getCanvasCursorPosition e, canvas
+    dx = x - @x0
+    dy = y - @y0
+
+    @x0 = x
+    @y0 = y
+    k = 2.0 / canvas.height
+    moveView dx*k , dy*k
     
+  mouseUp: (e)->
+    console.log "up"
+    
+class RotatingDragger
+  constructor: (x, y) ->
+    @xc = canvas.width * 0.5
+    @yc = canvas.width * 0.5
+    
+    @angle0 = @angle x, y 
+    
+  angle: (x,y) -> Math.atan2( x-@xc, y-@yc)
+    
+  mouseMoved: (e)->
+    [x, y] = getCanvasCursorPosition e, canvas
+    newAngle = @angle x, y
+    dAngle = newAngle - @angle0
+    @angle0 = newAngle
+    rotateView dAngle
+    
+  mouseUp: (e)->
+  
+                    
 # ============ Bind Events =================
 E("btn-reset").addEventListener "click", doReset
 E("btn-step").addEventListener "click", doStep
 E("canvas").addEventListener "mousedown", doCanvasClick
+E("canvas").addEventListener "mouseup", doCanvasMouseUp
+E("canvas").addEventListener "mousemove", doCanvasMouseMove
+E("canvas").addEventListener "mousedrag", doCanvasMouseMove
 E("btn-set-rule").addEventListener "click", doSetRule
 E("btn-set-grid").addEventListener "click", doSetGrid
-E("btn-misc").addEventListener "click", -> moveView 0.1, 0.2
 
 test_drawOrder2NMeighbors = ->
   coordsWithPaths = []

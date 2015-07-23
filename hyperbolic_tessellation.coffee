@@ -18,24 +18,25 @@ exports.Tessellation = class Tessellation
 
   
   makeCellShapePoincare: (cellTransformMatrix, context) ->
-    context.beginPath()
+    pPrev = null
     for vertex, i in @cellShape
-      [x0, y0, t0] = M.mulv(cellTransformMatrix, vertex)
-      [x1, y1, t1] = M.mulv(cellTransformMatrix, @cellShape[(i+1) % @cellShape.length])
+      [x0, y0, t0] = pPrev ? M.mulv(cellTransformMatrix, vertex)
+      [x1, y1, t1] = pPrev = M.mulv(cellTransformMatrix, @cellShape[(i+1) % @cellShape.length])
 
       #poincare coordinates
-      xx0 = x0/(t0+1)
-      yy0 = y0/(t0+1)
+      inv_t0 = 1.0/(t0+1)
+      xx0 = x0*inv_t0
+      yy0 = y0*inv_t0
 
-      xx1 = x1/(t1+1)
-      yy1 = y1/(t1+1)
+      inv_t1 = 1.0/(t1+1)
+      xx1 = x1*inv_t1
+      yy1 = y1*inv_t1
 
 
       #circular arc center
-      #xc = (x1*t0-x0*t1)/(x0*y1-x1*y0)
-      #yc = (y1*y0-y0*t1)/(x0*y1-x1*y0)
-      xc = (y1*t0-y0*t1)/(x0*y1-x1*y0)
-      yc = -(x1*t0-x0*t1)/(x0*y1-x1*y0)
+      iD = 1.0/(x0*y1-x1*y0)
+      xc =  (y1*t0-y0*t1)*iD
+      yc = -(x1*t0-x0*t1)*iD
 
       r0 = (xx0-xc)**2 + (yy0-yc)**2
       r1 = (xx1-xc)**2 + (yy1-yc)**2
@@ -107,21 +108,6 @@ exports.Tessellation = class Tessellation
     
       context.bezierCurveTo p11x, p11y, p12x, p12y, x1, y1
                   
-  makeCellShape: (cellTransformMatrix, context) ->
-    #each cell is n-gon.
-    
-    context.beginPath()
-    for vertex, i in @cellShape
-      [x, y, t] = M.mulv(cellTransformMatrix, vertex)
-      xx = x/t
-      yy = y/t
-
-      if i is 0
-        context.moveTo xx, yy
-      else
-        context.lineTo xx, yy
-    context.closePath()
-
   visiblePolygonSize: (cellTransformMatrix) ->
     xmin = xmax = ymin = ymax = 0.0
     
