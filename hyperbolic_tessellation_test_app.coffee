@@ -3,7 +3,7 @@
 {NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
-{mooreNeighborhood, evaluateTotalisticAutomaton, farNeighborhood} = require "./field.coffee"
+{mooreNeighborhood, evaluateTotalisticAutomaton} = require "./field.coffee"
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 
 
@@ -78,7 +78,7 @@ evaluateWithNeighbors = (cells, getNeighborhood, nextStateFunc)->
   return newCells
 
 #determine cordinates of the cell, containing given point
-xyt2cell = (group, appendRewrite) -> 
+xyt2cell = (group, appendRewrite, maxSteps=100) -> 
   getNeighbors = mooreNeighborhood group.n, group.m, appendRewrite
   cell2point = (cell) -> M.mulv nodeMatrixRepr(cell, group), [0.0,0.0,1.0]
   vectorDist = ([x1,y1,t1], [x2,y2,t2]) ->
@@ -100,8 +100,11 @@ xyt2cell = (group, appendRewrite) ->
   return (xyt) ->
     #FInally, search    
     cell = null #start search at origin
-    cellDist = vectorDist cell2point(cell), xyt  
-    while true
+    cellDist = vectorDist cell2point(cell), xyt
+    #Just in case, avoid infinite iteration
+    step = 0
+    while step < maxSteps
+      step += 1
       [nextNei, nextNeiDist] = nearestNeighbor cell, xyt
       if nextNeiDist > cellDist
         break
@@ -130,6 +133,31 @@ poincare2hyperblic = (x,y) ->
   th = (r2+1)/(1-r2)
   # th + 1 = (r2+1)/(1-r2)+1 = (r2+1+1-r2)/(1-r2) = 2/(1-r2)
   return [x * (th+1), y*(th+1), th ]
+
+
+    
+  
+# Create list of cells, that in Poincare projection are big enough.
+visibleNeighborhood = (tessellation, appendRewrite, minCellSize=1.0/400.0) ->
+  #Visible size of the polygon far away
+  getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, appendRewrite
+  cells = new NodeHashMap
+  walk = (cell) ->
+    return if cells.get(cell) isnt null
+    cellSize = tessellation.visiblePolygonSize nodeMatrixRepr(cell, tessellation.group)
+    cells.put cell, cellSize
+    if cellSize > minCellSize
+      for nei in getNeighbors cell
+        walk nei
+    return
+  walk null
+  visibleCells = []
+  cells.forItems (cell, size)->
+    if size >= minCellSize
+      visibleCells.push cell
+  console.log "VIsible neighborhood of null: #{visibleCells.length} cells"
+  return visibleCells
+    
 # BxxxSxxx
 parseTransitionFunction = (str, n, m) ->
   match = str.match /B([\d\s]+)S([\d\s]+)/
@@ -175,7 +203,7 @@ getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, app
 xytFromCell = xyt2cell tessellation.group, appendRewrite
 
 viewCenter = null
-visibleCells = farNeighborhood viewCenter, 5, appendRewrite, tessellation.group.n, tessellation.group.m
+visibleCells = visibleNeighborhood tessellation, appendRewrite, 1.0/400.0 #farNeighborhood viewCenter, 5, appendRewrite, tessellation.group.n, tessellation.group.m
 console.log "Visible field contains #{visibleCells.length} cells"
 
 transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
@@ -210,6 +238,8 @@ doCanvasClick = (e) ->
   xp = x/s - 1
   yp = y/s - 1
   xyt = poincare2hyperblic xp, yp
+  #inverse transform it...
+  xyt = M.mulv (M.inv tfm), xyt
   if xyt is null
     #console.log "Outside of circle"
   else
@@ -257,7 +287,33 @@ setGridImpl = (n, m)->
   xytFromCell = xyt2cell tessellation.group, appendRewrite
 
   transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
-                  
+  visibleCells = visibleNeighborhood tessellation, appendRewrite, 1.0/400.0
+###
+#
+###
+moveView = (dx, dy) ->
+  r2 = dx*dx+dy*dy
+  dt = Math.sqrt(r2+1)
+  k = (dt-1)/r2
+
+  xxk = dx*dx*k
+  xyk = dx*dy*k
+  yyk = dy*dy*k
+  
+  moveMatrix =[xxk+1, xyk,   dx,
+               xyk,   yyk+1, dy,
+               dx,     dy,     dt]
+  tfm = M.mul moveMatrix, tfm
+  redraw()
+    
+rotateView = (angle) ->
+  s = Math.sin angle
+  c = Math.cos angle
+  rotMatrix = [c, -s, 0.0,
+               s,  c, 0.0,
+               0,  0, 1.0]
+  tfm = M.mul moveMatrix, tfm
+  redraw()        
   
 redraw()
     
@@ -267,6 +323,8 @@ E("btn-step").addEventListener "click", doStep
 E("canvas").addEventListener "mousedown", doCanvasClick
 E("btn-set-rule").addEventListener "click", doSetRule
 E("btn-set-grid").addEventListener "click", doSetGrid
+E("btn-misc").addEventListener "click", -> moveView 0.1, 0.2
+
 test_drawOrder2NMeighbors = ->
   coordsWithPaths = []
   

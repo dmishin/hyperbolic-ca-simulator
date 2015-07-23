@@ -122,5 +122,22 @@ exports.Tessellation = class Tessellation
         context.lineTo xx, yy
     context.closePath()
 
+  visiblePolygonSize: (cellTransformMatrix) ->
+    xmin = xmax = ymin = ymax = 0.0
+    
+    for vertex, i in @cellShape
+      [x, y, t] = M.mulv cellTransformMatrix, vertex
+      xx = x/t
+      yy = y/t
+      if i is 0
+        xmin = xmax = xx
+        ymin = ymax = yy
+      else
+        xmin = Math.min xmin, xx
+        xmax = Math.max xmax, xx
 
+        ymin = Math.min ymin, yy
+        ymax = Math.max ymax, yy
         
+    return Math.max( xmax - xmin, ymax - ymin )
+                
