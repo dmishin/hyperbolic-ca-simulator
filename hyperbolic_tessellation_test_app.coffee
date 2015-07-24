@@ -18,6 +18,7 @@ colors = ["red", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
 drawVisibleCells = (visibleCells, cells, viewMatrix, tessellation, context) ->
   context.fillStyle = "black"
   context.lineWidth = 1.0/400.0
+  context.strokeStyle = "rgb(128,128,128)"
 
   #first borders
   context.beginPath()
@@ -232,17 +233,22 @@ doStep = ->
   cells = evaluateWithNeighbors cells, getNeighbors, transitionFunc
   redraw()
 
+frameRequested = false
 redraw = ->
   s = Math.min( canvas.width, canvas.height ) / 2
-  window.requestAnimationFrame ->
-    context.clearRect 0, 0, canvas.width, canvas.height
-    context.save()
-    context.scale s, s
-    context.translate 1, 1
-    drawVisibleCells visibleCells, cells, tfm, tessellation, context
-    context.restore()  
-  #console.log "Redraw. Population is #{cells.count}"
-  #E("population").innerHTML = ""+cells.count
+  #avoid spamming frame requests for smoother movement.
+  unless frameRequested
+    frameRequested = true
+    window.requestAnimationFrame ->
+      frameRequested = false
+      context.clearRect 0, 0, canvas.width, canvas.height
+      context.save()
+      context.scale s, s
+      context.translate 1, 1
+      drawVisibleCells visibleCells, cells, tfm, tessellation, context
+      context.restore()  
+    #console.log "Redraw. Population is #{cells.count}"
+    #E("population").innerHTML = ""+cells.count
 
 toggleCellAt = (x,y) ->
   s = Math.min( canvas.width, canvas.height ) * 0.5
@@ -329,7 +335,7 @@ setGridImpl = (n, m)->
 ###
 #
 ###
-moveView = (dx, dy) ->
+moveMatrix = (dx, dy) ->
   r2 = dx*dx+dy*dy
   dt = Math.sqrt(r2+1)
   k = (dt-1)/r2
@@ -338,22 +344,32 @@ moveView = (dx, dy) ->
   xyk = dx*dy*k
   yyk = dy*dy*k
   
-  moveMatrix =[xxk+1, xyk,   dx,
-               xyk,   yyk+1, dy,
-               dx,     dy,     dt]
-  tfm = M.mul moveMatrix, tfm
-  redraw()
-    
-rotateView = (angle) ->
+  [xxk+1, xyk,   dx,
+   xyk,   yyk+1, dy,
+   dx,     dy,     dt]
+              
+rotateMatrix = (angle) ->
   s = Math.sin angle
   c = Math.cos angle
-  rotMatrix = [c, s, 0.0,
-               -s,  c, 0.0,
-               0,  0, 1.0]
-  tfm = M.mul rotMatrix, tfm
-  redraw()        
+  [c,   s,   0.0,
+   -s,  c,   0.0,
+   0.0, 0.0, 1.0]
+  
+modifyView = (m) ->
+  tfm = M.mul m, tfm
+  E('distance').innerHTML = '' + viewDistanceToOrigin().toFixed(2)
+  redraw()  
+
+rotateView = (angle) -> modifyView rotateMatrix angle
+moveView = (dx, dy) -> modifyView moveMatrix(dx, dy)
+
+viewDistanceToOrigin = ->
+  #viewCenter = M.mulv tfm, [0.0,0.0,1.0]
+  #Math.acosh(viewCenter[2])
+  Math.acosh tfm[8]
   
 redraw()
+
 class MovingDragger
   constructor: (@x0, @y0) ->
   mouseMoved: (e)->
