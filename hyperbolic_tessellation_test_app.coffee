@@ -237,11 +237,13 @@ cells.put null, 1
 doReset = ->
   cells = new NodeHashMap
   cells.put null, 1
+  updatePopulation()
   redraw()
 
 doStep = ->
   cells = evaluateWithNeighbors cells, getNeighbors, transitionFunc
   redraw()
+  updatePopulation()
 
 frameRequested = false
 redraw = ->
@@ -280,6 +282,7 @@ doCanvasClick = (e) ->
   [x,y] = getCanvasCursorPosition e, canvas
   unless (e.button is 0) and not e.shiftKey
     toggleCellAt x, y
+    updatePopulation()    
   else 
     cx = canvas.width*0.5
     cy = canvas.height*0.5
@@ -396,8 +399,12 @@ rebaseView = ->
 
   #move observation point
   observer.translateBy node2array pathToCenterCell
-  
+
+updatePopulation = ->
+  E('population').innerHTML = ""+cells.count
+    
 redraw()
+updatePopulation()
 
 viewUpdates = 0
 #precision falls from 1e-16 to 1e-9 in 1000 steps.
