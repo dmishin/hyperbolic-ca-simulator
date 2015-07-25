@@ -1,6 +1,6 @@
 "use strict"
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
-{NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash} = require "./vondyck_chain.coffee"
+{NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 {mooreNeighborhood, evaluateTotalisticAutomaton} = require "./field.coffee"
@@ -14,7 +14,44 @@ E = (id) -> document.getElementById id
 
 colors = ["red", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
 
+class FieldObserver
+  constructor: (@tessellation, @appendRewrite, @minCellSize=1.0/400.0)->
+    @center = null
+    @cells = visibleNeighborhood @tessellation, @appendRewrite, @minCellSize
+    @cellOffsets = (node2array(c) for c in @cells)
+    @cellTransforms = (nodeMatrixRepr(c, @tessellation.group) for c in @cells)
+  rebuildAt: (newCenter) ->
+    @center = newCenter
+    @cells = for offset in @cellOffsets
+      #it is important to make copy since AR empties the array!
+      eliminateFinalA @appendRewrite(newCenter, offset[..]), @appendRewrite, @tessellation.group.n
+    return
+    
+  draw: (cells, viewMatrix, context) ->
+    context.fillStyle = "black"
+    context.lineWidth = 1.0/400.0
+    context.strokeStyle = "rgb(128,128,128)"
 
+    #first borders
+    context.beginPath()
+    for cell, i in @cells
+      unless cells.get cell
+        cellTfm = @cellTransforms[i]
+        mtx = M.mul viewMatrix, cellTfm
+        @tessellation.makeCellShapePoincare mtx, context
+    context.stroke()
+
+    #then cells
+    context.beginPath()
+    for cell, i in @cells
+      if cells.get cell
+        cellTfm = @cellTransforms[i]
+        mtx = M.mul viewMatrix, cellTfm
+        @tessellation.makeCellShapePoincare  mtx, context        
+    context.fill()
+    return      
+        
+  
 drawVisibleCells = (visibleCells, cells, viewMatrix, tessellation, context) ->
   context.fillStyle = "black"
   context.lineWidth = 1.0/400.0
@@ -214,8 +251,11 @@ getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, app
 xytFromCell = xyt2cell tessellation.group, appendRewrite
 
 viewCenter = null
-visibleCells = visibleNeighborhood tessellation, appendRewrite, minVisibleSize #farNeighborhood viewCenter, 5, appendRewrite, tessellation.group.n, tessellation.group.m
-console.log "Visible field contains #{visibleCells.length} cells"
+#visibleCells = visibleNeighborhood tessellation, appendRewrite, minVisibleSize #farNeighborhood viewCenter, 5, appendRewrite, tessellation.group.n, tessellation.group.m
+
+observer = new FieldObserver tessellation, appendRewrite, minVisibleSize
+
+#console.log "Visible field contains #{visibleCells.length} cells"
 
 transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
 dragHandler = null
@@ -245,7 +285,8 @@ redraw = ->
       context.save()
       context.scale s, s
       context.translate 1, 1
-      drawVisibleCells visibleCells, cells, tfm, tessellation, context
+      #drawVisibleCells visibleCells, cells, tfm, tessellation, context
+      observer.draw cells, tfm, context
       context.restore()  
     #console.log "Redraw. Population is #{cells.count}"
     #E("population").innerHTML = ""+cells.count
@@ -382,11 +423,18 @@ rebaseView = ->
   #centerCoord = M.mulv tfm, [0.0, 0.0, 1.0]
   pathToCenterCell = xytFromCell centerCoord
   console.log "Jump by #{showNode pathToCenterCell}"
+  
   m = nodeMatrixRepr pathToCenterCell, tessellation.group
   #console.log "dMatrix is #{JSON.stringify m}"
   #modifyView M.inv m
   tfm = M.mul tfm, m
   checkViewMatrix()
+
+  #move observation point
+  newCenter = appendRewrite observer.center, node2array(pathToCenterCell)
+  console.log  "New center at #{showNode newCenter}"
+  observer.rebuildAt newCenter
+  
   redraw()  
   
 redraw()
@@ -398,12 +446,11 @@ viewUpdates = 0
 #precision falls from 1e-16 to 1e-9 in 1000 steps.
 maxViewUpdatesBeforeCleanup = 500
 checkViewMatrix = ->
-  me = [-1,0,0,  0,-1,0, 0,0,-1]
-  d = M.add( me, M.mul(tfm, M.hyperbolicInv tfm))
-  ad = (Math.abs(x) for x in d)
-  maxDiff = Math.max( ad ... )
-  console.log "Step: #{viewUpdates}, R: #{maxDiff}"
-  
+  #me = [-1,0,0,  0,-1,0, 0,0,-1]
+  #d = M.add( me, M.mul(tfm, M.hyperbolicInv tfm))
+  #ad = (Math.abs(x) for x in d)
+  #maxDiff = Math.max( ad ... )
+  #console.log "Step: #{viewUpdates}, R: #{maxDiff}"
   if (viewUpdates+=1) > maxViewUpdatesBeforeCleanup
     viewUpdates = 0
     tfm = cleanupHyperbolicMoveMatrix tfm
