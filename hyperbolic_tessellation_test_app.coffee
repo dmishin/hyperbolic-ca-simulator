@@ -265,10 +265,9 @@ toggleCellAt = (x,y) ->
   xyt = poincare2hyperblic xp, yp
   #inverse transform it...
   xyt = M.mulv (M.inv tfm), xyt
-  if xyt is null
-    #console.log "Outside of circle"
-  else
-    cell = xytFromCell xyt
+  if xyt isnt null
+    visibleCell = xytFromCell xyt
+    cell = eliminateFinalA appendRewrite(observer.center, node2array(visibleCell)), appendRewrite, tessellation.group.n
     #console.log showNode cell
     if cells.get(cell) isnt null
       cells.remove cell
