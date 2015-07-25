@@ -271,17 +271,19 @@ toggleCellAt = (x,y) ->
 doCanvasClick = (e) ->
   e.preventDefault()
   [x,y] = getCanvasCursorPosition e, canvas
-  #toggleCellAt x, y
-  cx = canvas.width*0.5
-  cy = canvas.height*0.5
-  r = Math.min(cx, cy)
+  unless (e.button is 0) and not e.shiftKey
+    toggleCellAt x, y
+  else 
+    cx = canvas.width*0.5
+    cy = canvas.height*0.5
+    r = Math.min(cx, cy)
 
-  dx = x-cx
-  dy = y-cy
-  if dx*dx + dy*dy <= r*r*0.8*0.8
-    dragHandler = new MovingDragger x, y
-  else
-    dragHandler = new RotatingDragger x, y
+    dx = x-cx
+    dy = y-cy
+    if dx*dx + dy*dy <= r*r*(0.8*0.8)
+      dragHandler = new MovingDragger x, y
+    else
+      dragHandler = new RotatingDragger x, y
 
 doCanvasMouseMove = (e) ->
   if dragHandler isnt null
@@ -354,10 +356,15 @@ rotateMatrix = (angle) ->
   [c,   s,   0.0,
    -s,  c,   0.0,
    0.0, 0.0, 1.0]
+
+jumpLimit = 1.5
   
 modifyView = (m) ->
   tfm = M.mul m, tfm
-  E('distance').innerHTML = '' + viewDistanceToOrigin().toFixed(2)
+  originDistance = viewDistanceToOrigin()
+  if originDistance > jumpLimit
+    rebaseView()
+  E('distance').innerHTML = '' + originDistance.toFixed(2)
   redraw()  
 
 rotateView = (angle) -> modifyView rotateMatrix angle
@@ -367,6 +374,18 @@ viewDistanceToOrigin = ->
   #viewCenter = M.mulv tfm, [0.0,0.0,1.0]
   #Math.acosh(viewCenter[2])
   Math.acosh tfm[8]
+
+#build new view around the cell which is currently at the center
+rebaseView = ->
+  centerCoord = M.mulv (M.inv tfm), [0.0, 0.0, 1.0]
+  #centerCoord = M.mulv tfm, [0.0, 0.0, 1.0]
+  pathToCenterCell = xytFromCell centerCoord
+  console.log "Jump by #{showNode pathToCenterCell}"
+  m = nodeMatrixRepr pathToCenterCell, tessellation.group
+  #console.log "dMatrix is #{JSON.stringify m}"
+  #modifyView M.inv m
+  tfm = M.mul tfm, m
+  redraw()  
   
 redraw()
 
