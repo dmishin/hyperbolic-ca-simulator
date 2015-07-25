@@ -27,6 +27,10 @@ class FieldObserver
       eliminateFinalA @appendRewrite(newCenter, offset[..]), @appendRewrite, @tessellation.group.n
     return
     
+  translateBy: (appendArray) ->
+    #console.log  "New center at #{showNode newCenter}"
+    @rebuildAt @appendRewrite @center, appendArray
+        
   draw: (cells, viewMatrix, context) ->
     context.fillStyle = "black"
     context.lineWidth = 1.0/400.0
@@ -52,40 +56,6 @@ class FieldObserver
     return      
         
   
-drawVisibleCells = (visibleCells, cells, viewMatrix, tessellation, context) ->
-  context.fillStyle = "black"
-  context.lineWidth = 1.0/400.0
-  context.strokeStyle = "rgb(128,128,128)"
-
-  #first borders
-  context.beginPath()
-  for cell in visibleCells
-    unless cells.get cell
-      mtx = M.mul viewMatrix, nodeMatrixRepr(cell, tessellation.group)
-      tessellation.makeCellShapePoincare( mtx, context )    
-  context.stroke()
-
-  #then cells
-  context.beginPath()
-  for cell in visibleCells
-    if cells.get cell
-      mtx = M.mul viewMatrix, nodeMatrixRepr(cell, tessellation.group)
-      tessellation.makeCellShapePoincare( mtx, context )
-      
-  context.fill()
-  return      
-  
-drawCells = (cells, viewMatrix, tessellation, context) ->
-  cells.forItems  (chain, value) ->
-    #console.log "Drawing #{showNode chain}"
-    mtx = M.mul viewMatrix, nodeMatrixRepr(chain, tessellation.group)
-    #console.log "Matrix is #{JSON.stringify mtx}"
-    h = nodeHash(chain)
-    #console.log "node #{showNode chain}, hash = #{h}"
-    context.fillStyle = colors[ ((h % colors.length) + colors.length) % colors.length]
-    tessellation.makeCellShapePoincare( mtx, context )
-    context.fill()
-
 mooreNeighborhood = (n, m, appendRewrite)->(chain)->
   #reutrns Moore (vertex) neighborhood of the cell.
   # it contains N cells of von Neumann neighborhood
@@ -285,11 +255,8 @@ redraw = ->
       context.save()
       context.scale s, s
       context.translate 1, 1
-      #drawVisibleCells visibleCells, cells, tfm, tessellation, context
       observer.draw cells, tfm, context
       context.restore()  
-    #console.log "Redraw. Population is #{cells.count}"
-    #E("population").innerHTML = ""+cells.count
 
 toggleCellAt = (x,y) ->
   s = Math.min( canvas.width, canvas.height ) * 0.5
@@ -374,7 +341,8 @@ setGridImpl = (n, m)->
   xytFromCell = xyt2cell tessellation.group, appendRewrite
 
   transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
-  visibleCells = visibleNeighborhood tessellation, appendRewrite, minVisibleSize
+  observer = new FieldObserver tessellation, appendRewrite, minVisibleSize
+  
 ###
 #
 ###
@@ -406,7 +374,6 @@ modifyView = (m) ->
   originDistance = viewDistanceToOrigin()
   if originDistance > jumpLimit
     rebaseView()
-  E('distance').innerHTML = '' + originDistance.toFixed(2)
   redraw()  
 
 rotateView = (angle) -> modifyView rotateMatrix angle
@@ -420,27 +387,18 @@ viewDistanceToOrigin = ->
 #build new view around the cell which is currently at the center
 rebaseView = ->
   centerCoord = M.mulv (M.inv tfm), [0.0, 0.0, 1.0]
-  #centerCoord = M.mulv tfm, [0.0, 0.0, 1.0]
   pathToCenterCell = xytFromCell centerCoord
-  console.log "Jump by #{showNode pathToCenterCell}"
-  
+  #console.log "Jump by #{showNode pathToCenterCell}"
   m = nodeMatrixRepr pathToCenterCell, tessellation.group
-  #console.log "dMatrix is #{JSON.stringify m}"
-  #modifyView M.inv m
+
+  #modifyView won't work, since it multiplies in different order.
   tfm = M.mul tfm, m
   checkViewMatrix()
 
   #move observation point
-  newCenter = appendRewrite observer.center, node2array(pathToCenterCell)
-  console.log  "New center at #{showNode newCenter}"
-  observer.rebuildAt newCenter
-  
-  redraw()  
+  observer.translateBy node2array pathToCenterCell
   
 redraw()
-
-cleanupHyperbolicMoveMatrix = (m)->
-  M.smul 0.5, M.add(m, M.inv M.hyperbolicInv m)
 
 viewUpdates = 0
 #precision falls from 1e-16 to 1e-9 in 1000 steps.
@@ -453,7 +411,7 @@ checkViewMatrix = ->
   #console.log "Step: #{viewUpdates}, R: #{maxDiff}"
   if (viewUpdates+=1) > maxViewUpdatesBeforeCleanup
     viewUpdates = 0
-    tfm = cleanupHyperbolicMoveMatrix tfm
+    tfm = M.cleanupHyperbolicMoveMatrix tfm
 
 class MovingDragger
   constructor: (@x0, @y0) ->
