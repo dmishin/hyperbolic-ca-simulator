@@ -246,19 +246,31 @@ doStep = ->
   updatePopulation()
 
 frameRequested = false
+dirty = true
 redraw = ->
-  s = Math.min( canvas.width, canvas.height ) / 2
+  dirty = true
   #avoid spamming frame requests for smoother movement.
-  unless frameRequested
-    frameRequested = true
-    window.requestAnimationFrame ->
-      frameRequested = false
-      context.clearRect 0, 0, canvas.width, canvas.height
-      context.save()
-      context.scale s, s
-      context.translate 1, 1
-      observer.draw cells, tfm, context
-      context.restore()  
+  #unless frameRequested
+  #  frameRequested = true
+  #  window.requestAnimationFrame ->
+  #    drawEverything()
+  #    frameRequested = false
+
+drawEverything = ->
+  s = Math.min( canvas.width, canvas.height ) / 2
+  context.clearRect 0, 0, canvas.width, canvas.height
+  context.save()
+  context.scale s, s
+  context.translate 1, 1
+  observer.draw cells, tfm, context
+  context.restore()  
+  
+redrawLoop = ->
+  if dirty
+    drawEverything()
+    dirty = false
+  requestAnimationFrame redrawLoop
+    
 
 toggleCellAt = (x,y) ->
   s = Math.min( canvas.width, canvas.height ) * 0.5
@@ -403,8 +415,9 @@ rebaseView = ->
 updatePopulation = ->
   E('population').innerHTML = ""+cells.count
     
-redraw()
+#redraw()
 updatePopulation()
+redrawLoop()
 
 viewUpdates = 0
 #precision falls from 1e-16 to 1e-9 in 1000 steps.
