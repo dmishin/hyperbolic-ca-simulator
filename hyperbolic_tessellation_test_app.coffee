@@ -361,6 +361,7 @@ jumpLimit = 1.5
   
 modifyView = (m) ->
   tfm = M.mul m, tfm
+  checkViewMatrix()
   originDistance = viewDistanceToOrigin()
   if originDistance > jumpLimit
     rebaseView()
@@ -385,9 +386,27 @@ rebaseView = ->
   #console.log "dMatrix is #{JSON.stringify m}"
   #modifyView M.inv m
   tfm = M.mul tfm, m
+  checkViewMatrix()
   redraw()  
   
 redraw()
+
+cleanupHyperbolicMoveMatrix = (m)->
+  M.smul 0.5, M.add(m, M.inv M.hyperbolicInv m)
+
+viewUpdates = 0
+#precision falls from 1e-16 to 1e-9 in 1000 steps.
+maxViewUpdatesBeforeCleanup = 500
+checkViewMatrix = ->
+  me = [-1,0,0,  0,-1,0, 0,0,-1]
+  d = M.add( me, M.mul(tfm, M.hyperbolicInv tfm))
+  ad = (Math.abs(x) for x in d)
+  maxDiff = Math.max( ad ... )
+  console.log "Step: #{viewUpdates}, R: #{maxDiff}"
+  
+  if (viewUpdates+=1) > maxViewUpdatesBeforeCleanup
+    viewUpdates = 0
+    tfm = cleanupHyperbolicMoveMatrix tfm
 
 class MovingDragger
   constructor: (@x0, @y0) ->
