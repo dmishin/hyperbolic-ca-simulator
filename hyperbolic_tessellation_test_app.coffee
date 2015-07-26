@@ -256,11 +256,17 @@ drawEverything = ->
   context.translate 1, 1
   observer.draw cells, tfm, context
   context.restore()  
-  
+
+lastTime = Date.now()
+fpsMax = 10
+dtMax = 1000.0/fpsMax
 redrawLoop = ->
   if dirty
-    drawEverything()
-    dirty = false
+    t = Date.now()
+    if t - lastTime > dtMax
+      drawEverything()
+      dirty = false
+      lastTime = t
   requestAnimationFrame redrawLoop
     
 
