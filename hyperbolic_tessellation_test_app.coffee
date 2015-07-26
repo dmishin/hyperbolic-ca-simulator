@@ -245,16 +245,8 @@ doStep = ->
   redraw()
   updatePopulation()
 
-frameRequested = false
 dirty = true
-redraw = ->
-  dirty = true
-  #avoid spamming frame requests for smoother movement.
-  #unless frameRequested
-  #  frameRequested = true
-  #  window.requestAnimationFrame ->
-  #    drawEverything()
-  #    frameRequested = false
+redraw = -> dirty = true
 
 drawEverything = ->
   s = Math.min( canvas.width, canvas.height ) / 2
