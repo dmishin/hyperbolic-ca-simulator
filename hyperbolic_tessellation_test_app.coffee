@@ -259,7 +259,7 @@ drawEverything = ->
 
 lastTime = Date.now()
 fpsMax = 10
-dtMax = 1000.0/fpsMax
+dtMax = 1000.0/fpsMax #
 redrawLoop = ->
   if dirty
     t = Date.now()
