@@ -5,7 +5,7 @@
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 {mooreNeighborhood, evaluateTotalisticAutomaton} = require "./field.coffee"
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
-
+{runCommands}= require "./context_delegate.coffee"
 
 M = require "./matrix3.coffee"
 
@@ -55,7 +55,81 @@ class FieldObserver
     context.fill()
     return      
         
-  
+class FieldObserverWithRemoreRenderer extends FieldObserver
+  constructor: (tessellation, appendRewrite, minCellSize=1.0/400.0)->
+    super tessellation, appendRewrite, minCellSize
+    @worker = new Worker "./render_worker.js"
+    console.log "Worker created: #{@worker}"
+    @worker.onmessage = (e) => @onMessage e
+
+    @cellShapes = null
+
+    @workerReady = false
+
+    @rendering = true
+    @worker.postMessage ["I", [tessellation.group.n, tessellation.group.m, @cellTransforms]]
+    
+    @onFinish = null
+    @postponedRenderRequest = null
+    
+  onMessage: (e) ->
+    #console.log "message received: #{JSON.stringify e.data}"
+    switch e.data[0]    
+      when "I" then @onInitialized e.data[1] ...
+      when "R" then @renderFinished e.data[1]
+      else throw new Error "Unexpected answer from worker: #{JSON.stringify e.data}"
+    return
+    
+  onInitialized: (n,m) ->
+    if n is @tessellation.group.n and m is tessellation.group.m
+      console.log "Worker initialized"
+      @workerReady = true
+      #now waiting for first rendered field.
+    else
+      console.log "Init OK message received, but mismatched. Probably, late message"
+      
+  _runPostponed: ->
+    if @postponedRenderRequest isnt null
+      @renderGrid @postponedRenderRequest
+      @postponedRenderRequest = null
+          
+  renderFinished: (renderedCells) ->
+    #console.log "worker finished rendering #{renderedCells.length} cells"
+    @cellShapes = renderedCells
+    @rendering = false
+    
+    @onFinish?()
+    @_runPostponed()
+    
+  renderGrid: (viewMatrix) ->
+    if @rendering or not @workerReady
+      @postponedRenderRequest = viewMatrix
+    else
+      @rendering = true
+      @worker.postMessage ["R", viewMatrix]
+
+  draw: (cells, context) ->
+    return false if (not @cellShapes) or (not @workerReady)
+    context.fillStyle = "black"
+    context.lineWidth = 1.0/400.0
+    context.strokeStyle = "rgb(128,128,128)"
+
+    #first borders
+    context.beginPath()
+    for cell, i in @cells
+      unless cells.get cell
+        runCommands context, @cellShapes[i]
+    context.stroke()
+
+    #then cells
+    context.beginPath()
+    for cell, i in @cells
+      if cells.get cell
+        runCommands context, @cellShapes[i]
+    context.fill()
+    return true
+    
+      
 mooreNeighborhood = (n, m, appendRewrite)->(chain)->
   #reutrns Moore (vertex) neighborhood of the cell.
   # it contains N cells of von Neumann neighborhood
@@ -223,7 +297,11 @@ xytFromCell = xyt2cell tessellation.group, appendRewrite
 viewCenter = null
 #visibleCells = visibleNeighborhood tessellation, appendRewrite, minVisibleSize #farNeighborhood viewCenter, 5, appendRewrite, tessellation.group.n, tessellation.group.m
 
-observer = new FieldObserver tessellation, appendRewrite, minVisibleSize
+#observer = new FieldObserver tessellation, appendRewrite, minVisibleSize
+# 
+observer = new FieldObserverWithRemoreRenderer tessellation, appendRewrite, minVisibleSize
+observer.onFinish = ->
+  redraw()
 
 #console.log "Visible field contains #{visibleCells.length} cells"
 
@@ -249,23 +327,24 @@ dirty = true
 redraw = -> dirty = true
 
 drawEverything = ->
-  s = Math.min( canvas.width, canvas.height ) / 2
+  s = Math.min( canvas.width, canvas.height ) / 2 #
   context.clearRect 0, 0, canvas.width, canvas.height
   context.save()
   context.scale s, s
   context.translate 1, 1
-  observer.draw cells, tfm, context
-  context.restore()  
+  rval = observer.draw cells, context
+  context.restore()
+  return rval
 
 lastTime = Date.now()
-fpsMax = 10
+fpsMax = 60
 dtMax = 1000.0/fpsMax #
 redrawLoop = ->
   if dirty
     t = Date.now()
     if t - lastTime > dtMax
-      drawEverything()
-      dirty = false
+      if drawEverything()
+        dirty = false
       lastTime = t
   requestAnimationFrame redrawLoop
     
@@ -386,7 +465,9 @@ modifyView = (m) ->
   originDistance = viewDistanceToOrigin()
   if originDistance > jumpLimit
     rebaseView()
-  redraw()  
+
+  observer.renderGrid tfm
+  #redraw()   #redraw is called when observer is ready
 
 rotateView = (angle) -> modifyView rotateMatrix angle
 moveView = (dx, dy) -> modifyView moveMatrix(dx, dy)
