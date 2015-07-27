@@ -1,6 +1,6 @@
 "use strict"
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
-{NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash} = require "./vondyck_chain.coffee"
+{NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 {mooreNeighborhood, evaluateTotalisticAutomaton} = require "./field.coffee"
@@ -12,29 +12,49 @@ M = require "./matrix3.coffee"
 E = (id) -> document.getElementById id
 
 
-drawVisibleCells = (visibleCells, cells, viewMatrix, tessellation, context) ->
-  context.fillStyle = "black"
-  context.strokeStyle = "gray"
-  context.lineWidth = 1.0/400.0
+colors = ["red", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
 
-  #first borders
-  context.beginPath()
-  for cell in visibleCells
-    unless cells.get cell
-      mtx = M.mul viewMatrix, nodeMatrixRepr(cell, tessellation.group)
-      tessellation.makeCellShapePoincare( mtx, context )    
-  context.stroke()
+class FieldObserver
+  constructor: (@tessellation, @appendRewrite, @minCellSize=1.0/400.0)->
+    @center = null
+    @cells = visibleNeighborhood @tessellation, @appendRewrite, @minCellSize
+    @cellOffsets = (node2array(c) for c in @cells)
+    @cellTransforms = (nodeMatrixRepr(c, @tessellation.group) for c in @cells)
+  rebuildAt: (newCenter) ->
+    @center = newCenter
+    @cells = for offset in @cellOffsets
+      #it is important to make copy since AR empties the array!
+      eliminateFinalA @appendRewrite(newCenter, offset[..]), @appendRewrite, @tessellation.group.n
+    return
+    
+  translateBy: (appendArray) ->
+    #console.log  "New center at #{showNode newCenter}"
+    @rebuildAt @appendRewrite @center, appendArray
+        
+  draw: (cells, viewMatrix, context) ->
+    context.fillStyle = "black"
+    context.lineWidth = 1.0/400.0
+    context.strokeStyle = "rgb(128,128,128)"
 
-  #then cells
-  context.beginPath()
-  for cell in visibleCells
-    if cells.get cell
-      mtx = M.mul viewMatrix, nodeMatrixRepr(cell, tessellation.group)
-      tessellation.makeCellShapePoincare( mtx, context )
-      
-  context.fill()
-  return      
-  
+    #first borders
+    context.beginPath()
+    for cell, i in @cells
+      unless cells.get cell
+        cellTfm = @cellTransforms[i]
+        mtx = M.mul viewMatrix, cellTfm
+        @tessellation.makeCellShapePoincare mtx, context
+    context.stroke()
+
+    #then cells
+    context.beginPath()
+    for cell, i in @cells
+      if cells.get cell
+        cellTfm = @cellTransforms[i]
+        mtx = M.mul viewMatrix, cellTfm
+        @tessellation.makeCellShapePoincare  mtx, context        
+    context.fill()
+    return      
+        
 mooreNeighborhood = (n, m, appendRewrite)->(chain)->
   #reutrns Moore (vertex) neighborhood of the cell.
   # it contains N cells of von Neumann neighborhood
@@ -209,8 +229,11 @@ getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, app
 xytFromCell = xyt2cell tessellation.group, appendRewrite
 
 viewCenter = null
-visibleCells = visibleNeighborhood tessellation, appendRewrite, minVisibleSize #farNeighborhood viewCenter, 5, appendRewrite, tessellation.group.n, tessellation.group.m
-console.log "Visible field contains #{visibleCells.length} cells"
+#visibleCells = visibleNeighborhood tessellation, appendRewrite, minVisibleSize #farNeighborhood viewCenter, 5, appendRewrite, tessellation.group.n, tessellation.group.m
+
+observer = new FieldObserver tessellation, appendRewrite, minVisibleSize
+
+#console.log "Visible field contains #{visibleCells.length} cells"
 
 transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
 dragHandler = null
@@ -222,18 +245,19 @@ cells.put null, 1
 doReset = ->
   cells = new NodeHashMap
   cells.put null, 1
+  updatePopulation()
   redraw()
 
 doStep = ->
   cells = evaluateWithNeighbors cells, getNeighbors, transitionFunc.evaluate.bind(transitionFunc)
   redraw()
+  updatePopulation()
 
-#Flag to avoid requestAnimationFrame congestion. It really helps a lot!
 frameRequested = false
 redraw = ->
   s = Math.min( canvas.width, canvas.height ) / 2
-
-  if not frameRequested
+  #avoid spamming frame requests for smoother movement.
+  unless frameRequested
     frameRequested = true
     window.requestAnimationFrame ->
       frameRequested = false
@@ -241,12 +265,8 @@ redraw = ->
       context.save()
       context.scale s, s
       context.translate 1, 1
-      drawVisibleCells visibleCells, cells, tfm, tessellation, context
-      context.restore()
-
-updatePopulation = ->
-  #console.log "Redraw. Population is #{cells.count}"
-  E("population").innerHTML = ""+cells.count
+      observer.draw cells, tfm, context
+      context.restore()  
 
 toggleCellAt = (x,y) ->
   s = Math.min( canvas.width, canvas.height ) * 0.5
@@ -255,10 +275,9 @@ toggleCellAt = (x,y) ->
   xyt = poincare2hyperblic xp, yp
   #inverse transform it...
   xyt = M.mulv (M.inv tfm), xyt
-  if xyt is null
-    #console.log "Outside of circle"
-  else
-    cell = xytFromCell xyt
+  if xyt isnt null
+    visibleCell = xytFromCell xyt
+    cell = eliminateFinalA appendRewrite(observer.center, node2array(visibleCell)), appendRewrite, tessellation.group.n
     #console.log showNode cell
     if cells.get(cell) isnt null
       cells.remove cell
@@ -269,17 +288,20 @@ toggleCellAt = (x,y) ->
 doCanvasClick = (e) ->
   e.preventDefault()
   [x,y] = getCanvasCursorPosition e, canvas
-  #toggleCellAt x, y
-  cx = canvas.width*0.5
-  cy = canvas.height*0.5
-  r = Math.min(cx, cy)
+  unless (e.button is 0) and not e.shiftKey
+    toggleCellAt x, y
+    updatePopulation()    
+  else 
+    cx = canvas.width*0.5
+    cy = canvas.height*0.5
+    r = Math.min(cx, cy)
 
-  dx = x-cx
-  dy = y-cy
-  if dx*dx + dy*dy <= r*r*0.8*0.8
-    dragHandler = new MouseToolPan x, y
-  else
-    dragHandler = new MouseToolRotate x, y
+    dx = x-cx
+    dy = y-cy
+    if dx*dx + dy*dy <= r*r*(0.8*0.8)
+      dragHandler = new MouseToolPan x, y
+    else
+      dragHandler = new MouseToolRotate x, y
 
 doCanvasMouseMove = (e) ->
   if dragHandler isnt null
@@ -323,20 +345,13 @@ setGridImpl = (n, m)->
   appendRewrite = makeAppendRewrite rewriteRuleset
   getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, appendRewrite
   xytFromCell = xyt2cell tessellation.group, appendRewrite
-
   transitionFunc = parseTransitionFunction transitionFunc.toString(), tessellation.group.n, tessellation.group.m
-  visibleCells = visibleNeighborhood tessellation, appendRewrite, minVisibleSize
-###
-#
-###
-modifyViewMatrix = (m) ->
-  tfm = M.mul m, tfm
-  redraw()
+  observer = new FieldObserver tessellation, appendRewrite, minVisibleSize
 
 translationMatrix = (dx, dy) ->
   #Formulae obtained with Maxima,
   # as combination of (inverse rotate) * (shift by x) * (rotate)
-  # distance is acosh( sqrt( dx^2 + dy^2 + 1 ))
+  # distance is acosh( dx^2 + dy^2 + 1 )
   r2 = dx*dx+dy*dy
   dt = Math.sqrt(r2+1)
   k = (dt-1)/r2
@@ -349,22 +364,70 @@ translationMatrix = (dx, dy) ->
    xyk,   yyk+1, dy,
    dx,    dy,    dt]
   
-rotationMatrix = (angle)->
+rotationMatrix = (angle) ->
   s = Math.sin angle
   c = Math.cos angle
   [c,   s,   0.0,
    -s,  c,   0.0,
    0.0, 0.0, 1.0]
   
-moveView = (dx, dy) -> modifyViewMatrix translationMatrix(dx, dy)        
-rotateView = (angle) -> modifyViewMatrix rotationMatrix angle
+moveView = (dx, dy) -> modifyView translationMatrix(dx, dy)        
+rotateView = (angle) -> modifyView rotationMatrix angle
   
-
 class MouseTool
   mouseMoved: ->
   mouseUp: ->
   mouseDown: ->
     
+
+jumpLimit = 1.5
+  
+modifyView = (m) ->
+  tfm = M.mul m, tfm
+  checkViewMatrix()
+  originDistance = viewDistanceToOrigin()
+  if originDistance > jumpLimit
+    rebaseView()
+  redraw()  
+
+viewDistanceToOrigin = ->
+  #viewCenter = M.mulv tfm, [0.0,0.0,1.0]
+  #Math.acosh(viewCenter[2])
+  Math.acosh tfm[8]
+
+#build new view around the cell which is currently at the center
+rebaseView = ->
+  centerCoord = M.mulv (M.inv tfm), [0.0, 0.0, 1.0]
+  pathToCenterCell = xytFromCell centerCoord
+  #console.log "Jump by #{showNode pathToCenterCell}"
+  m = nodeMatrixRepr pathToCenterCell, tessellation.group
+
+  #modifyView won't work, since it multiplies in different order.
+  tfm = M.mul tfm, m
+  checkViewMatrix()
+
+  #move observation point
+  observer.translateBy node2array pathToCenterCell
+
+updatePopulation = ->
+  E('population').innerHTML = ""+cells.count
+    
+redraw()
+updatePopulation()
+
+viewUpdates = 0
+#precision falls from 1e-16 to 1e-9 in 1000 steps.
+maxViewUpdatesBeforeCleanup = 500
+checkViewMatrix = ->
+  #me = [-1,0,0,  0,-1,0, 0,0,-1]
+  #d = M.add( me, M.mul(tfm, M.hyperbolicInv tfm))
+  #ad = (Math.abs(x) for x in d)
+  #maxDiff = Math.max( ad ... )
+  #console.log "Step: #{viewUpdates}, R: #{maxDiff}"
+  if (viewUpdates+=1) > maxViewUpdatesBeforeCleanup
+    viewUpdates = 0
+    tfm = M.cleanupHyperbolicMoveMatrix tfm
+
 class MouseToolPan extends MouseTool
   constructor: (@x0, @y0) ->
   mouseMoved: (e)->

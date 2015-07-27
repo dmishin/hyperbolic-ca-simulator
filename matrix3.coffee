@@ -69,3 +69,19 @@ exports.inv = inv = (m) ->
 
 exports.smul = smul = (k, m) -> (mi*k for mi in m)
 exports.add = add = (m1, m2) -> (m1[i]+m2[i] for i in [0...9])
+exports.transpose = transpose = (m)->
+  [m[0], m[3], m[6],
+   m[1], m[4], m[7],
+   m[2], m[5], m[8]]
+exports.hyperbolicInv = hyperbolicInv = (m) ->
+  #x' S x = 1, S = diag (-1, -1, 1)
+  #x' M' S M x = 1
+  #M' S M = S
+  #M^-1 = SM'S
+  [ m[0],  m[3], -m[6],
+    m[1],  m[4], -m[7],
+   -m[2], -m[5],  m[8]]
+
+exports.cleanupHyperbolicMoveMatrix = cleanupHyperbolicMoveMatrix = (m)->
+  smul 0.5, add(m, inv hyperbolicInv m)
+
