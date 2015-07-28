@@ -206,12 +206,23 @@ exports.NodeHashMap = class NodeHashMap
     @table = newTable.table
     @sizeMask = newTable.sizeMask
     return
-    
+      
   forItems: (callback) ->
     for cell in @table
       for [key, value] in cell
         callback key, value
     return    
+
+  copy: ->
+    copied = new NodeHashMap 1 #minimal size
+
+    copied.count = @count
+    copied.maxFillRatio = @maxFillRatio
+    copied.sizeMask = @sizeMask
     
-    
+    copied.table = for cell in @table
+      for key_value in cell
+        key_value[..]
+
+    return copied
   
