@@ -32,10 +32,6 @@ class FieldObserver
     @rebuildAt @appendRewrite @center, appendArray
         
   draw: (cells, viewMatrix, context) ->
-    context.fillStyle = "black"
-    context.lineWidth = 1.0/400.0
-    context.strokeStyle = "rgb(128,128,128)"
-
     #first borders
     context.beginPath()
     for cell, i in @cells
@@ -110,10 +106,6 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
 
   draw: (cells, context) ->
     return false if (not @cellShapes) or (not @workerReady)
-    context.fillStyle = "black"
-    context.lineWidth = 1.0/400.0
-    context.strokeStyle = "rgb(128,128,128)"
-
     #first borders
     context.beginPath()
     for cell, i in @cells
@@ -130,6 +122,8 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
         null
     context.fill()
     return true
+  shutdown: ->
+    @worker.terminate()
     
 
 #determine cordinates of the cell, containing given point
@@ -272,8 +266,7 @@ viewCenter = null
 #observer = new FieldObserver tessellation, appendRewrite, minVisibleSize
 # 
 observer = new FieldObserverWithRemoreRenderer tessellation, appendRewrite, minVisibleSize
-observer.onFinish = ->
-  redraw()
+observer.onFinish = -> redraw()
 
 #console.log "Visible field contains #{visibleCells.length} cells"
 
@@ -306,6 +299,10 @@ drawEverything = ->
   context.save()
   context.scale s, s
   context.translate 1, 1
+  context.fillStyle = "black"
+  context.lineWidth = 1.0/s
+  context.strokeStyle = "rgb(128,128,128)"
+
   rval = observer.draw cells, context
   context.restore()
   return rval
@@ -321,7 +318,7 @@ redrawLoop = ->
       if drawEverything()
         tEnd = Date.now()
         #adaptively update FPS
-        dtMax = dtMax*0.9 + (tEnd - t)*1.2*0.1
+        dtMax = dtMax*0.9 + (tEnd - t)*2*0.1
         dirty = false
       lastTime = t
   requestAnimationFrame redrawLoop
@@ -405,7 +402,10 @@ setGridImpl = (n, m)->
   getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, appendRewrite
   xytFromCell = xyt2cell tessellation.group, appendRewrite
   transitionFunc = parseTransitionFunction transitionFunc.toString(), tessellation.group.n, tessellation.group.m
-  observer = new FieldObserver tessellation, appendRewrite, minVisibleSize
+  #observer = new FieldObserver tessellation, appendRewrite, minVisibleSize
+  observer?.shutdown()
+  observer = new FieldObserverWithRemoreRenderer tessellation, appendRewrite, minVisibleSize
+  observer.onFinish = -> redraw()
 
 moveView = (dx, dy) -> modifyView M.translationMatrix(dx, dy)        
 rotateView = (angle) -> modifyView M.rotationMatrix angle
@@ -426,7 +426,6 @@ modifyView = (m) ->
     rebaseView()
 
   observer.renderGrid tfm
-  #redraw()   #redraw is called when observer is ready
 
 viewDistanceToOrigin = ->
   #viewCenter = M.mulv tfm, [0.0,0.0,1.0]
