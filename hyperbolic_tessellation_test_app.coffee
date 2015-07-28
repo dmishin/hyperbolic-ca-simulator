@@ -119,6 +119,7 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
     for cell, i in @cells
       unless cells.get cell
         runCommands context, @cellShapes[i]
+        null
     context.stroke()
 
     #then cells
@@ -126,6 +127,7 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
     for cell, i in @cells
       if cells.get cell
         runCommands context, @cellShapes[i]
+        null
     context.fill()
     return true
     
@@ -328,7 +330,9 @@ redraw = -> dirty = true
 
 drawEverything = ->
   s = Math.min( canvas.width, canvas.height ) / 2 #
-  context.clearRect 0, 0, canvas.width, canvas.height
+  context.fillStyle="white"
+  #context.clearRect 0, 0, canvas.width, canvas.height
+  context.fillRect 0, 0, canvas.width, canvas.height
   context.save()
   context.scale s, s
   context.translate 1, 1
@@ -337,13 +341,17 @@ drawEverything = ->
   return rval
 
 lastTime = Date.now()
-fpsMax = 60
-dtMax = 1000.0/fpsMax #
+fpsDefault = 30
+dtMax = 1000.0/fpsDefault #
+
 redrawLoop = ->
   if dirty
     t = Date.now()
     if t - lastTime > dtMax
       if drawEverything()
+        tEnd = Date.now()
+        #adaptively update FPS
+        dtMax = dtMax*0.9 + (tEnd - t)*1.2*0.1
         dirty = false
       lastTime = t
   requestAnimationFrame redrawLoop
