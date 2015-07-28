@@ -85,3 +85,26 @@ exports.hyperbolicInv = hyperbolicInv = (m) ->
 exports.cleanupHyperbolicMoveMatrix = cleanupHyperbolicMoveMatrix = (m)->
   smul 0.5, add(m, inv hyperbolicInv m)
 
+exports.translationMatrix = translationMatrix = (dx, dy) ->
+  #Formulae obtained with Maxima,
+  # as combination of (inverse rotate) * (shift by x) * (rotate)
+  # distance is acosh( dx^2 + dy^2 + 1 )
+  r2 = dx*dx+dy*dy
+  dt = Math.sqrt(r2+1)
+  k = (dt-1)/r2
+
+  xxk = dx*dx*k
+  xyk = dx*dy*k
+  yyk = dy*dy*k
+  
+  [xxk+1, xyk,   dx,
+   xyk,   yyk+1, dy,
+   dx,    dy,    dt]
+  
+exports.rotationMatrix = rotationMatrix = (angle) ->
+  s = Math.sin angle
+  c = Math.cos angle
+  [c,   s,   0.0,
+   -s,  c,   0.0,
+   0.0, 0.0, 1.0]
+  

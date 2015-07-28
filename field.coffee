@@ -68,3 +68,32 @@ exports.farNeighborhood = farNeighborhood = (center, r, appendRewrite, n, m) ->
 
   getCellList cells  
 
+
+exports.extractClusterAt = extractClusterAt = (cells, getNeighbors, chain) ->
+  #use cycle instead of recursion in order to avoid possible stack overflow.
+  #Clusters may be big.
+  stack = [chain]
+  cluster = []
+  while stack.length > 0
+    c = stack.pop()
+    continue if cells.get(c) is null
+    
+    cells.remove c
+    cluster.push c
+    
+    for neighbor in getNeighbors c
+      if cells.get(neighbor) isnt null
+        stack.push neighbor
+  return cluster
+  
+exports.allClusters = (cells, n, m, appendRewrite) ->
+  cellsCopy = cells.copy()
+  clusters = []
+  getNeighbors = mooreNeighborhood n, m, appendRewrite
+    
+  cells.forItems (chain, value) ->
+    if cellsCopy.get(chain) isnt null
+      clusters.push extractClusterAt(cellsCopy, getNeighbors, chain)
+
+  return clusters      
+  

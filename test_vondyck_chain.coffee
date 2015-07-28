@@ -101,6 +101,40 @@ describe "NodeHashMap", ->
     assert.equal m.get(a1), "a1"
     assert.equal m.get(b2), "b2"
     assert.equal m.get(a1b1), "a1b1"
+    
+  it "should support copy", ->
+    m = new NodeHashMap
+    c1 = null
+    c2 = newNode 'a', 2, null
+    c3 = newNode 'b', 3, null
+    c4 = newNode 'a', -1, c3
+    cells = [c1,c2,c3,c4]
+
+    for cell, index in cells
+      m.put cell, index
+
+    m1 = m.copy()
+    #ensure that copy is right
+    for cell, index in cells
+      assert.equal m1.get(cell), index
+
+    assert.equal m1.count, m.count
+
+    #ensure that copy is independednt
+    for cell, index in cells
+      m.put cell, index+100
+
+    for cell, index in cells
+      assert.equal m1.get(cell), index
+
+    #ensure that copy is functional
+    c5 = newNode 'b', 3, c4
+    m1.put c5, 100
+    assert.equal m1.get(c5), 100
+    assert.equal m.get(c5), null
+    for cell, index in cells
+      assert.equal m1.get(cell), index
+    
 
   it "should remove cells without corrupting data", ->
     m = new NodeHashMap
