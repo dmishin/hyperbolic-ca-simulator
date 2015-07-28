@@ -35,7 +35,8 @@ exports.Tessellation = class Tessellation
       if i is 0
         context.moveTo xx0, yy0
       @drawPoincareCircleTo context, xx0, yy0, xx1, yy1
-    context.closePath()
+    #context.closePath()
+    return
     
   drawPoincareCircleTo: (context, x0, y0, x1, y1) ->
     #Calculate radius of the circular arc.
