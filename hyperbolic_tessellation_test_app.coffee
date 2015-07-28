@@ -348,31 +348,8 @@ setGridImpl = (n, m)->
   transitionFunc = parseTransitionFunction transitionFunc.toString(), tessellation.group.n, tessellation.group.m
   observer = new FieldObserver tessellation, appendRewrite, minVisibleSize
 
-translationMatrix = (dx, dy) ->
-  #Formulae obtained with Maxima,
-  # as combination of (inverse rotate) * (shift by x) * (rotate)
-  # distance is acosh( dx^2 + dy^2 + 1 )
-  r2 = dx*dx+dy*dy
-  dt = Math.sqrt(r2+1)
-  k = (dt-1)/r2
-
-  xxk = dx*dx*k
-  xyk = dx*dy*k
-  yyk = dy*dy*k
-  
-  [xxk+1, xyk,   dx,
-   xyk,   yyk+1, dy,
-   dx,    dy,    dt]
-  
-rotationMatrix = (angle) ->
-  s = Math.sin angle
-  c = Math.cos angle
-  [c,   s,   0.0,
-   -s,  c,   0.0,
-   0.0, 0.0, 1.0]
-  
-moveView = (dx, dy) -> modifyView translationMatrix(dx, dy)        
-rotateView = (angle) -> modifyView rotationMatrix angle
+moveView = (dx, dy) -> modifyView M.translationMatrix(dx, dy)        
+rotateView = (angle) -> modifyView M.rotationMatrix angle
   
 class MouseTool
   mouseMoved: ->
