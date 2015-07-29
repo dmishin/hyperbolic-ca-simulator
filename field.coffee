@@ -12,7 +12,8 @@ exports.mooreNeighborhood = mooreNeighborhood = (n, m, appendRewrite)->(chain)->
   # it contains N cells of von Neumann neighborhood
   #    and N*(M-3) cells, sharing single vertex.
   # In total, N*(M-2) cells.
-  neighbors = []
+  neighbors = new Array(n*(m-2))
+  i = 0
   for powerA in [0...n] by 1
     for powerB in [1...m-1] by 1
       #adding truncateA to eliminate final rotation of the chain.
@@ -21,7 +22,8 @@ exports.mooreNeighborhood = mooreNeighborhood = (n, m, appendRewrite)->(chain)->
         else
             [['b', powerB]]
       neigh = eliminateFinalA appendRewrite(chain, nStep), appendRewrite, n
-      neighbors.push neigh
+      neighbors[i] = neigh
+      i += 1
   return neighbors
 
 
