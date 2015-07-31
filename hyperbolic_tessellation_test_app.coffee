@@ -3,7 +3,7 @@
 {NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
-{mooreNeighborhood, evaluateTotalisticAutomaton} = require "./field.coffee"
+{mooreNeighborhood, evaluateTotalisticAutomaton, exportField} = require "./field.coffee"
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 
 
@@ -431,7 +431,9 @@ class MouseToolRotate extends MouseTool
     dAngle = newAngle - @angle0
     @angle0 = newAngle
     rotateView dAngle
-                      
+
+doExport = ->
+  E('export').value = JSON.stringify(exportField(cells))                                            
 # ============ Bind Events =================
 E("btn-reset").addEventListener "click", doReset
 E("btn-step").addEventListener "click", doStep
@@ -441,6 +443,6 @@ E("canvas").addEventListener "mousemove", doCanvasMouseMove
 E("canvas").addEventListener "mousedrag", doCanvasMouseMove
 E("btn-set-rule").addEventListener "click", doSetRule
 E("btn-set-grid").addEventListener "click", doSetGrid
-
+E("btn-export").addEventListener "click", doExport
 E('rule-entry').value = transitionFunc.toString()
 redraw()
