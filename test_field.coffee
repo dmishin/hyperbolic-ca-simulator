@@ -1,6 +1,6 @@
 
 assert = require "assert"
-{allClusters, mooreNeighborhood} = require "./field"
+{allClusters, mooreNeighborhood, exportField, importField} = require "./field"
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
@@ -73,3 +73,81 @@ describe "mooreNeighborhood", ->
             foundCell += 1
         assert.equal foundCell, 1, "Exactly 1 of the #{showNode nei}'s neighbors must be original chain: #{showNode cell}, but #{foundCell} found"
     return
+
+describe "exportField", ->
+  it "must export empty field", ->
+    f = new NodeHashMap
+    tree = exportField f
+    assert.deepEqual tree, {}
+    
+  it "must export field with only root cell", ->
+    f = new NodeHashMap
+    f.put null, 1
+    tree = exportField f
+    assert.deepEqual tree, {v: 1}
+    
+  it "must export field with 1 non-root cell", ->
+    f = new NodeHashMap
+    #ab^3a^2
+    chain = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, null
+    f.put chain, "value"
+    tree = exportField f
+    assert.deepEqual tree, {
+      cs:[{
+        g: 'a'
+        p: 1
+        cs: [{
+          g: 'b'
+          p: 3
+          cs: [{
+            g: 'a'
+            p: 2
+            v: "value"
+    }]}]}]}
+    
+describe "importField", ->
+  it "must import empty field correctly", ->
+    f = importField {}
+    assert.equal f.count, 0
+  it "must import root cell correctly", ->
+    f = importField {v: 1}
+    assert.equal f.count, 1
+    assert.equal f.get(null), 1
+  it "must import 1 non-root cell correctly", ->
+    tree = {
+      cs:[{
+        g: 'a'
+        p: 1
+        cs: [{
+          g: 'b'
+          p: 3
+          cs: [{
+            g: 'a'
+            p: 2
+            v: "value"
+    }]}]}]}
+    #ab^3a^2
+    chain = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, null
+    f = importField tree
+    assert.equal f.count, 1
+    assert.equal f.get(chain), 'value'
+    
+  
+  it "must import some nontrivial exported field", ->
+    f = new NodeHashMap
+    #ab^3a^2
+    chain1 = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, null
+    #a^-1b^3a^2
+    chain2 = newNode 'a', -1, newNode 'b', 3, newNode 'a',1, null
+    f.put null, "value0"
+    f.put chain1, "value1"
+    f.put chain2, "value2"
+      
+
+    f1 = importField exportField f
+
+    assert.equal f.count, 3
+    assert.equal f.get(null), 'value0'
+    assert.equal f.get(chain1), 'value1'
+    assert.equal f.get(chain2), 'value2'
+    

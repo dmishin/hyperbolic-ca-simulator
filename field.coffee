@@ -99,3 +99,56 @@ exports.allClusters = (cells, n, m, appendRewrite) ->
 
   return clusters      
   
+
+#Generate JS object from this field.
+# object tries to efectively store states of the field cells in the tree.
+# Position of echa cell is represented by chain.
+# Chains can be long; for nearby chains, their tails are the same.
+# Storing chains in list would cause duplication of repeating tails.
+#
+# Object structure:
+# {
+#   g: 'a' or 'b', name of the group generator. Not present in root!
+#   p: integer, power of the generator. Not present in root!
+#   [v:] value of the cell. Optional.
+#   [cs]: [children] array of child trees
+# }
+exports.exportField = (cells) ->
+  root = {
+  }
+  chain2treeNode = new NodeHashMap
+  chain2treeNode.put null, root
+  
+  putChain = (chain) -> #returns tree node for that chain
+    node = chain2treeNode.get chain
+    if node is null
+      parentNode = putChain chain.t
+      node = {
+        g: chain.letter
+        p: chain.p
+      }
+      if parentNode.cs?
+        parentNode.cs.push node
+      else
+        parentNode.cs = [node]
+      chain2treeNode.put chain, node
+    return node
+  cells.forItems (chain, value) ->
+    putChain(chain).v = value
+
+  return root
+
+exports.importField = (fieldData, cells = new NodeHashMap)->
+  putNode = (rootChain, rootNode)->
+    if rootNode.v?
+      #node is a cell that stores some value?
+      cells.put rootChain, rootNode.v
+    if rootNode.cs?
+      for childNode in rootNode.cs
+        putNode(newNode(childNode.g, childNode.p, rootChain), childNode)
+    return
+  putNode null, fieldData
+  return cells
+      
+  
+  
