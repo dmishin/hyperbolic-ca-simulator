@@ -123,10 +123,8 @@ exports.exportField = (cells) ->
     node = chain2treeNode.get chain
     if node is null
       parentNode = putChain chain.t
-      node = {
-        g: chain.letter
-        p: chain.p
-      }
+      node = {}
+      node[chain.letter] = chain.p
       if parentNode.cs?
         parentNode.cs.push node
       else
@@ -145,7 +143,12 @@ exports.importField = (fieldData, cells = new NodeHashMap)->
       cells.put rootChain, rootNode.v
     if rootNode.cs?
       for childNode in rootNode.cs
-        putNode(newNode(childNode.g, childNode.p, rootChain), childNode)
+        if childNode.a?
+          putNode(newNode('a', childNode.a, rootChain), childNode)
+        else if childNode.b?
+          putNode(newNode('b', childNode.b, rootChain), childNode)
+        else
+          throw new Error "Node has neither A nor B generator"
     return
   putNode null, fieldData
   return cells

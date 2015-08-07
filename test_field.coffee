@@ -94,14 +94,11 @@ describe "exportField", ->
     tree = exportField f
     assert.deepEqual tree, {
       cs:[{
-        g: 'a'
-        p: 1
+        a: 1
         cs: [{
-          g: 'b'
-          p: 3
+          b: 3
           cs: [{
-            g: 'a'
-            p: 2
+            a: 2
             v: "value"
     }]}]}]}
     
@@ -116,14 +113,11 @@ describe "importField", ->
   it "must import 1 non-root cell correctly", ->
     tree = {
       cs:[{
-        g: 'a'
-        p: 1
+        a: 1
         cs: [{
-          g: 'b'
-          p: 3
+          b: 3
           cs: [{
-            g: 'a'
-            p: 2
+            a: 2
             v: "value"
     }]}]}]}
     #ab^3a^2
