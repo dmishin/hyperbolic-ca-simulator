@@ -5,7 +5,7 @@
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 {mooreNeighborhood, evaluateTotalisticAutomaton, exportField} = require "./field.coffee"
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
-
+{lzw_encode} = require "./lzw.coffee"
 
 M = require "./matrix3.coffee"
 
@@ -433,7 +433,10 @@ class MouseToolRotate extends MouseTool
     rotateView dAngle
 
 doExport = ->
-  E('export').value = JSON.stringify(exportField(cells))                                            
+  data = JSON.stringify(exportField(cells))
+  edata = lzw_encode data
+  alert "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}"
+  E('export').value = edata
 # ============ Bind Events =================
 E("btn-reset").addEventListener "click", doReset
 E("btn-step").addEventListener "click", doStep
