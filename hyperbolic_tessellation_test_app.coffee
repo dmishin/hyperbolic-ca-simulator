@@ -316,9 +316,9 @@ redrawLoop = ->
     t = Date.now()
     if t - lastTime > dtMax
       if drawEverything()
-        tEnd = Date.now()
+        tDraw = Date.now() - t
         #adaptively update FPS
-        dtMax = dtMax*0.9 + (tEnd - t)*2*0.1
+        dtMax = dtMax*0.9 + tDraw*2*0.1
         dirty = false
       lastTime = t
   requestAnimationFrame redrawLoop
