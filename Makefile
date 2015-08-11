@@ -1,4 +1,4 @@
-.PHONY = test test_app
+.PHONY = test test_app start
 
 test_app:
 	browserify -t coffeeify hyperbolic_tessellation_test_app.coffee > test_app_bundle.js
@@ -7,3 +7,6 @@ test_app:
 test:
 	mocha test*.coffee --compilers coffee:coffee-script/register
 
+start:
+	python -m http.server &
+	xdg-open http://localhost:8000/test_app.html
