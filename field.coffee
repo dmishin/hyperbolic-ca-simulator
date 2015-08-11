@@ -12,7 +12,8 @@ exports.mooreNeighborhood = mooreNeighborhood = (n, m, appendRewrite)->(chain)->
   # it contains N cells of von Neumann neighborhood
   #    and N*(M-3) cells, sharing single vertex.
   # In total, N*(M-2) cells.
-  neighbors = []
+  neighbors = new Array(n*(m-2))
+  i = 0
   for powerA in [0...n] by 1
     for powerB in [1...m-1] by 1
       #adding truncateA to eliminate final rotation of the chain.
@@ -21,7 +22,8 @@ exports.mooreNeighborhood = mooreNeighborhood = (n, m, appendRewrite)->(chain)->
         else
             [['b', powerB]]
       neigh = eliminateFinalA appendRewrite(chain, nStep), appendRewrite, n
-      neighbors.push neigh
+      neighbors[i] = neigh
+      i += 1
   return neighbors
 
 
@@ -96,4 +98,60 @@ exports.allClusters = (cells, n, m, appendRewrite) ->
       clusters.push extractClusterAt(cellsCopy, getNeighbors, chain)
 
   return clusters      
+  
+
+#Generate JS object from this field.
+# object tries to efectively store states of the field cells in the tree.
+# Position of echa cell is represented by chain.
+# Chains can be long; for nearby chains, their tails are the same.
+# Storing chains in list would cause duplication of repeating tails.
+#
+# Object structure:
+# {
+#   g: 'a' or 'b', name of the group generator. Not present in root!
+#   p: integer, power of the generator. Not present in root!
+#   [v:] value of the cell. Optional.
+#   [cs]: [children] array of child trees
+# }
+exports.exportField = (cells) ->
+  root = {
+  }
+  chain2treeNode = new NodeHashMap
+  chain2treeNode.put null, root
+  
+  putChain = (chain) -> #returns tree node for that chain
+    node = chain2treeNode.get chain
+    if node is null
+      parentNode = putChain chain.t
+      node = {}
+      node[chain.letter] = chain.p
+      if parentNode.cs?
+        parentNode.cs.push node
+      else
+        parentNode.cs = [node]
+      chain2treeNode.put chain, node
+    return node
+  cells.forItems (chain, value) ->
+    putChain(chain).v = value
+
+  return root
+
+exports.importField = (fieldData, cells = new NodeHashMap)->
+  putNode = (rootChain, rootNode)->
+    if rootNode.v?
+      #node is a cell that stores some value?
+      cells.put rootChain, rootNode.v
+    if rootNode.cs?
+      for childNode in rootNode.cs
+        if childNode.a?
+          putNode(newNode('a', childNode.a, rootChain), childNode)
+        else if childNode.b?
+          putNode(newNode('b', childNode.b, rootChain), childNode)
+        else
+          throw new Error "Node has neither A nor B generator"
+    return
+  putNode null, fieldData
+  return cells
+      
+  
   
