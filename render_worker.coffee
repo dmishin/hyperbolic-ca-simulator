@@ -27,11 +27,12 @@ self.onmessage = (e) ->
       postMessage ["I", [n,m]]
       
       shapes = render M.eye()
-      postMessage ["R", shapes]      
+      postMessage ["R", shapes, 0]      
       
     when "R"
+      id = e.data[2]
       shapes = render( e.data[1])
-      postMessage ["R", shapes]
+      postMessage ["R", shapes, id]
     else
       console.log "Unknown message: #{JSON.stringify e.data}"
   

@@ -37,12 +37,15 @@ class FieldObserver
     @cells = for offset in @cellOffsets
       #it is important to make copy since AR empties the array!
       eliminateFinalA @appendRewrite(newCenter, offset[..]), @appendRewrite, @tessellation.group.n
+    @_observedCellsChanged()
     return
+    
+  _observedCellsChanged: ->
     
   translateBy: (appendArray) ->
     #console.log  "New center at #{showNode newCenter}"
     @rebuildAt @appendRewrite @center, appendArray
-        
+  canDraw: -> true        
   draw: (cells, context) ->
     #first borders
     if @drawEmpty
@@ -129,15 +132,23 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
     @workerReady = false
 
     @rendering = true
+    @cellSetState = 0
     @worker.postMessage ["I", [tessellation.group.n, tessellation.group.m, @cellTransforms]]
     
     @postponedRenderRequest = null
-    
+
+      
+  _observedCellsChanged: ->
+    console.log "Ignore all responces before answer..."
+    @cellShapes = null
+    @cellSetState+= 1
+    return
+        
   onMessage: (e) ->
     #console.log "message received: #{JSON.stringify e.data}"
     switch e.data[0]    
       when "I" then @onInitialized e.data[1] ...
-      when "R" then @renderFinished e.data[1]
+      when "R" then @renderFinished e.data[1], e.data[2]
       else throw new Error "Unexpected answer from worker: #{JSON.stringify e.data}"
     return
     
@@ -154,12 +165,14 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
       @renderGrid @postponedRenderRequest
       @postponedRenderRequest = null
           
-  renderFinished: (renderedCells) ->
+  renderFinished: (renderedCells, cellSetState) ->
     #console.log "worker finished rendering #{renderedCells.length} cells"
-    @cellShapes = renderedCells
     @rendering = false
-    
-    @onFinish?()
+    if cellSetState is @cellSetState
+      @cellShapes = renderedCells
+      @onFinish?()
+    #else
+    #  console.log "mismatch cell states: answer for #{cellSetState}, but current is #{@cellSetState}"
     @_runPostponed()
     
   renderGrid: (viewMatrix) ->
@@ -167,9 +180,13 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
       @postponedRenderRequest = viewMatrix
     else
       @rendering = true
-      @worker.postMessage ["R", viewMatrix]
-
+      @worker.postMessage ["R", viewMatrix, @cellSetState]
+      
+  canDraw: -> @cellShapes and @workerReady
+  
   draw: (cells, context) ->
+    if @cellShapes is null
+      console.log "cell shapes null"
     return false if (not @cellShapes) or (not @workerReady)
     #first borders
     if @drawEmpty
@@ -354,6 +371,8 @@ dirty = true
 redraw = -> dirty = true
 
 drawEverything = ->
+  return false unless observer.canDraw()
+  
   context.clearRect 0, 0, canvas.width, canvas.height
   context.save()
   s = Math.min( canvas.width, canvas.height ) / 2 #
@@ -362,10 +381,9 @@ drawEverything = ->
   context.fillStyle = "black"
   context.lineWidth = 1.0/s
   context.strokeStyle = "rgb(128,128,128)"
-
-  rval = observer.draw cells, context
+  observer.draw cells, context
   context.restore()
-  return rval
+  return true
 
 fpsLimiting = false
 lastTime = Date.now()
