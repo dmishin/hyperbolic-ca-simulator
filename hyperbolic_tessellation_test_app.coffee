@@ -21,6 +21,7 @@ class FieldObserver
     @cells = visibleNeighborhood @tessellation, @appendRewrite, @minCellSize
     @cellOffsets = (node2array(c) for c in @cells)
     @cellTransforms = (nodeMatrixRepr(c, @tessellation.group) for c in @cells)
+    @drawEmpty = true
   rebuildAt: (newCenter) ->
     @center = newCenter
     @cells = for offset in @cellOffsets
@@ -34,13 +35,14 @@ class FieldObserver
         
   draw: (cells, viewMatrix, context) ->
     #first borders
-    context.beginPath()
-    for cell, i in @cells
-      unless cells.get cell
-        cellTfm = @cellTransforms[i]
-        mtx = M.mul viewMatrix, cellTfm
-        @tessellation.makeCellShapePoincare mtx, context
-    context.stroke()
+    if @drawEmpty
+      context.beginPath()
+      for cell, i in @cells
+        unless cells.get cell
+          cellTfm = @cellTransforms[i]
+          mtx = M.mul viewMatrix, cellTfm
+          @tessellation.makeCellShapePoincare mtx, context
+      context.stroke()
 
     #then cells
     context.beginPath()
@@ -78,7 +80,7 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
     return
     
   onInitialized: (n,m) ->
-    if n is @tessellation.group.n and m is tessellation.group.m
+    if (n is @tessellation.group.n) and (m is @tessellation.group.m)
       console.log "Worker initialized"
       @workerReady = true
       #now waiting for first rendered field.
@@ -108,12 +110,13 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
   draw: (cells, context) ->
     return false if (not @cellShapes) or (not @workerReady)
     #first borders
-    context.beginPath()
-    for cell, i in @cells
-      unless cells.get cell
-        runCommands context, @cellShapes[i]
-        null
-    context.stroke()
+    if @drawEmpty
+      context.beginPath()
+      for cell, i in @cells
+        unless cells.get cell
+          runCommands context, @cellShapes[i]
+          null
+      context.stroke()
 
     #then cells
     context.beginPath()
@@ -293,11 +296,9 @@ dirty = true
 redraw = -> dirty = true
 
 drawEverything = ->
-  s = Math.min( canvas.width, canvas.height ) / 2 #
-  context.fillStyle="white"
-  #context.clearRect 0, 0, canvas.width, canvas.height
-  context.fillRect 0, 0, canvas.width, canvas.height
+  context.clearRect 0, 0, canvas.width, canvas.height
   context.save()
+  s = Math.min( canvas.width, canvas.height ) / 2 #
   context.scale s, s
   context.translate 1, 1
   context.fillStyle = "black"
@@ -308,14 +309,14 @@ drawEverything = ->
   context.restore()
   return rval
 
+fpsLimiting = false
 lastTime = Date.now()
 fpsDefault = 30
 dtMax = 1000.0/fpsDefault #
 
 redrawLoop = ->
   if dirty
-    t = Date.now()
-    if t - lastTime > dtMax
+    if not fpsLimiting or ((t=Date.now()) - lastTime > dtMax)
       if drawEverything()
         tDraw = Date.now() - t
         #adaptively update FPS
