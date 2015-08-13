@@ -22,6 +22,14 @@ class FieldObserver
     @cellOffsets = (node2array(c) for c in @cells)
     @cellTransforms = (nodeMatrixRepr(c, @tessellation.group) for c in @cells)
     @drawEmpty = true
+    @jumpLimit = 1.5
+    @tfm = M.eye()
+    
+    @viewUpdates = 0
+    #precision falls from 1e-16 to 1e-9 in 1000 steps.
+    @maxViewUpdatesBeforeCleanup = 500
+  
+
   rebuildAt: (newCenter) ->
     @center = newCenter
     @cells = for offset in @cellOffsets
@@ -53,6 +61,43 @@ class FieldObserver
         @tessellation.makeCellShapePoincare  mtx, context        
     context.fill()
     return      
+  
+  checkViewMatrix: ->
+    #me = [-1,0,0,  0,-1,0, 0,0,-1]
+    #d = M.add( me, M.mul(tfm, M.hyperbolicInv tfm))
+    #ad = (Math.abs(x) for x in d)
+    #maxDiff = Math.max( ad ... )
+    #console.log "Step: #{viewUpdates}, R: #{maxDiff}"
+    if (@viewUpdates+=1) > @maxViewUpdatesBeforeCleanup
+      @viewUpdates = 0
+      @tfm = M.cleanupHyperbolicMoveMatrix @tfm
+
+    
+  modifyView: (m) ->
+    @tfm = M.mul m, @tfm
+    @checkViewMatrix()
+    originDistance = @viewDistanceToOrigin()
+    if originDistance > @jumpLimit
+      @rebaseView()
+    @renderGrid @tfm
+
+  viewDistanceToOrigin: ->
+    #viewCenter = M.mulv tfm, [0.0,0.0,1.0]
+    #Math.acosh(viewCenter[2])
+    Math.acosh @tfm[8]
+  #build new view around the cell which is currently at the center
+  rebaseView: ->
+    centerCoord = M.mulv (M.inv @tfm), [0.0, 0.0, 1.0]
+    pathToCenterCell = xytFromCell centerCoord
+    #console.log "Jump by #{showNode pathToCenterCell}"
+    m = nodeMatrixRepr pathToCenterCell, @tessellation.group
+
+    #modifyView won't work, since it multiplies in different order.
+    @tfm = M.mul @tfm, m
+    @checkViewMatrix()
+
+    #move observation point
+    @translateBy node2array pathToCenterCell
         
 class FieldObserverWithRemoreRenderer extends FieldObserver
   constructor: (tessellation, appendRewrite, minCellSize=1.0/400.0)->
@@ -277,7 +322,6 @@ observer.onFinish = -> redraw()
 transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
 dragHandler = null
 
-tfm = M.eye()
 cells = new NodeHashMap
 cells.put null, 1
 
@@ -331,9 +375,9 @@ toggleCellAt = (x,y) ->
   xp = x/s - 1
   yp = y/s - 1
   xyt = poincare2hyperblic xp, yp
-  #inverse transform it...
-  xyt = M.mulv (M.inv tfm), xyt
   if xyt isnt null
+    #inverse transform it...
+    xyt = M.mulv (M.inv observer.tfm), xyt
     visibleCell = xytFromCell xyt
     cell = eliminateFinalA appendRewrite(observer.center, node2array(visibleCell)), appendRewrite, tessellation.group.n
     #console.log showNode cell
@@ -409,8 +453,8 @@ setGridImpl = (n, m)->
   observer = new FieldObserverWithRemoreRenderer tessellation, appendRewrite, minVisibleSize
   observer.onFinish = -> redraw()
 
-moveView = (dx, dy) -> modifyView M.translationMatrix(dx, dy)        
-rotateView = (angle) -> modifyView M.rotationMatrix angle
+moveView = (dx, dy) -> observer.modifyView M.translationMatrix(dx, dy)        
+rotateView = (angle) -> observer.modifyView M.rotationMatrix angle
   
 class MouseTool
   mouseMoved: ->
@@ -418,35 +462,7 @@ class MouseTool
   mouseDown: ->
     
 
-jumpLimit = 1.5
-  
-modifyView = (m) ->
-  tfm = M.mul m, tfm
-  checkViewMatrix()
-  originDistance = viewDistanceToOrigin()
-  if originDistance > jumpLimit
-    rebaseView()
 
-  observer.renderGrid tfm
-
-viewDistanceToOrigin = ->
-  #viewCenter = M.mulv tfm, [0.0,0.0,1.0]
-  #Math.acosh(viewCenter[2])
-  Math.acosh tfm[8]
-
-#build new view around the cell which is currently at the center
-rebaseView = ->
-  centerCoord = M.mulv (M.inv tfm), [0.0, 0.0, 1.0]
-  pathToCenterCell = xytFromCell centerCoord
-  #console.log "Jump by #{showNode pathToCenterCell}"
-  m = nodeMatrixRepr pathToCenterCell, tessellation.group
-
-  #modifyView won't work, since it multiplies in different order.
-  tfm = M.mul tfm, m
-  checkViewMatrix()
-
-  #move observation point
-  observer.translateBy node2array pathToCenterCell
 
 updatePopulation = ->
   E('population').innerHTML = ""+cells.count
@@ -454,19 +470,6 @@ updatePopulation = ->
 #redraw()
 updatePopulation()
 redrawLoop()
-
-viewUpdates = 0
-#precision falls from 1e-16 to 1e-9 in 1000 steps.
-maxViewUpdatesBeforeCleanup = 500
-checkViewMatrix = ->
-  #me = [-1,0,0,  0,-1,0, 0,0,-1]
-  #d = M.add( me, M.mul(tfm, M.hyperbolicInv tfm))
-  #ad = (Math.abs(x) for x in d)
-  #maxDiff = Math.max( ad ... )
-  #console.log "Step: #{viewUpdates}, R: #{maxDiff}"
-  if (viewUpdates+=1) > maxViewUpdatesBeforeCleanup
-    viewUpdates = 0
-    tfm = M.cleanupHyperbolicMoveMatrix tfm
 
 class MouseToolPan extends MouseTool
   constructor: (@x0, @y0) ->
