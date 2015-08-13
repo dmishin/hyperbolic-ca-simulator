@@ -28,7 +28,9 @@ class FieldObserver
     @viewUpdates = 0
     #precision falls from 1e-16 to 1e-9 in 1000 steps.
     @maxViewUpdatesBeforeCleanup = 500
-  
+    @xyt2path = makeXYT2path @tessellation.group, @appendRewrite
+
+    @onFinish = null
 
   rebuildAt: (newCenter) ->
     @center = newCenter
@@ -41,14 +43,14 @@ class FieldObserver
     #console.log  "New center at #{showNode newCenter}"
     @rebuildAt @appendRewrite @center, appendArray
         
-  draw: (cells, viewMatrix, context) ->
+  draw: (cells, context) ->
     #first borders
     if @drawEmpty
       context.beginPath()
       for cell, i in @cells
         unless cells.get cell
           cellTfm = @cellTransforms[i]
-          mtx = M.mul viewMatrix, cellTfm
+          mtx = M.mul @tfm, cellTfm
           @tessellation.makeCellShapePoincare mtx, context
       context.stroke()
 
@@ -57,10 +59,11 @@ class FieldObserver
     for cell, i in @cells
       if cells.get cell
         cellTfm = @cellTransforms[i]
-        mtx = M.mul viewMatrix, cellTfm
+        mtx = M.mul @tfm, cellTfm
         @tessellation.makeCellShapePoincare  mtx, context        
     context.fill()
-    return      
+    #true because immediate-mode observer always finishes drawing.
+    return true
   
   checkViewMatrix: ->
     #me = [-1,0,0,  0,-1,0, 0,0,-1]
@@ -71,7 +74,6 @@ class FieldObserver
     if (@viewUpdates+=1) > @maxViewUpdatesBeforeCleanup
       @viewUpdates = 0
       @tfm = M.cleanupHyperbolicMoveMatrix @tfm
-
     
   modifyView: (m) ->
     @tfm = M.mul m, @tfm
@@ -80,15 +82,20 @@ class FieldObserver
     if originDistance > @jumpLimit
       @rebaseView()
     @renderGrid @tfm
-
+    
+  renderGrid: (viewMatrix) ->
+    #for immediaet mode observer, grid is rendered while drawing.
+    @onFinish?()
+    
   viewDistanceToOrigin: ->
     #viewCenter = M.mulv tfm, [0.0,0.0,1.0]
     #Math.acosh(viewCenter[2])
     Math.acosh @tfm[8]
+    
   #build new view around the cell which is currently at the center
   rebaseView: ->
     centerCoord = M.mulv (M.inv @tfm), [0.0, 0.0, 1.0]
-    pathToCenterCell = xytFromCell centerCoord
+    pathToCenterCell = @xyt2path centerCoord
     #console.log "Jump by #{showNode pathToCenterCell}"
     m = nodeMatrixRepr pathToCenterCell, @tessellation.group
 
@@ -98,7 +105,18 @@ class FieldObserver
 
     #move observation point
     @translateBy node2array pathToCenterCell
-        
+
+  #xp, yp in range [-1..1]
+  cellFromPoint:(xp,yp) ->
+    xyt = poincare2hyperblic xp, yp
+    throw new Error("point outside") if xyt is null
+    #inverse transform it...
+    xyt = M.mulv (M.inv @tfm), xyt
+    visibleCell = @xyt2path xyt
+    eliminateFinalA @appendRewrite(@center, node2array(visibleCell)), @appendRewrite, @tessellation.group.n
+    
+  shutdown: -> #nothing to do.
+  
 class FieldObserverWithRemoreRenderer extends FieldObserver
   constructor: (tessellation, appendRewrite, minCellSize=1.0/400.0)->
     super tessellation, appendRewrite, minCellSize
@@ -113,7 +131,6 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
     @rendering = true
     @worker.postMessage ["I", [tessellation.group.n, tessellation.group.m, @cellTransforms]]
     
-    @onFinish = null
     @postponedRenderRequest = null
     
   onMessage: (e) ->
@@ -176,7 +193,7 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
     
 
 #determine cordinates of the cell, containing given point
-xyt2cell = (group, appendRewrite, maxSteps=100) -> 
+makeXYT2path = (group, appendRewrite, maxSteps=100) -> 
   getNeighbors = mooreNeighborhood group.n, group.m, appendRewrite
   cell2point = (cell) -> M.mulv nodeMatrixRepr(cell, group), [0.0,0.0,1.0]
   vectorDist = ([x1,y1,t1], [x2,y2,t2]) ->
@@ -297,6 +314,8 @@ parseTransitionFunction = (str, n, m) ->
 #putRandomBlob = (cells, radius, percent, n, m, appendRewrite)->
   
 # ============================================  app code ===============
+#
+
 canvas = E "canvas"
 context = canvas.getContext "2d"
 minVisibleSize = 1/100
@@ -307,17 +326,12 @@ console.log "Finished"
 appendRewrite = makeAppendRewrite rewriteRuleset
 
 getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, appendRewrite
-xytFromCell = xyt2cell tessellation.group, appendRewrite
 
-viewCenter = null
-#visibleCells = visibleNeighborhood tessellation, appendRewrite, minVisibleSize #farNeighborhood viewCenter, 5, appendRewrite, tessellation.group.n, tessellation.group.m
+ObserverClass = FieldObserverWithRemoreRenderer
+#ObserverClass = FieldObserver
 
-#observer = new FieldObserver tessellation, appendRewrite, minVisibleSize
-# 
-observer = new FieldObserverWithRemoreRenderer tessellation, appendRewrite, minVisibleSize
+observer = new ObserverClass tessellation, appendRewrite, minVisibleSize
 observer.onFinish = -> redraw()
-
-#console.log "Visible field contains #{visibleCells.length} cells"
 
 transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
 dragHandler = null
@@ -374,18 +388,17 @@ toggleCellAt = (x,y) ->
   s = Math.min( canvas.width, canvas.height ) * 0.5
   xp = x/s - 1
   yp = y/s - 1
-  xyt = poincare2hyperblic xp, yp
-  if xyt isnt null
-    #inverse transform it...
-    xyt = M.mulv (M.inv observer.tfm), xyt
-    visibleCell = xytFromCell xyt
-    cell = eliminateFinalA appendRewrite(observer.center, node2array(visibleCell)), appendRewrite, tessellation.group.n
-    #console.log showNode cell
-    if cells.get(cell) isnt null
-      cells.remove cell
-    else
-      cells.put cell, 1
-    redraw()
+  try
+    cell = observer.cellFromPoint xp, yp
+  catch e
+    return
+    
+  if cells.get(cell) isnt null
+    cells.remove cell
+  else
+    cells.put cell, 1
+  redraw()
+    
     
 doCanvasClick = (e) ->
   e.preventDefault()
@@ -446,11 +459,9 @@ setGridImpl = (n, m)->
   console.log "Finished"
   appendRewrite = makeAppendRewrite rewriteRuleset
   getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, appendRewrite
-  xytFromCell = xyt2cell tessellation.group, appendRewrite
   transitionFunc = parseTransitionFunction transitionFunc.toString(), tessellation.group.n, tessellation.group.m
-  #observer = new FieldObserver tessellation, appendRewrite, minVisibleSize
   observer?.shutdown()
-  observer = new FieldObserverWithRemoreRenderer tessellation, appendRewrite, minVisibleSize
+  observer = new ObserverClass tessellation, appendRewrite, minVisibleSize
   observer.onFinish = -> redraw()
 
 moveView = (dx, dy) -> observer.modifyView M.translationMatrix(dx, dy)        
