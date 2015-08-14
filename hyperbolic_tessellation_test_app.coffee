@@ -7,6 +7,8 @@
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {runCommands}= require "./context_delegate.coffee"
 {lzw_encode} = require "./lzw.coffee"
+{Navigator} = require "./navigator.coffee"
+#{shortcut} = require "./shortcut.coffee"
 
 M = require "./matrix3.coffee"
 
@@ -341,6 +343,7 @@ console.log "Running knuth-bendix algorithm...."
 rewriteRuleset = knuthBendix vdRule tessellation.group.n, tessellation.group.m
 console.log "Finished"
 appendRewrite = makeAppendRewrite rewriteRuleset
+navigator = new Navigator
 
 getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, appendRewrite
 
@@ -532,6 +535,11 @@ doExport = ->
   edata = lzw_encode data
   alert "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}"
   E('export').value = edata
+doSearch = ->
+  navigator.search cells, tessellation.group.n, tessellation.group.m, appendRewrite
+
+
+    
 # ============ Bind Events =================
 E("btn-reset").addEventListener "click", doReset
 E("btn-step").addEventListener "click", doStep
@@ -543,4 +551,24 @@ E("btn-set-rule").addEventListener "click", doSetRule
 E("btn-set-grid").addEventListener "click", doSetGrid
 E("btn-export").addEventListener "click", doExport
 E('rule-entry').value = transitionFunc.toString()
+E('btn-search').addEventListener 'click', doSearch
+
+shortcuts =
+  #N
+  '78': doStep
+  #C
+  '67': doReset
+  #S
+  '83': doSearch
+  
+  
+document.addEventListener "keydown", (e)->
+  keyCode = "" + e.keyCode
+  keyCode += "C" if e.ctrlKey
+  keyCode += "A" if e.altKey
+  keyCode += "S" if e.shiftKey
+  #console.log keyCode
+  if (handler = shortcuts[keyCode])?
+    e.preventDefault()
+    handler(e)
 redraw()
