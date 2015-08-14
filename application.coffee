@@ -42,7 +42,14 @@ class FieldObserver
       eliminateFinalA @appendRewrite(newCenter, offset[..]), @appendRewrite, @tessellation.group.n
     @_observedCellsChanged()
     return
-    
+
+  navigateTo: (chain) ->
+    console.log "navigated to #{showNode chain}"
+    @rebuildAt chain
+    @tfm = M.eye()
+    @renderGrid @tfm
+    return
+        
   _observedCellsChanged: ->
     
   translateBy: (appendArray) ->
@@ -264,7 +271,6 @@ console.log "Running knuth-bendix algorithm...."
 rewriteRuleset = knuthBendix vdRule tessellation.group.n, tessellation.group.m
 console.log "Finished"
 appendRewrite = makeAppendRewrite rewriteRuleset
-navigator = new Navigator
 
 getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, appendRewrite
 
@@ -273,6 +279,8 @@ ObserverClass = FieldObserverWithRemoreRenderer
 
 observer = new ObserverClass tessellation, appendRewrite, minVisibleSize
 observer.onFinish = -> redraw()
+
+navigator = new Navigator observer
 
 transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
 dragHandler = null
@@ -405,6 +413,7 @@ setGridImpl = (n, m)->
   observer?.shutdown()
   observer = new ObserverClass tessellation, appendRewrite, minVisibleSize
   observer.onFinish = -> redraw()
+  navigator.setObserver observer
 
 moveView = (dx, dy) -> observer.modifyView M.translationMatrix(dx, dy)        
 rotateView = (angle) -> observer.modifyView M.rotationMatrix angle

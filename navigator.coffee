@@ -5,7 +5,7 @@
 {DomBuilder} = require "./dom_builder.coffee"
 
 exports.Navigator = class Navigator
-  constructor: ->
+  constructor: (@observer) ->
     @clustersElem = document.getElementById "navigator-cluster-list"
     @clusters = []
     
@@ -14,9 +14,13 @@ exports.Navigator = class Navigator
     @clusters = allClusters field, n, m, appendRewrite
     @updateClusterList()
 
-  makeNavigateTo: (chain) -> (e) ->
+  setObserver: (o) -> @observer = o
+  
+  makeNavigateTo: (chain) -> (e) =>
     e.preventDefault()
-    console.log JSON.stringify chain
+    #console.log JSON.stringify chain
+    if @observer?
+      @observer.navigateTo chain
     return
     
   updateClusterList: ->
