@@ -122,6 +122,12 @@ exports.nodeHash = nodeHash = (node) ->
   else
     node.hash()
 
+exports.chainLen = chainLen = (chain)->
+  if chain is null
+    0
+  else
+    chain.l
+    
 ###
 # Reverse compare 2 chains by shortlex algorithm
 ###

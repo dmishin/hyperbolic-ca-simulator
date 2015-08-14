@@ -454,7 +454,27 @@ exports.makeAppendRewriteRef = makeAppendRewriteRef= (rewriteRule) ->
     string2chain rewriteRule.appendRewrite sChain, ungroupedStack.join('')
 
 
+#Remove last element of a chain, if it is A.
+takeLastA = (chain) ->
+  if (chain is null) or (chain.letter isnt 'a')
+    chain
+  else
+    chain.t
+    
+# Add all possible rotations powers of A generator) to the end of the chain,
+# and choose minimal of all chains (by some ordering).
 exports.eliminateFinalA = eliminateFinalA = (chain, appendRewrite, orderA) ->
+  chain = takeLastA chain
+  #zero chain is always shortest, return it.
+  if chain is null
+    return chain
+  #now chain ends with B power, for sure.
+  #if chain.letter isnt 'b' then throw new Error "two A's in the chain!"
+    
+  #bPower = chain.p
+
+  #TODO: only try to append A powers that cause rewriting.
+      
   bestChain = chain
   for i in [1...orderA]
     chain_i = appendRewrite chain, [['a', i]]
