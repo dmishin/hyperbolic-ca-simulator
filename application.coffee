@@ -3,7 +3,7 @@
 {NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
-{mooreNeighborhood, evaluateTotalisticAutomaton, exportField} = require "./field.coffee"
+{mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill} = require "./field.coffee"
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {runCommands}= require "./context_delegate.coffee"
 {lzw_encode} = require "./lzw.coffee"
@@ -468,8 +468,13 @@ doExport = ->
 doSearch = ->
   navigator.search cells, tessellation.group.n, tessellation.group.m, appendRewrite
 
-
-    
+randomFillRadius = 5
+randomFillPercent = 0.4
+doRandomFill = ->
+  randomFill cells, randomFillPercent, null, randomFillRadius, appendRewrite, tessellation.group.n, tessellation.group.m
+  updatePopulation()
+  redraw()
+  
 # ============ Bind Events =================
 E("btn-reset").addEventListener "click", doReset
 E("btn-step").addEventListener "click", doStep
@@ -482,6 +487,7 @@ E("btn-set-grid").addEventListener "click", doSetGrid
 E("btn-export").addEventListener "click", doExport
 E('rule-entry').value = transitionFunc.toString()
 E('btn-search').addEventListener 'click', doSearch
+E('btn-random').addEventListener 'click', doRandomFill
 
 shortcuts =
   #N
@@ -490,7 +496,8 @@ shortcuts =
   '67': doReset
   #S
   '83': doSearch
-  
+  #R
+  '82': doRandomFill
   
 document.addEventListener "keydown", (e)->
   keyCode = "" + e.keyCode

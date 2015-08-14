@@ -153,5 +153,13 @@ exports.importField = (fieldData, cells = new NodeHashMap)->
   putNode null, fieldData
   return cells
       
-  
+exports.randomFill = (field, density, center, r, appendRewrite, n, m) ->
+  if density < 0 or density > 1.0
+    throw new Error "Density must be in [0;1]"
+    
+  for cell in farNeighborhood center, r, appendRewrite, n, m
+    if Math.random() < density
+      field.put cell, 1
+  return
+      
   
