@@ -1,6 +1,6 @@
 # Generates JS code that effectively rewrites
 {RewriteRuleset}= require "./knuth_bendix.coffee"
-{chainEquals, appendSimple} = require "./vondyck_chain.coffee"
+{unity, chainEquals, appendSimple} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, groupPowersVd} = require "./vondyck_rewriter.coffee"
 
 testRewriter = (appendRewrite, sSource, sExpected)->  
@@ -12,8 +12,8 @@ testRewriter = (appendRewrite, sSource, sExpected)->
       rs.reverse()
       return rs
 
-  result = appendRewrite( null, reversed(gSource) )
-  expected = appendSimple( null, reversed(gExpected));
+  result = appendRewrite( unity, reversed(gSource) )
+  expected = appendSimple( unity, reversed(gExpected));
   
   if chainEquals(result, expected)
     console.log("Test #{sSource}->#{sExpected} passed")

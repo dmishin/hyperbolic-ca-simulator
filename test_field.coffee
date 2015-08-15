@@ -2,7 +2,7 @@
 assert = require "assert"
 {allClusters, mooreNeighborhood, exportField, importField} = require "./field"
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
-{NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
+{unity, NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
 describe "allClusters", ->
@@ -16,14 +16,14 @@ describe "allClusters", ->
   
   it "should give one cell, if only one central cell present", ->
     cells = new NodeHashMap
-    cells.put null, 1
+    cells.put unity, 1
     clusters = allClusters cells, N, M, appendRewrite
     assert.equal clusters.length, 1
-    assert.deepEqual clusters, [[null]] #one cluster of 1 cell
+    assert.deepEqual clusters, [[unity]] #one cluster of 1 cell
 
   it "should give one cell, if only one central cell present", ->
     cells = new NodeHashMap
-    c = newNode 'a', 2, newNode 'b', 2, newNode 'a', -1, null
+    c = newNode 'a', 2, newNode 'b', 2, newNode 'a', -1, unity
     c = eliminateFinalA c, appendRewrite, N
     
     cells.put c, 1
@@ -43,10 +43,10 @@ describe "mooreNeighborhood", ->
 
   getNeighbors = mooreNeighborhood N, M, appendRewrite
   eliminate = (chain)-> eliminateFinalA chain, appendRewrite, N
-  rewriteChain = (arr) -> appendRewrite null, arr[..]
+  rewriteChain = (arr) -> appendRewrite unity, arr[..]
   
   cells = []
-  cells.push  null
+  cells.push  unity
   cells.push  eliminate rewriteChain [['b',1]]
   cells.push  eliminate rewriteChain [['b', 2]]
   cells.push  eliminate rewriteChain [['b', 2],['a', 1]]
@@ -82,14 +82,14 @@ describe "exportField", ->
     
   it "must export field with only root cell", ->
     f = new NodeHashMap
-    f.put null, 1
+    f.put unity, 1
     tree = exportField f
     assert.deepEqual tree, {v: 1}
     
   it "must export field with 1 non-root cell", ->
     f = new NodeHashMap
     #ab^3a^2
-    chain = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, null
+    chain = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, unity
     f.put chain, "value"
     tree = exportField f
     assert.deepEqual tree, {
@@ -109,7 +109,7 @@ describe "importField", ->
   it "must import root cell correctly", ->
     f = importField {v: 1}
     assert.equal f.count, 1
-    assert.equal f.get(null), 1
+    assert.equal f.get(unity), 1
   it "must import 1 non-root cell correctly", ->
     tree = {
       cs:[{
@@ -121,7 +121,7 @@ describe "importField", ->
             v: "value"
     }]}]}]}
     #ab^3a^2
-    chain = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, null
+    chain = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, unity
     f = importField tree
     assert.equal f.count, 1
     assert.equal f.get(chain), 'value'
@@ -130,10 +130,10 @@ describe "importField", ->
   it "must import some nontrivial exported field", ->
     f = new NodeHashMap
     #ab^3a^2
-    chain1 = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, null
+    chain1 = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, unity
     #a^-1b^3a^2
-    chain2 = newNode 'a', -1, newNode 'b', 3, newNode 'a',1, null
-    f.put null, "value0"
+    chain2 = newNode 'a', -1, newNode 'b', 3, newNode 'a',1, unity
+    f.put unity, "value0"
     f.put chain1, "value1"
     f.put chain2, "value2"
       
@@ -141,7 +141,7 @@ describe "importField", ->
     f1 = importField exportField f
 
     assert.equal f.count, 3
-    assert.equal f.get(null), 'value0'
+    assert.equal f.get(unity), 'value0'
     assert.equal f.get(chain1), 'value1'
     assert.equal f.get(chain2), 'value2'
     

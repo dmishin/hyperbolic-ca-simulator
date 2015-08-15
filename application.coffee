@@ -1,6 +1,6 @@
 "use strict"
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
-{NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
+{unity, NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 {mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill} = require "./field.coffee"
@@ -20,7 +20,7 @@ colors = ["red", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
 
 class FieldObserver
   constructor: (@tessellation, @appendRewrite, @minCellSize=1.0/400.0)->
-    @center = null
+    @center = unity
     @cells = visibleNeighborhood @tessellation, @appendRewrite, @minCellSize
     @cellOffsets = (node2array(c) for c in @cells)
     @cellTransforms = (nodeMatrixRepr(c, @tessellation.group) for c in @cells)
@@ -204,7 +204,6 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
       for cell, i in @cells
         unless cells.get cell
           runCommands context, @cellShapes[i]
-          null
       context.stroke()
 
     #then cells
@@ -212,7 +211,6 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
     for cell, i in @cells
       if cells.get cell
         runCommands context, @cellShapes[i]
-        null
     context.fill()
     return true
   shutdown: ->
@@ -286,11 +284,11 @@ transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tess
 dragHandler = null
 
 cells = new NodeHashMap
-cells.put null, 1
+cells.put unity, 1
 
 doReset = ->
   cells = new NodeHashMap
-  cells.put null, 1
+  cells.put unity, 1
   updatePopulation()
   redraw()
 
@@ -471,7 +469,7 @@ doSearch = ->
 randomFillRadius = 5
 randomFillPercent = 0.4
 doRandomFill = ->
-  randomFill cells, randomFillPercent, null, randomFillRadius, appendRewrite, tessellation.group.n, tessellation.group.m
+  randomFill cells, randomFillPercent, unity, randomFillRadius, appendRewrite, tessellation.group.n, tessellation.group.m
   updatePopulation()
   redraw()
   

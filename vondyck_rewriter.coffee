@@ -1,6 +1,6 @@
 #Generates JS code that effectively rewrites
 {RewriteRuleset}= require "./knuth_bendix.coffee"
-{NodeA, NodeB, chainEquals, appendSimple, nodeConstructors, newNode, reverseShortlexLess, showNode} = require "./vondyck_chain.coffee"
+{unity, NodeA, NodeB, chainEquals, appendSimple, nodeConstructors, newNode, reverseShortlexLess, showNode} = require "./vondyck_chain.coffee"
 
 collectPowers = ( elemsWithPowers )->
     ### List (elem, power::int) -> List (elem, power::int)
@@ -185,7 +185,7 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
         @block =>
             @line "if (stack.length === 0) {throw new Error('empty stack');}"
             @op("var _e = stack.pop(), element = _e[0], power = _e[1]")
-            @line("if (chain === null)")
+            @line("if (chain === unity)")
             @block =>
                 @line("//empty chain")
                 @line('console.log("Append to empth chain:"+_e);');
@@ -413,14 +413,13 @@ exports.vdRule = vdRule = (n, m, k=2)->
 
 exports.string2chain = string2chain = (s) ->
   #last element of the string is chain head
-  chain = null
   grouped = groupPowersVd s
   grouped.reverse()
-  appendSimple null, grouped
+  appendSimple unity, grouped
 
 exports.chain2string = chain2string = (chain)->
   s = ""
-  while chain isnt null
+  while chain isnt unity
     e = chain.letter
     p = chain.p
     if p < 0
@@ -456,7 +455,7 @@ exports.makeAppendRewriteRef = makeAppendRewriteRef= (rewriteRule) ->
 
 #Remove last element of a chain, if it is A.
 takeLastA = (chain) ->
-  if (chain is null) or (chain.letter isnt 'a')
+  if (chain is unity) or (chain.letter isnt 'a')
     chain
   else
     chain.t
@@ -466,7 +465,7 @@ takeLastA = (chain) ->
 exports.eliminateFinalA = eliminateFinalA = (chain, appendRewrite, orderA) ->
   chain = takeLastA chain
   #zero chain is always shortest, return it.
-  if chain is null
+  if chain is unity
     return chain
   #now chain ends with B power, for sure.
   #if chain.letter isnt 'b' then throw new Error "two A's in the chain!"

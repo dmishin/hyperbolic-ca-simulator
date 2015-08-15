@@ -12,10 +12,12 @@
 #  (To this module actually implements free group of 2 generators...)
 #
 #  To facilitate chain appending/truncating, theyt are implemented as a functional data structure.
-#  Root element is null, it represens identity element of the group.
+#  Root element is `unity`, it represens identity element of the group.
 ###  
 M = require "./matrix3.coffee"
-    
+
+exports.unity = unity = null
+        
 exports.Node = class Node
   hash: ->
     h = @h
@@ -31,7 +33,7 @@ exports.NodeA = class NodeA extends Node
   letter: 'a'
   letterCode: 0
   constructor: (@p, @t)->
-    @l = if @t is null then 1 else @t.l+1
+    @l = if @t is unity then 1 else @t.l+1
     @h = null
     @mtx = null #support for calculating matrix representations
     
@@ -39,15 +41,15 @@ exports.NodeB = class NodeB extends Node
   letter: 'b'
   letterCode: 1
   constructor: (@p, @t)->
-    @l = if @t is null then 1 else @t.l+1
+    @l = if @t is unity then 1 else @t.l+1
     @h = null
     @mtx = null
     
 exports.chainEquals = chainEquals = (a, b) ->
   while true
     return true if a is b 
-    if a is null or b is null
-      return false #a is null and b is null
+    if a is unity or b is unity
+      return false #a is E and b is E
       
     if (a.letter isnt b.letter) or (a.p isnt b.p)
       return false
@@ -56,19 +58,19 @@ exports.chainEquals = chainEquals = (a, b) ->
 
 
 showNode = exports.showNode = (node) ->
-  if node is null
+  if node is unity
     'e'
   else
     showNode(node.t) + node.letter + (if node.p is 1 then '' else "^#{node.p}")
 
 
 exports.truncateA = truncateA = (chain)->
-  while (chain isnt null) and (chain.letter is "a")
+  while (chain isnt unity) and (chain.letter is "a")
     chain = chain.t
   return chain
   
 exports.truncateB = truncateB = (chain)->
-  while (chain isnt null) and (chain.letter is "b")
+  while (chain isnt unity) and (chain.letter is "b")
     chain = chain.t
   return chain
   
@@ -94,7 +96,7 @@ exports.appendSimple = appendSimple = (chain, stack) ->
 ###
 exports.node2array = node2array = (node) ->
   result = []
-  while node isnt null
+  while node isnt unity
     result.push [node.letter, node.p]
     node = node.t
   return result
@@ -103,7 +105,7 @@ exports.node2array = node2array = (node) ->
 identityMatrix = M.eye()
 
 exports.nodeMatrixRepr = nodeMatrixRepr = (node, generatorMatrices) ->
-  if node is null
+  if node is unity
     identityMatrix
   else
     m = node.mtx
@@ -117,13 +119,13 @@ exports.nodeMatrixRepr = nodeMatrixRepr = (node, generatorMatrices) ->
 # Hash function of the node
 #
 exports.nodeHash = nodeHash = (node) ->
-  if node is null
+  if node is unity
     0
   else
     node.hash()
 
 exports.chainLen = chainLen = (chain)->
-  if chain is null
+  if chain is unity
     0
   else
     chain.l
@@ -132,18 +134,18 @@ exports.chainLen = chainLen = (chain)->
 # Reverse compare 2 chains by shortlex algorithm
 ###
 exports.reverseShortlexLess = reverseShortlexLess = (c1, c2) ->
-  if c1 is null
-    return c2 isnt null
+  if c1 is unity
+    return c2 isnt unity
   else
-    #c1 not null
-    if c2 is null
+    #c1 not unity
+    if c2 is unity
       return false
     else
-      #neither is null
+      #neither is unity
       if c1.l isnt c2.l
         return c1.l < c2.l
       #both are equal length
-      while c1 isnt null
+      while c1 isnt unity
         if c1.letter isnt c2.letter
           return c1.letter < c2.letter
         if c1.p isnt c2.p

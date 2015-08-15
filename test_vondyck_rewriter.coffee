@@ -1,17 +1,17 @@
 assert = require "assert"
 {RewriteRuleset} = require  "./knuth_bendix.coffee"
 {string2chain, chain2string, makeAppendRewriteRef, makeAppendRewrite, extendLastPowerRewriteTable} = require "./vondyck_rewriter.coffee"
-{chainEquals, newNode, showNode} = require "./vondyck_chain.coffee"
+{unity, chainEquals, newNode, showNode} = require "./vondyck_chain.coffee"
 
 describe "string2chain", ->
   it "must convert empty string", ->
-    assert.equal null, string2chain ""
+    assert.equal unity, string2chain ""
 
   it "must convert  nonempty strings", ->
-    assert chainEquals string2chain("a"), newNode('a', 1, null) 
-    assert chainEquals string2chain("A"), newNode('a', -1, null) 
-    assert chainEquals string2chain("aa"), newNode('a', 2, null) 
-    assert chainEquals string2chain("AA"), newNode('a', -2, null) 
+    assert chainEquals string2chain("a"), newNode('a', 1, unity) 
+    assert chainEquals string2chain("A"), newNode('a', -1, unity) 
+    assert chainEquals string2chain("aa"), newNode('a', 2, unity) 
+    assert chainEquals string2chain("AA"), newNode('a', -2, unity) 
 
   it "must convert complex chains", ->
     assert chainEquals 
@@ -20,14 +20,14 @@ describe "string2chain", ->
 
 describe "chain2string", ->
   it "must convert empty chain", ->
-    assert.equal chain2string(null), ""
+    assert.equal chain2string(unity), ""
   it "must convert simple nonempty chain", ->
-    assert.equal chain2string(newNode('a', 2, null)), "aa"
-    assert.equal chain2string(newNode('a', -3, null)), "AAA"
-    assert.equal chain2string(newNode('b', 1, null)), "b"
+    assert.equal chain2string(newNode('a', 2, unity)), "aa"
+    assert.equal chain2string(newNode('a', -3, unity)), "AAA"
+    assert.equal chain2string(newNode('b', 1, unity)), "b"
 
   it "must convert complex nonempty chain", ->
-    c = newNode('a', -1, newNode('b', -3, newNode('a', 2, null)))
+    c = newNode('a', -1, newNode('b', -3, newNode('a', 2, unity)))
     assert.equal chain2string(c), "aaBBBA"
 
 
@@ -60,7 +60,7 @@ describe "Compiled rewriter", ->
   refRewriter = makeAppendRewriteRef rewriteTable
   compiledRewriter = makeAppendRewrite rewriteTable
 
-  doTest = ( stack, chain0=null ) ->
+  doTest = ( stack, chain0=unity ) ->
     #console.log "should stringify #{JSON.stringify stack}"
     #console.log "#{showNode chainRef} != #{showNode chain}"
     chainRef = refRewriter chain0, stack[..]
@@ -86,7 +86,7 @@ describe "Compiled rewriter", ->
   #it "must produce same result as reference rewriter", ->
   #  walkChains [], 3, doTest
   #chain = ba^-2b, stack: [["a",1]], refValue: a^-1b^-1ab^-1, value: ba^2b^-1
-  doTest [["a",1]], newNode('b',1, newNode('a',-2, newNode('b',1,null)))
+  doTest [["a",1]], newNode('b',1, newNode('a',-2, newNode('b',1,unity)))
 
 describe "extendLastPowerRewriteTable", ->    
   it "must extend positive powers", ->

@@ -1,5 +1,5 @@
 #{Tessellation} = require "./hyperbolic_tessellation.coffee"
-{NodeHashMap, newNode, showNode, node2array} = require "./vondyck_chain.coffee"
+{unity, NodeHashMap, newNode, showNode, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 #{RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
@@ -117,7 +117,7 @@ exports.exportField = (cells) ->
   root = {
   }
   chain2treeNode = new NodeHashMap
-  chain2treeNode.put null, root
+  chain2treeNode.put unity, root
   
   putChain = (chain) -> #returns tree node for that chain
     node = chain2treeNode.get chain
@@ -150,7 +150,7 @@ exports.importField = (fieldData, cells = new NodeHashMap)->
         else
           throw new Error "Node has neither A nor B generator"
     return
-  putNode null, fieldData
+  putNode unity, fieldData
   return cells
       
 exports.randomFill = (field, density, center, r, appendRewrite, n, m) ->

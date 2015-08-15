@@ -1,26 +1,26 @@
 assert = require "assert"
-{reverseShortlexLess, nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, NodeHashMap, reverseShortlexLess} = require "./vondyck_chain.coffee"
+{unity, reverseShortlexLess, nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, NodeHashMap, reverseShortlexLess} = require "./vondyck_chain.coffee"
 M = require "./matrix3.coffee"
 {CenteredVonDyck} = require "./triangle_group_representation.coffee"
 
 describe "chainEquals", ->
   it "should return true for empty chains", ->
-    assert chainEquals null, null
+    assert chainEquals unity, unity
   it "should return false for comparing non-empty with empty", ->
-    a1 = new NodeA(1,null)
-    b1 = new NodeB(1,null)
-    assert not chainEquals null, a1
-    assert not chainEquals a1, null
-    assert not chainEquals null, b1
-    assert not chainEquals b1, null
+    a1 = new NodeA(1,unity)
+    b1 = new NodeB(1,unity)
+    assert not chainEquals unity, a1
+    assert not chainEquals a1, unity
+    assert not chainEquals unity, b1
+    assert not chainEquals b1, unity
 
   it "should correctly compare chains of length 1", ->
-    a1 = new NodeA(1,null)
-    a1_ = new NodeA(1,null)
+    a1 = new NodeA(1,unity)
+    a1_ = new NodeA(1,unity)
     
-    b1 = new NodeB(1,null)
+    b1 = new NodeB(1,unity)
     
-    a2 = new NodeA(2,null)
+    a2 = new NodeA(2,unity)
 
 
     assert chainEquals a1, a1
@@ -35,24 +35,24 @@ describe "chainEquals", ->
   
   it "should compare chains of length 2 and more", ->
 
-    a1b1 = new NodeA(1, new NodeB(1, null))
-    a1b2 = new NodeA(1, new NodeB(2, null))
-    a1b1a3 = new NodeA(1, new NodeB(1, new NodeA(3, null)))
+    a1b1 = new NodeA(1, new NodeB(1, unity))
+    a1b2 = new NodeA(1, new NodeB(2, unity))
+    a1b1a3 = new NodeA(1, new NodeB(1, new NodeA(3, unity)))
     
     assert chainEquals a1b1, a1b1
     assert not chainEquals a1b1, a1b2
     assert not chainEquals a1b1, a1b1a3
-    assert not chainEquals a1b1, null
+    assert not chainEquals a1b1, unity
   
 describe "nodeHash", ->
   isNumber = (x) -> parseInt(''+x, 10) is x
   it "must return different values for empty node, nodes of lenght 1", ->
-    e = null
-    a1 = newNode('a', 1, null)
-    a1b1 = newNode('a', 1, newNode('b', 1, null))
-    a2 = newNode('a', 2, null)
-    b1 = newNode('b', 1, null)
-    b2 = newNode('b', 2, null)
+    e = unity
+    a1 = newNode('a', 1, unity)
+    a1b1 = newNode('a', 1, newNode('b', 1, unity))
+    a2 = newNode('a', 2, unity)
+    b1 = newNode('b', 1, unity)
+    b2 = newNode('b', 2, unity)
 
     chains = [e, a1, a2, b1, b2, a1b1]
 
@@ -71,24 +71,24 @@ describe "nodeHash", ->
 describe "NodeHashMap", ->
   it "should support putting and removing empty chain", ->
     m = new NodeHashMap
-    m.put null, "empty"
-    assert.equal m.get(null), "empty"
+    m.put unity, "empty"
+    assert.equal m.get(unity), "empty"
     assert.equal m.count, 1
   
-    m.put null, "empty1"
-    assert.equal m.get(null), "empty1"
+    m.put unity, "empty1"
+    assert.equal m.get(unity), "empty1"
     assert.equal m.count, 1
 
-    assert m.remove null
-    assert.equal m.get(null), null
+    assert m.remove unity
+    assert.equal m.get(unity), null
     assert.equal m.count, 0
 
   it "should support putting and removing non - empty chains", ->
     m = new NodeHashMap
-    e = null
-    a1 = newNode("a", 1, null)
-    b2 = newNode("b", 2, null)
-    a1b1 = newNode("a", 1, newNode("b", 1, null))
+    e = unity
+    a1 = newNode("a", 1, unity)
+    b2 = newNode("b", 2, unity)
+    a1b1 = newNode("a", 1, newNode("b", 1, unity))
     
     m.put e, "e"
     m.put a1, "a1"
@@ -104,9 +104,9 @@ describe "NodeHashMap", ->
     
   it "should support copy", ->
     m = new NodeHashMap
-    c1 = null
-    c2 = newNode 'a', 2, null
-    c3 = newNode 'b', 3, null
+    c1 = unity
+    c2 = newNode 'a', 2, unity
+    c3 = newNode 'b', 3, unity
     c4 = newNode 'a', -1, c3
     cells = [c1,c2,c3,c4]
 
@@ -138,9 +138,9 @@ describe "NodeHashMap", ->
 
   it "should remove cells without corrupting data", ->
     m = new NodeHashMap
-    c1 = null
-    c2 = newNode 'a', 2, null
-    c3 = newNode 'b', 3, null
+    c1 = unity
+    c2 = newNode 'a', 2, unity
+    c3 = newNode 'b', 3, unity
     c4 = newNode 'a', -1, c3
     cells = [c1,c2,c3,c4]
 
@@ -179,7 +179,7 @@ describe "NodeHashMap", ->
     initialTableSize = m.table.length
     
     for i1 in [-5..5]
-      a1 = newNode 'a', i1, null
+      a1 = newNode 'a', i1, unity
       for i2 in [-5..5]
         a2 = newNode 'b', i2, a1
         for i3 in [-5..5]
@@ -193,7 +193,7 @@ describe "NodeHashMap", ->
     assert.equal m.count, 11**5
 
     for i1 in [-5..5]
-      a1 = newNode 'a', i1, null
+      a1 = newNode 'a', i1, unity
       for i2 in [-5..5]
         a2 = newNode 'b', i2, a1
         for i3 in [-5..5]
@@ -216,26 +216,26 @@ describe "nodeMatrixRepr", ->
   group = new CenteredVonDyck 4, 4
   
   it "should return unity matrix for empty node", ->
-    assert M.approxEq nodeMatrixRepr(null, group), M.eye()
+    assert M.approxEq nodeMatrixRepr(unity, group), M.eye()
 
 describe "reverseShortlexLess", ->
-  chain_a = newNode('a',1,null)
-  chain_B = newNode('b',-1,null)
-  chain_Baa = newNode('b',-1,newNode('a',2,null))
+  chain_a = newNode('a',1,unity)
+  chain_B = newNode('b',-1,unity)
+  chain_Baa = newNode('b',-1,newNode('a',2,unity))
   it "should return false for equal chains", ->
-    assert not reverseShortlexLess null, null
+    assert not reverseShortlexLess unity, unity
     assert not reverseShortlexLess chain_a, chain_a
     assert not reverseShortlexLess chain_B, chain_B
     assert not reverseShortlexLess chain_Baa, chain_Baa
     
   it "should compare chains of different len", ->
-    assert reverseShortlexLess null, chain_a
-    assert reverseShortlexLess null, chain_B
-    assert reverseShortlexLess null, chain_Baa
+    assert reverseShortlexLess unity, chain_a
+    assert reverseShortlexLess unity, chain_B
+    assert reverseShortlexLess unity, chain_Baa
 
-    assert not reverseShortlexLess chain_a, null
-    assert not reverseShortlexLess chain_B, null
-    assert not reverseShortlexLess chain_Baa, null
+    assert not reverseShortlexLess chain_a, unity
+    assert not reverseShortlexLess chain_B, unity
+    assert not reverseShortlexLess chain_Baa, unity
 
     assert reverseShortlexLess chain_a, chain_Baa
     assert not reverseShortlexLess chain_Baa, chain_a

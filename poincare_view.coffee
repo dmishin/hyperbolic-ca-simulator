@@ -1,6 +1,6 @@
 {mooreNeighborhood} = require "./field.coffee"
 M = require "./matrix3.coffee"
-{nodeMatrixRepr, node2array, NodeHashMap} = require "./vondyck_chain.coffee"
+{unity, nodeMatrixRepr, node2array, NodeHashMap} = require "./vondyck_chain.coffee"
 
 
 #determine cordinates of the cell, containing given point
@@ -25,7 +25,7 @@ exports.makeXYT2path = (group, appendRewrite, maxSteps=100) ->
     
   return (xyt) ->
     #FInally, search    
-    cell = null #start search at origin
+    cell = unity #start search at origin
     cellDist = vectorDist cell2point(cell), xyt
     #Just in case, avoid infinite iteration
     step = 0
@@ -75,7 +75,7 @@ exports.visibleNeighborhood = (tessellation, appendRewrite, minCellSize) ->
       for nei in getNeighbors cell
         walk nei
     return
-  walk null
+  walk unity
   visibleCells = []
   cells.forItems (cell, size)->
     if size >= minCellSize
