@@ -3,7 +3,7 @@
 {unity, inverseChain, appendChain, NodeHashMap, newNode, showNode, chainEquals, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
-{stringifyFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill} = require "./field.coffee"
+{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill} = require "./field.coffee"
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {runCommands}= require "./context_delegate.coffee"
 {lzw_encode} = require "./lzw.coffee"
@@ -507,12 +507,15 @@ encodeVisible = ->
   visibleCells = new NodeHashMap
   for [cell, state] in observer.visibleCells cells
     translatedCell = appendChain iCenter, cell, appendRewrite
+    translatedCell = eliminateFinalA translatedCell, appendRewrite, tessellation.group.n
     visibleCells.put translatedCell, state
   return exportField visibleCells
 
 doExportVisible = ->
-  alert stringifyFieldData encodeVisible()            
-
+  sdata = stringifyFieldData encodeVisible()
+  alert sdata
+  #alert JSON.stringify parseFieldData sdata
+  
 randomFillRadius = 5
 randomFillPercent = 0.4
 doRandomFill = ->
