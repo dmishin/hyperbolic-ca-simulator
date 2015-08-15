@@ -3,7 +3,7 @@
 {unity, inverseChain, appendChain, NodeHashMap, newNode, showNode, chainEquals, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
-{mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill} = require "./field.coffee"
+{stringifyFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill} = require "./field.coffee"
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {runCommands}= require "./context_delegate.coffee"
 {lzw_encode} = require "./lzw.coffee"
@@ -30,7 +30,7 @@ class FieldObserver
     
     @viewUpdates = 0
     #precision falls from 1e-16 to 1e-9 in 1000 steps.
-    @maxViewUpdatesBeforeCleanup = 500
+    @maxViewUpdatesBeforeCleanup = 50
     @xyt2path = makeXYT2path @tessellation.group, @appendRewrite
 
     @onFinish = null
@@ -87,13 +87,14 @@ class FieldObserver
         
   checkViewMatrix: ->
     #me = [-1,0,0,  0,-1,0, 0,0,-1]
-    #d = M.add( me, M.mul(tfm, M.hyperbolicInv tfm))
+    #d = M.add( me, M.mul(@tfm, M.hyperbolicInv @tfm))
     #ad = (Math.abs(x) for x in d)
     #maxDiff = Math.max( ad ... )
-    #console.log "Step: #{viewUpdates}, R: #{maxDiff}"
+    #console.log "Step: #{@viewUpdates}, R: #{maxDiff}"
     if (@viewUpdates+=1) > @maxViewUpdatesBeforeCleanup
       @viewUpdates = 0
       @tfm = M.cleanupHyperbolicMoveMatrix @tfm
+      #console.log "cleanup"
     
   modifyView: (m) ->
     @tfm = M.mul m, @tfm
@@ -101,7 +102,8 @@ class FieldObserver
     originDistance = @viewDistanceToOrigin()
     if originDistance > @jumpLimit
       @rebaseView()
-    @renderGrid @tfm
+    else
+      @renderGrid @tfm
     
   renderGrid: (viewMatrix) ->
     #for immediaet mode observer, grid is rendered while drawing.
@@ -116,6 +118,8 @@ class FieldObserver
   rebaseView: ->
     centerCoord = M.mulv (M.inv @tfm), [0.0, 0.0, 1.0]
     pathToCenterCell = @xyt2path centerCoord
+    if pathToCenterCell is unity
+      return
     #console.log "Jump by #{showNode pathToCenterCell}"
     m = pathToCenterCell.repr @tessellation.group
 
@@ -123,8 +127,10 @@ class FieldObserver
     @tfm = M.mul @tfm, m
     @checkViewMatrix()
 
+    #console.log JSON.stringify @tfm
     #move observation point
     @translateBy node2array pathToCenterCell
+    @renderGrid @tfm
 
   #xp, yp in range [-1..1]
   cellFromPoint:(xp,yp) ->
@@ -279,8 +285,8 @@ appendRewrite = makeAppendRewrite rewriteRuleset
 
 getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, appendRewrite
 
-ObserverClass = FieldObserverWithRemoreRenderer
-#ObserverClass = FieldObserver
+#ObserverClass = FieldObserverWithRemoreRenderer
+ObserverClass = FieldObserver
 
 observer = new ObserverClass tessellation, appendRewrite, minVisibleSize
 observer.onFinish = -> redraw()
@@ -440,6 +446,9 @@ redrawLoop()
 
 class MouseToolPan extends MouseTool
   constructor: (@x0, @y0) ->
+    @panEventDebouncer = new Debouncer 1000, =>
+      observer.rebaseView()
+      
   mouseMoved: (e)->
     [x, y] = getCanvasCursorPosition e, canvas
     dx = x - @x0
@@ -449,6 +458,7 @@ class MouseToolPan extends MouseTool
     @y0 = y
     k = 2.0 / canvas.height
     moveView dx*k , dy*k
+    @panEventDebouncer.fire()
     
 class MouseToolRotate extends MouseTool
   constructor: (x, y) ->
@@ -493,7 +503,7 @@ doClearMemory = ->
   
 
 encodeVisible = ->
-  iCenter = inverseChain observer.getViewCenter(), appendRewrite
+  iCenter = inverseChain observer.cellFromPoint(0,0), appendRewrite
   visibleCells = new NodeHashMap
   for [cell, state] in observer.visibleCells cells
     translatedCell = appendChain iCenter, cell, appendRewrite
@@ -501,7 +511,7 @@ encodeVisible = ->
   return exportField visibleCells
 
 doExportVisible = ->
-  alert JSON.stringify encodeVisible()            
+  alert stringifyFieldData encodeVisible()            
 
 randomFillRadius = 5
 randomFillPercent = 0.4
@@ -509,7 +519,17 @@ doRandomFill = ->
   randomFill cells, randomFillPercent, unity, randomFillRadius, appendRewrite, tessellation.group.n, tessellation.group.m
   updatePopulation()
   redraw()
-  
+
+class Debouncer
+  constructor: (@timeout, @callback) ->
+    @timer = null
+  fire:  ->
+    if @timer
+      clearTimeout @timer
+    @timer = setTimeout (=>@onTimer()), @timeout
+  onTimer: ->
+    @timer = null
+    @callback()
 # ============ Bind Events =================
 E("btn-reset").addEventListener "click", doReset
 E("btn-step").addEventListener "click", doStep

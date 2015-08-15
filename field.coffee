@@ -163,3 +163,21 @@ exports.randomFill = (field, density, center, r, appendRewrite, n, m) ->
   return
       
   
+
+exports.stringifyFieldData = (data) ->
+  parts = []
+  doStringify = (data)->
+    if data.v?
+      parts.push " "+data.v
+    if data.cs?
+      for child in data.cs
+        parts.push ' ('
+        if child.a?
+          parts.push "a #{child.a}"
+        else if child.b?
+          parts.push "b #{child.b}"
+        else throw new Error "bad data, neither a nor b"
+        doStringify child
+        parts.push ')'
+  doStringify(data)
+  return parts.join ""
