@@ -136,11 +136,12 @@ exports.exportField = (cells) ->
 
   return root
 
-exports.importField = (fieldData, cells = new NodeHashMap)->
+
+exports.importFieldTo = importFieldTo = (fieldData, callback) ->
   putNode = (rootChain, rootNode)->
     if rootNode.v?
       #node is a cell that stores some value?
-      cells.put rootChain, rootNode.v
+      callback rootChain, rootNode.v
     if rootNode.cs?
       for childNode in rootNode.cs
         if childNode.a?
@@ -151,6 +152,10 @@ exports.importField = (fieldData, cells = new NodeHashMap)->
           throw new Error "Node has neither A nor B generator"
     return
   putNode unity, fieldData
+    
+exports.importField = (fieldData, cells = new NodeHashMap)->
+  importFieldTo fieldData, (chain, value) ->
+    cells.put chain, value
   return cells
       
 exports.randomFill = (field, density, center, r, appendRewrite, n, m) ->
@@ -166,19 +171,30 @@ exports.randomFill = (field, density, center, r, appendRewrite, n, m) ->
 
 exports.stringifyFieldData = (data) ->
   parts = []
+  needSep = false
+  sep = ->
+    parts.push " " if needSep
+    needSep = false
+    
   doStringify = (data)->
     if data.v?
-      parts.push " "+data.v
+      sep()
+      parts.push data.v
+      needSep = true
+      
     if data.cs?
       for child in data.cs
-        parts.push ' ('
+        sep()
+        parts.push '('
         if child.a?
           parts.push "a #{child.a}"
         else if child.b?
           parts.push "b #{child.b}"
         else throw new Error "bad data, neither a nor b"
+        needSep = true
         doStringify child
         parts.push ')'
+        needSep = true
   doStringify(data)
   return parts.join ""
 

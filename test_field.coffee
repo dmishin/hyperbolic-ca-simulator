@@ -1,6 +1,6 @@
 
 assert = require "assert"
-{allClusters, mooreNeighborhood, exportField, importField} = require "./field"
+{stringifyFieldData, parseFieldData, allClusters, mooreNeighborhood, exportField, importField} = require "./field"
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {unity, NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
@@ -102,6 +102,47 @@ describe "exportField", ->
             v: "value"
     }]}]}]}
     
+describe "stringifyFieldData", ->
+  it "must stringify empty", ->
+    f = {}
+    assert.equal stringifyFieldData(f), ""
+  it "must cell at origin", ->
+    f = {v:1}
+    assert.equal stringifyFieldData(f), "1"
+  it "must other cells", ->
+    f ={
+      v:1
+      cs: [
+        {
+          a:1
+          v:2
+        },{
+          a:2
+          v:3
+    }]}
+    assert.equal stringifyFieldData(f), "1 (a 1 2) (a 2 3)"
+
+describe "parseFieldData", ->
+  it "must parse empty string", ->
+    f = parseFieldData ""
+    assert.deepEqual f, {}
+  it "must parse cell at origin", ->
+    f = parseFieldData "1"
+    assert.deepEqual f, {v:1}
+  it "must parse non-trivial", ->
+    tree = {
+      cs:[{
+        a: 1
+        cs: [{
+          b: 3
+          cs: [{
+            a: 2
+            v: 1
+    }]}]}]}
+    f = parseFieldData "(a 1 (b 3 (a 2 1)))"
+    assert.deepEqual f, tree
+    
+
 describe "importField", ->
   it "must import empty field correctly", ->
     f = importField {}
