@@ -34,7 +34,10 @@ class FieldObserver
     @xyt2path = makeXYT2path @tessellation.group, @appendRewrite
 
     @onFinish = null
-
+    
+  getViewCenter: ->@center
+  getViewOffsetMatrix: ->@tfm
+  
   rebuildAt: (newCenter) ->
     @center = newCenter
     @cells = for offset in @cellOffsets
@@ -43,10 +46,10 @@ class FieldObserver
     @_observedCellsChanged()
     return
 
-  navigateTo: (chain) ->
+  navigateTo: (chain, offsetMatrix=M.eye()) ->
     console.log "navigated to #{showNode chain}"
     @rebuildAt chain
-    @tfm = M.eye()
+    @tfm = offsetMatrix
     @renderGrid @tfm
     return
         
@@ -466,6 +469,26 @@ doExport = ->
 doSearch = ->
   navigator.search cells, tessellation.group.n, tessellation.group.m, appendRewrite
 
+memo = null
+doMemorize = ->
+  memo =
+    cells: cells.copy()
+    viewCenter: observer.getViewCenter()
+    viewOffset: observer.getViewOffsetMatrix()
+  console.log "Position memoized"
+
+doRemember = ->
+  if memo is null
+    console.log "nothing to remember"
+  else
+    cells = memo.cells.copy()
+    observer.navigateTo memo.viewCenter, memo.viewOffset
+
+doClearMemory = ->
+  memo = null        
+  
+  
+
 randomFillRadius = 5
 randomFillPercent = 0.4
 doRandomFill = ->
@@ -487,6 +510,10 @@ E('rule-entry').value = transitionFunc.toString()
 E('btn-search').addEventListener 'click', doSearch
 E('btn-random').addEventListener 'click', doRandomFill
 
+E('btn-mem-set').addEventListener 'click', doMemorize
+E('btn-mem-get').addEventListener 'click', doRemember
+E('btn-mem-clear').addEventListener 'click', doClearMemory
+
 shortcuts =
   #N
   '78': doStep
@@ -496,6 +523,13 @@ shortcuts =
   '83': doSearch
   #R
   '82': doRandomFill
+
+  #M
+  '77': doMemorize
+  #U
+  '85': doRemember
+  '77A': doClearMemory
+  
   
 document.addEventListener "keydown", (e)->
   keyCode = "" + e.keyCode
