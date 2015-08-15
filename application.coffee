@@ -1,6 +1,6 @@
 "use strict"
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
-{unity, NodeHashMap, newNode, showNode, chainEquals, node2array} = require "./vondyck_chain.coffee"
+{unity, inverseChain, appendChain, NodeHashMap, newNode, showNode, chainEquals, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 {mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill} = require "./field.coffee"
@@ -80,7 +80,11 @@ class FieldObserver
     context.fill()
     #true because immediate-mode observer always finishes drawing.
     return true
-  
+    
+  visibleCells: (cells) ->
+    for cell in @cells when (value=cells.get(cell)) isnt null
+      [cell, value]
+        
   checkViewMatrix: ->
     #me = [-1,0,0,  0,-1,0, 0,0,-1]
     #d = M.add( me, M.mul(tfm, M.hyperbolicInv tfm))
@@ -487,7 +491,17 @@ doRemember = ->
 doClearMemory = ->
   memo = null        
   
-  
+
+encodeVisible = ->
+  iCenter = inverseChain observer.getViewCenter(), appendRewrite
+  visibleCells = new NodeHashMap
+  for [cell, state] in observer.visibleCells cells
+    translatedCell = appendChain iCenter, cell, appendRewrite
+    visibleCells.put translatedCell, state
+  return exportField visibleCells
+
+doExportVisible = ->
+  alert JSON.stringify encodeVisible()            
 
 randomFillRadius = 5
 randomFillPercent = 0.4
@@ -513,6 +527,7 @@ E('btn-random').addEventListener 'click', doRandomFill
 E('btn-mem-set').addEventListener 'click', doMemorize
 E('btn-mem-get').addEventListener 'click', doRemember
 E('btn-mem-clear').addEventListener 'click', doClearMemory
+E('btn-exp-visible').addEventListener 'click', doExportVisible
 
 shortcuts =
   #N
