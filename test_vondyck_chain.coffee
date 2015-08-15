@@ -1,7 +1,13 @@
 assert = require "assert"
-{unity, reverseShortlexLess, nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, NodeHashMap, reverseShortlexLess} = require "./vondyck_chain.coffee"
+{unity, reverseShortlexLess, nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, NodeHashMap, reverseShortlexLess, inverseChain, appendChain} = require "./vondyck_chain.coffee"
+
 M = require "./matrix3.coffee"
+
 {CenteredVonDyck} = require "./triangle_group_representation.coffee"
+
+#for testing algebra
+{makeAppendRewrite, vdRule} = require "./vondyck_rewriter.coffee"
+{RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
 describe "chainEquals", ->
   it "should return true for empty chains", ->
@@ -244,3 +250,48 @@ describe "reverseShortlexLess", ->
   it "should compare chains of same len", ->
     assert reverseShortlexLess chain_a, chain_B
     assert not reverseShortlexLess chain_B, chain_a
+
+describe "inverseChain", ->
+  n = 5
+  m = 4
+  rewriteRuleset = knuthBendix vdRule n, m
+  appendRewrite = makeAppendRewrite rewriteRuleset
+  
+  it "should inverse unity", ->
+    assert chainEquals unity, inverseChain(unity, appendRewrite)
+  it "should inverse simple 1-element values", ->
+    c = newNode 'a', 1, unity
+    ic = newNode 'a', -1, unity
+    assert chainEquals inverseChain(c, appendRewrite), ic
+
+
+  it "should return same chain after double rewrite", ->
+
+    c = appendRewrite unity, [['b',1],['a',2],['b',-2],['a',3],['b',1]]
+    ic = inverseChain c, appendRewrite
+    iic = inverseChain ic, appendRewrite
+
+    assert chainEquals c, iic
+
+describe "appendChain", ->
+  n = 5
+  m = 4
+  rewriteRuleset = knuthBendix vdRule n, m
+  appendRewrite = makeAppendRewrite rewriteRuleset
+  
+
+  it "choud append unity", ->
+    assert chainEquals unity, appendChain(unity, unity, appendRewrite)
+
+    c = newNode 'a', 1, unity
+    assert chainEquals c, appendChain(c, unity, appendRewrite)
+    assert chainEquals c, appendChain(unity, c, appendRewrite)
+
+  it "shouls append inverse and return unity", ->
+
+    c = appendRewrite unity, [['b',1],['a',2],['b',-2],['a',3],['b',1]]
+
+    ic = inverseChain c, appendRewrite
+
+    assert chainEquals unity, appendChain c, ic, appendRewrite
+    assert chainEquals unity, appendChain ic, c, appendRewrite    

@@ -30,6 +30,7 @@ exports.Node = class Node
         m
       else
         @mtx = M.mul @t.repr(generatorMatrices), generatorMatrices.generatorPower(@letter, @p)
+  equals: (c) -> chainEquals(this, c)
           
 identityMatrix = M.eye()
 
@@ -59,7 +60,7 @@ exports.chainEquals = chainEquals = (a, b) ->
   while true
     return true if a is b 
     if a is unity or b is unity
-      return false #a is E and b is E
+      return false #a is E and b is E, but not both
       
     if (a.letter isnt b.letter) or (a.p isnt b.p)
       return false
@@ -226,3 +227,14 @@ exports.NodeHashMap = class NodeHashMap
 
     return copied
   
+
+#Inverse element of the chain
+exports.inverseChain = inverseChain = (c, appendRewrite) ->
+  elementsWithPowers = node2array c
+  elementsWithPowers.reverse()
+  for e_p in elementsWithPowers
+    e_p[1] *= -1
+  appendRewrite unity, elementsWithPowers
+
+exports.appendChain = appendChain = (c1, c2, appendRewrite) ->
+  appendRewrite c1, node2array(c2)  
