@@ -16,18 +16,28 @@
 ###  
 M = require "./matrix3.coffee"
 
-exports.unity = unity = null
         
 exports.Node = class Node
   hash: ->
-    h = @h
-    if h isnt null
+    if (h = @h) isnt null
       h
     else
       #seen here: http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
-      h = nodeHash @t
+      h = @t.hash()
       @h = (((h<<5)-h) + (@letterCode<<7) + @p) | 0
-      
+  repr: (generatorMatrices) ->
+      if (m = @mtx) isnt null
+        m
+      else
+        @mtx = M.mul @t.repr(generatorMatrices), generatorMatrices.generatorPower(@letter, @p)
+          
+identityMatrix = M.eye()
+
+exports.unity = unity = new Node
+unity.l = 0
+unity.h = 0
+unity.mtx = M.eye()
+unity.repr = (g) -> @.mtx #jsut reload with a faster code.
   
 exports.NodeA = class NodeA extends Node
   letter: 'a'
@@ -102,33 +112,15 @@ exports.node2array = node2array = (node) ->
   return result
 
 
-identityMatrix = M.eye()
 
-exports.nodeMatrixRepr = nodeMatrixRepr = (node, generatorMatrices) ->
-  if node is unity
-    identityMatrix
-  else
-    m = node.mtx
-    if m isnt null
-      m
-    else
-      node.mtx = M.mul nodeMatrixRepr(node.t, generatorMatrices), generatorMatrices.generatorPower(node.letter, node.p)
+exports.nodeMatrixRepr = nodeMatrixRepr = (node, generatorMatrices) -> node.repr(generatorMatrices)
     
 
 
 # Hash function of the node
 #
-exports.nodeHash = nodeHash = (node) ->
-  if node is unity
-    0
-  else
-    node.hash()
-
-exports.chainLen = chainLen = (chain)->
-  if chain is unity
-    0
-  else
-    chain.l
+exports.nodeHash = nodeHash = (node) -> node.hash()
+exports.chainLen = chainLen = (chain)-> chain.l
     
 ###
 # Reverse compare 2 chains by shortlex algorithm
@@ -168,7 +160,7 @@ exports.NodeHashMap = class NodeHashMap
     
     @sizeMask = initialSize - 1
 
-  _index: (chain) -> nodeHash(chain) & @sizeMask
+  _index: (chain) -> chain.hash() & @sizeMask
     
   putAccumulate: (chain, value, accumulateFunc)->
     cell = @table[@_index chain]

@@ -6,7 +6,7 @@ M = require "./matrix3.coffee"
 #determine cordinates of the cell, containing given point
 exports.makeXYT2path = (group, appendRewrite, maxSteps=100) -> 
   getNeighbors = mooreNeighborhood group.n, group.m, appendRewrite
-  cell2point = (cell) -> M.mulv nodeMatrixRepr(cell, group), [0.0,0.0,1.0]
+  cell2point = (cell) -> M.mulv cell.repr(group), [0.0,0.0,1.0]
   vectorDist = ([x1,y1,t1], [x2,y2,t2]) ->
     #actually, this is the correct way:
     # Math.acosh t1*t2 - x1*x2 - y1*y2
@@ -69,7 +69,7 @@ exports.visibleNeighborhood = (tessellation, appendRewrite, minCellSize) ->
   cells = new NodeHashMap
   walk = (cell) ->
     return if cells.get(cell) isnt null
-    cellSize = tessellation.visiblePolygonSize nodeMatrixRepr(cell, tessellation.group)
+    cellSize = tessellation.visiblePolygonSize cell.repr(tessellation.group)
     cells.put cell, cellSize
     if cellSize > minCellSize
       for nei in getNeighbors cell

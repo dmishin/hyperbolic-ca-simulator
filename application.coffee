@@ -1,6 +1,6 @@
 "use strict"
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
-{unity, NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
+{unity, NodeHashMap, newNode, showNode, chainEquals, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 {mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill} = require "./field.coffee"
@@ -23,7 +23,7 @@ class FieldObserver
     @center = unity
     @cells = visibleNeighborhood @tessellation, @appendRewrite, @minCellSize
     @cellOffsets = (node2array(c) for c in @cells)
-    @cellTransforms = (nodeMatrixRepr(c, @tessellation.group) for c in @cells)
+    @cellTransforms = (c.repr(@tessellation.group) for c in @cells)
     @drawEmpty = true
     @jumpLimit = 1.5
     @tfm = M.eye()
@@ -110,7 +110,7 @@ class FieldObserver
     centerCoord = M.mulv (M.inv @tfm), [0.0, 0.0, 1.0]
     pathToCenterCell = @xyt2path centerCoord
     #console.log "Jump by #{showNode pathToCenterCell}"
-    m = nodeMatrixRepr pathToCenterCell, @tessellation.group
+    m = pathToCenterCell.repr @tessellation.group
 
     #modifyView won't work, since it multiplies in different order.
     @tfm = M.mul @tfm, m
