@@ -171,30 +171,19 @@ exports.randomFill = (field, density, center, r, appendRewrite, n, m) ->
 
 exports.stringifyFieldData = (data) ->
   parts = []
-  needSep = false
-  sep = ->
-    parts.push " " if needSep
-    needSep = false
-    
   doStringify = (data)->
     if data.v?
-      sep()
-      parts.push data.v
-      needSep = true
-      
+      parts.push "|"+data.v
     if data.cs?
       for child in data.cs
-        sep()
         parts.push '('
         if child.a?
-          parts.push "a #{child.a}"
+          parts.push "a#{child.a}"
         else if child.b?
-          parts.push "b #{child.b}"
+          parts.push "b#{child.b}"
         else throw new Error "bad data, neither a nor b"
-        needSep = true
         doStringify child
         parts.push ')'
-        needSep = true
   doStringify(data)
   return parts.join ""
 
@@ -230,43 +219,49 @@ exports.parseFieldData = (text) ->
     while pos < text.length and text[pos] in [' ','\t','\r','\n']
       pos += 1
     return pos
-    
-  parseChildSpec = (text, pos) ->
+
+  awaitChar = (char, text, pos) ->
     pos = skipSpaces text, pos
     return null if pos >= text.length
     c = text[pos]
     pos += 1
-    return null if c isnt '('
-    #console.log "child start"
-
+    return null if c isnt char
+    return pos
     
+  parseChildSpec = (text, pos) ->
+
+    #parse
+    pos = awaitChar '(', text, pos
+    return null if pos is null
+
+    #parse generator name...
     pos = skipSpaces text, pos
     return null if pos >= text.length
     gen = text[pos]
     pos += 1
     return null unless gen is 'a' or gen is 'b'
-    
+
+    #parse generaotr power
     pos = skipSpaces text, pos
-    return null if pos >= text.length
     powerRes = integer text, pos
     return null if powerRes is null
     [power, pos] = powerRes
 
-    #console.log "child #{gen}, #{power}"
-
+    #parse cell state and children
     pos = skipSpaces text, pos
     valueRes = parseValueSpec text, pos
     return null if valueRes is null
     [value, pos] = valueRes
+    
     #store previously parsed generator and power
     value[gen] = power
     #console.log "Value updated with generator data, waiting for ) from #{pos}, '#{text.substring(pos)}'"
 
+  
     pos = skipSpaces text, pos
-    return null if pos >= text.length
-    c = text[pos]
-    pos += 1
-    return null if c isnt ')'
+    pos = awaitChar ')', text, pos
+    return null if pos is null
+
     #ok, parsed child fine!
     #console.log "parsed child OK"
     return [value, pos]
@@ -275,10 +270,14 @@ exports.parseFieldData = (text) ->
   parseValueSpec = (text, pos) ->
     value = {}
     pos = skipSpaces text, pos
-    intResult = integer(text, pos)
-    #parse optionally value
-    if intResult isnt null
-      [value.v, pos] = intResult
+
+    pos1 = awaitChar '|', text, pos
+    if pos1 isnt null
+      #has value
+      pos = pos1
+      intResult = integer(text, pos)
+      if intResult isnt null
+        [value.v, pos] = intResult
     #parse children
     children = []
     #console.log "parsing children from from #{pos}, '#{text.substring(pos)}'"

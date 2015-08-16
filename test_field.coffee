@@ -108,7 +108,7 @@ describe "stringifyFieldData", ->
     assert.equal stringifyFieldData(f), ""
   it "must cell at origin", ->
     f = {v:1}
-    assert.equal stringifyFieldData(f), "1"
+    assert.equal stringifyFieldData(f), "|1"
   it "must other cells", ->
     f ={
       v:1
@@ -120,14 +120,14 @@ describe "stringifyFieldData", ->
           a:2
           v:3
     }]}
-    assert.equal stringifyFieldData(f), "1 (a 1 2) (a 2 3)"
+    assert.equal stringifyFieldData(f), "|1(a1|2)(a2|3)"
 
 describe "parseFieldData", ->
   it "must parse empty string", ->
     f = parseFieldData ""
     assert.deepEqual f, {}
   it "must parse cell at origin", ->
-    f = parseFieldData "1"
+    f = parseFieldData "|1"
     assert.deepEqual f, {v:1}
   it "must parse non-trivial", ->
     tree = {
@@ -139,7 +139,7 @@ describe "parseFieldData", ->
             a: 2
             v: 1
     }]}]}]}
-    f = parseFieldData "(a 1 (b 3 (a 2 1)))"
+    f = parseFieldData "(a1(b3(a2|1)))"
     assert.deepEqual f, tree
     
 
