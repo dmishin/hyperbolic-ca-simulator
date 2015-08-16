@@ -37,6 +37,9 @@ class FieldObserver
     
   getViewCenter: ->@center
   getViewOffsetMatrix: ->@tfm
+  setViewOffsetMatrix: (m) ->
+    @tfm = m
+    @renderGrid @tfm
   
   rebuildAt: (newCenter) ->
     @center = newCenter
@@ -539,6 +542,9 @@ doRandomFill = ->
 doNavigateHome = ->
   observer.navigateTo unity
 
+doStraightenView = ->
+  observer.setViewOffsetMatrix M.eye()
+  
 class Debouncer
   constructor: (@timeout, @callback) ->
     @timer = null
@@ -587,7 +593,7 @@ shortcuts =
   '77A': doClearMemory
   #H
   '72': doNavigateHome
-  
+  '72S': doStraightenView
   
 document.addEventListener "keydown", (e)->
   keyCode = "" + e.keyCode
