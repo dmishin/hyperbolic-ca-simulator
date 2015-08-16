@@ -490,11 +490,22 @@ class MouseToolRotate extends MouseTool
     @angle0 = newAngle
     rotateView dAngle
 
+exportTrivial = (cells) ->
+  parts = []
+  cells.forItems (cell, value)->
+    parts.push showNode cell
+    parts.push ""+value
+  return parts.join " "
+  
 doExport = ->
   #data = JSON.stringify(exportField(cells))
   data = stringifyFieldData exportField cells
   edata = lzw_encode data
-  alert "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}"
+
+  data1 = exportTrivial cells
+  edata1 = lzw_encode data1
+  
+  alert "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}\n trivial export: #{data1.length}, compressed: #{edata1.length}"
   E('export').value = edata
 doSearch = ->
   navigator.search cells, tessellation.group.n, tessellation.group.m, appendRewrite

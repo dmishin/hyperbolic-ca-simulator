@@ -178,10 +178,19 @@ exports.stringifyFieldData = (data) ->
       for child in data.cs
         parts.push '('
         if child.a?
-          parts.push "a#{child.a}"
+          gen = 'a'
+          pow = child.a
         else if child.b?
-          parts.push "b#{child.b}"
+          gen = 'b'
+          pow = child.b
+          #parts.push "b#{child.b}"
         else throw new Error "bad data, neither a nor b"
+        if pow < 0
+          gen = gen.toUpperCase()
+          pow = -pow
+        parts.push gen
+        parts.push "#{pow}" if pow isnt 1
+        
         doStringify child
         parts.push ')'
   doStringify(data)
@@ -239,13 +248,19 @@ exports.parseFieldData = (text) ->
     return null if pos >= text.length
     gen = text[pos]
     pos += 1
-    return null unless gen is 'a' or gen is 'b'
-
+    return null unless gen in ['a','b','A','B']
+    genLower = gen.toLowerCase()
+    powerSign = if genLower is gen then 1 else -1
+    gen = genLower
+    
     #parse generaotr power
     pos = skipSpaces text, pos
     powerRes = integer text, pos
-    return null if powerRes is null
-    [power, pos] = powerRes
+    if powerRes is null
+      power = 1
+    else
+      [power, pos] = powerRes
+    power *= powerSign
 
     #parse cell state and children
     pos = skipSpaces text, pos

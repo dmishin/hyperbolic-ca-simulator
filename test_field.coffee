@@ -117,10 +117,10 @@ describe "stringifyFieldData", ->
           a:1
           v:2
         },{
-          a:2
+          a:-2
           v:3
     }]}
-    assert.equal stringifyFieldData(f), "|1(a1|2)(a2|3)"
+    assert.equal stringifyFieldData(f), "|1(a|2)(A2|3)"
 
 describe "parseFieldData", ->
   it "must parse empty string", ->
@@ -134,12 +134,12 @@ describe "parseFieldData", ->
       cs:[{
         a: 1
         cs: [{
-          b: 3
+          b: -3
           cs: [{
             a: 2
             v: 1
     }]}]}]}
-    f = parseFieldData "(a1(b3(a2|1)))"
+    f = parseFieldData "(a(B3(a2|1)))"
     assert.deepEqual f, tree
     
 
