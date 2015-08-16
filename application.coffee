@@ -364,6 +364,12 @@ toggleCellAt = (x,y) ->
 doCanvasClick = (e) ->
   e.preventDefault()
   [x,y] = getCanvasCursorPosition e, canvas
+  toggleCellAt x, y
+  updatePopulation()    
+  
+doCanvasMouseDown = (e) ->
+  e.preventDefault()
+  [x,y] = getCanvasCursorPosition e, canvas
   unless (e.button is 0) and not e.shiftKey
     toggleCellAt x, y
     updatePopulation()    
@@ -457,7 +463,13 @@ class MouseToolPan extends MouseTool
     @x0 = x
     @y0 = y
     k = 2.0 / canvas.height
-    moveView dx*k , dy*k
+    xc = (x - canvas.width*0.5)*k
+    yc = (y - canvas.height*0.5)*k
+
+    r2 = xc*xc + yc*yc
+    s = 2 / Math.max(0.3, 1-r2)
+    
+    moveView dx*k*s , dy*k*s
     @panEventDebouncer.fire()
     
 class MouseToolRotate extends MouseTool
@@ -476,7 +488,8 @@ class MouseToolRotate extends MouseTool
     rotateView dAngle
 
 doExport = ->
-  data = JSON.stringify(exportField(cells))
+  #data = JSON.stringify(exportField(cells))
+  data = stringifyFieldData exportField cells
   edata = lzw_encode data
   alert "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}"
   E('export').value = edata
@@ -523,6 +536,9 @@ doRandomFill = ->
   updatePopulation()
   redraw()
 
+doNavigateHome = ->
+  observer.navigateTo unity
+
 class Debouncer
   constructor: (@timeout, @callback) ->
     @timer = null
@@ -536,10 +552,11 @@ class Debouncer
 # ============ Bind Events =================
 E("btn-reset").addEventListener "click", doReset
 E("btn-step").addEventListener "click", doStep
-E("canvas").addEventListener "mousedown", doCanvasClick
+#E("canvas").addEventListener "click", doCanvasClick
+E("canvas").addEventListener "mousedown", doCanvasMouseDown, true
 E("canvas").addEventListener "mouseup", doCanvasMouseUp
-E("canvas").addEventListener "mousemove", doCanvasMouseMove
-E("canvas").addEventListener "mousedrag", doCanvasMouseMove
+E("canvas").addEventListener "mousemove", doCanvasMouseMove, true
+E("canvas").addEventListener "mousedrag", doCanvasMouseMove, true
 E("btn-set-rule").addEventListener "click", doSetRule
 E("btn-set-grid").addEventListener "click", doSetGrid
 E("btn-export").addEventListener "click", doExport
@@ -551,6 +568,7 @@ E('btn-mem-set').addEventListener 'click', doMemorize
 E('btn-mem-get').addEventListener 'click', doRemember
 E('btn-mem-clear').addEventListener 'click', doClearMemory
 E('btn-exp-visible').addEventListener 'click', doExportVisible
+E('btn-nav-home').addEventListener 'click', doNavigateHome
 
 shortcuts =
   #N
@@ -567,6 +585,8 @@ shortcuts =
   #U
   '85': doRemember
   '77A': doClearMemory
+  #H
+  '72': doNavigateHome
   
   
 document.addEventListener "keydown", (e)->
