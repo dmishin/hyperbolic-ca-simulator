@@ -3,20 +3,24 @@
 {unity, NodeHashMap, newNode, showNode, chainEquals, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
-{mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill} = require "./field.coffee"
+{mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill, randomStateGenerator} = require "./field.coffee"
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {runCommands}= require "./context_delegate.coffee"
 {lzw_encode} = require "./lzw.coffee"
 {Navigator} = require "./navigator.coffee"
 #{shortcut} = require "./shortcut.coffee"
 {makeXYT2path, poincare2hyperblic, visibleNeighborhood} = require "./poincare_view.coffee"
+{DomBuilder} = require "./dom_builder.coffee"
+{ButtonGroup} = require "./htmlutil.coffee"
 
 M = require "./matrix3.coffee"
 
 E = (id) -> document.getElementById id
 
 
-colors = ["red", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
+
+
+
 
 class FieldObserver
   constructor: (@tessellation, @appendRewrite, @minCellSize=1.0/400.0)->
@@ -32,9 +36,13 @@ class FieldObserver
     #precision falls from 1e-16 to 1e-9 in 1000 steps.
     @maxViewUpdatesBeforeCleanup = 500
     @xyt2path = makeXYT2path @tessellation.group, @appendRewrite
+    @pattern = ["red", "black", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
 
     @onFinish = null
-
+    
+  getColorForState: (state) ->
+    @pattern[ (state % @pattern.length + @pattern.length) % @pattern.length ]
+    
   rebuildAt: (newCenter) ->
     @center = newCenter
     @cells = for offset in @cellOffsets
@@ -58,23 +66,33 @@ class FieldObserver
   canDraw: -> true        
   draw: (cells, context) ->
     #first borders
-    if @drawEmpty
-      context.beginPath()
-      for cell, i in @cells
-        unless cells.get cell
-          cellTfm = @cellTransforms[i]
-          mtx = M.mul @tfm, cellTfm
-          @tessellation.makeCellShapePoincare mtx, context
-      context.stroke()
-
-    #then cells
-    context.beginPath()
+    #cells grouped by state
+    state2cellIndexList = {}
+    
     for cell, i in @cells
-      if cells.get cell
-        cellTfm = @cellTransforms[i]
+      state = cells.get(cell) ? 0
+      if (state isnt 0) or @drawEmpty
+        stateCells = state2cellIndexList[state]
+        unless stateCells?
+          state2cellIndexList[state] = stateCells = []
+        stateCells.push i
+        
+    for strState, cellIndices of state2cellIndexList
+      state = parseInt strState, 10
+      #console.log "Group: #{state}, #{JSON.stringify cellIndices}"
+      
+      context.beginPath()
+      for cellIndex in cellIndices
+        cellTfm = @cellTransforms[cellIndex]
         mtx = M.mul @tfm, cellTfm
-        @tessellation.makeCellShapePoincare  mtx, context        
-    context.fill()
+        @tessellation.makeCellShapePoincare mtx, context
+        
+      if state is 0
+        context.stroke()
+      else
+        context.fillStyle = @getColorForState state
+        context.fill()
+        
     #true because immediate-mode observer always finishes drawing.
     return true
   
@@ -215,8 +233,13 @@ class FieldObserverWithRemoreRenderer extends FieldObserver
     return true
   shutdown: ->
     @worker.terminate()
-    
 
+
+class GenericTransitionFunc
+  constructor: ( @numStates, @plus, @plusInitial, @evaluate ) ->
+    if @numStates <= 0 then throw new Error "Number if states incorrect"
+  toString: -> "GenericFunction( #{@numStates} states )"
+  isStable: -> @evaluate(0,0) is 0
   
 class BinaryTransitionFunc
   constructor: ( @n, @m, bornAt, stayAt ) ->
@@ -224,7 +247,14 @@ class BinaryTransitionFunc
     @table = for arr in [bornAt, stayAt]
       for s in [0 .. @numNeighbors] by 1
         if s in arr then 1 else 0
+          
   isStable: -> table[0][0] is 0
+  
+  plus: (x,y) -> x+y
+  plusInitial: 0
+  
+  numStates: 2
+  
   evaluate: (state, sum) ->
     throw new Error "Bad state: #{state}" unless state in [0,1]
     throw new Error "Bad sum: #{sum}" if sum < 0 or sum > @numNeighbors
@@ -234,7 +264,26 @@ class BinaryTransitionFunc
     "B " + @_nonzeroIndices(@table[0]).join(" ") + " S " + @_nonzeroIndices(@table[1]).join(" ")
     
   _nonzeroIndices: (arr)-> (i for x, i in arr when x isnt 0)
-    
+
+#Generic TF is given by its code.
+# Code is a JS object with 3 fields:
+# states: N #integer
+# sum: (r, x) -> r'  #default is (x,y) -> x+y
+# sumInitial: value r0 #default is 0
+# next: (sum, value) -> value
+parseGenericTransitionFunction = (str) ->
+  tfObject = eval('('+str+')')
+  throw new Error("Numer of states not specified") unless tfObject.states?
+  throw new Error("Transition function not specified") unless tfObject.next?
+  
+  #@numStates, @plus, @plusInitial, @evaluate )
+  return new GenericTransitionFunc tfObject.states, (tfObject.sum ? ((x,y)->x+y)), (tfObject.sumInitial ? 0), tfObject.next
+
+updateGenericRuleStatus = (status)->
+  span = E 'generic-tf-status'
+  span.innerHTML = status
+  span.setAttribute('class', 'generic-tf-status-#{status.toLowerCase()}')  
+      
 # BxxxSxxx
 parseTransitionFunction = (str, n, m) ->
   match = str.match /B([\d\s]+)S([\d\s]+)/
@@ -250,14 +299,54 @@ parseTransitionFunction = (str, n, m) ->
 
   bArray = strings2array match[1]
   sArray = strings2array match[2]
-
   return new BinaryTransitionFunc n, m, bArray, sArray
-  
-  return (state, sum) ->
-    transitionTable[state][sum]
 
-#putRandomBlob = (cells, radius, percent, n, m, appendRewrite)->
-  
+class PaintStateSelector
+  constructor: (@container, @buttonContainer)->
+    @state = 1
+    @numStates = 2
+    
+  update: (transitionFunc)->
+    numStates = transitionFunc.numStates
+    #only do something if number of states changed
+    return if numStates == @numStates
+    @numStates = numStates
+    console.log "Num states changed to #{numStates}"
+    if @state >= numStates
+      @state = 1
+    @buttonContainer.innerHTML = ''
+    if numStates <= 2
+      @container.style.display = 'none'
+      @buttons = null
+      @state2id = null
+    else
+      @container.style.display = ''
+      dom = new DomBuilder()
+      id2state = {}
+      @state2id = {}
+      for state in [1...numStates]
+        color = observer.getColorForState state
+        btnId = "select-state-#{state}"
+        @state2id[state] = btnId
+        id2state[btnId] = state
+        dom.tag('button').store('btn')\
+           .CLASS(if state is @state then 'btn-active' else '')\
+           .ID(btnId)\
+           .a('style', "background-color:#{color}")\
+           .text(''+state)\
+           .end()
+        #dom.vars.btn.onclick = (e)->
+      @buttonContainer.appendChild dom.finalize()
+      @buttons = new ButtonGroup @buttonContainer, 'button'
+      @buttons.addEventListener 'change', (e, btnId, oldBtn)=>
+        if (state = id2state[btnId])?
+          @state = state
+  setState: (newState) ->
+    return if newState is @state
+    return unless @state2id[newState]?
+    @state = newState
+    if @buttons
+      @buttons.setButton @state2id[newState]
 # ============================================  app code ===============
 #
 
@@ -270,10 +359,13 @@ rewriteRuleset = knuthBendix vdRule tessellation.group.n, tessellation.group.m
 console.log "Finished"
 appendRewrite = makeAppendRewrite rewriteRuleset
 
+
+paintStateSelector = new PaintStateSelector E("state-selector"), E("state-selector-buttons")
+
 getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, appendRewrite
 
-ObserverClass = FieldObserverWithRemoreRenderer
-#ObserverClass = FieldObserver
+#ObserverClass = FieldObserverWithRemoreRenderer
+ObserverClass = FieldObserver
 
 observer = new ObserverClass tessellation, appendRewrite, minVisibleSize
 observer.onFinish = -> redraw()
@@ -293,7 +385,7 @@ doReset = ->
   redraw()
 
 doStep = ->
-  cells = evaluateTotalisticAutomaton cells, getNeighbors, transitionFunc.evaluate.bind(transitionFunc)
+  cells = evaluateTotalisticAutomaton cells, getNeighbors, transitionFunc.evaluate.bind(transitionFunc), transitionFunc.plus, transitionFunc.plusInitial
   redraw()
   updatePopulation()
 
@@ -341,10 +433,10 @@ toggleCellAt = (x,y) ->
   catch e
     return
     
-  if cells.get(cell) isnt null
+  if cells.get(cell) is paintStateSelector.state
     cells.remove cell
   else
-    cells.put cell, 1
+    cells.put cell, paintStateSelector.state
   redraw()
     
     
@@ -376,12 +468,36 @@ doCanvasMouseUp = (e) ->
     e.preventDefault()
     dragHandler?.mouseUp e
     dragHandler = null
-            
+
+                        
 doSetRule =  ->
   try
     transitionFunc = parseTransitionFunction E('rule-entry').value, tessellation.group.n, tessellation.group.m
+    paintStateSelector.update transitionFunc
+    console.log transitionFunc
+    E('controls-rule-simple').style.display=""
+    E('controls-rule-generic').style.display="none"
   catch e
     alert "Failed to parse function: #{e}"
+
+doOpenEditor = ->
+  E('generic-tf-editor').style.display = ''
+
+doCloseEditor = ->
+  E('generic-tf-editor').style.display = 'none'
+
+
+doSetRuleGeneric = ->
+  try
+    console.log "Set generic rule"
+    transitionFunc = parseGenericTransitionFunction E('generic-tf-code').value
+    updateGenericRuleStatus 'Compiled'
+    paintStateSelector.update transitionFunc
+    E('controls-rule-simple').style.display="none"
+    E('controls-rule-generic').style.display=""
+  catch e
+    alert "Failed to parse function: #{e}"
+    updateGenericRuleStatus 'Error'
 
 doSetGrid = ->
   try
@@ -420,9 +536,6 @@ class MouseTool
   mouseMoved: ->
   mouseUp: ->
   mouseDown: ->
-    
-
-
 
 updatePopulation = ->
   E('population').innerHTML = ""+cells.count
@@ -469,10 +582,22 @@ doSearch = ->
 randomFillRadius = 5
 randomFillPercent = 0.4
 doRandomFill = ->
-  randomFill cells, randomFillPercent, unity, randomFillRadius, appendRewrite, tessellation.group.n, tessellation.group.m
+  randomFill cells, randomFillPercent, unity, randomFillRadius, appendRewrite, tessellation.group.n, tessellation.group.m, randomStateGenerator(transitionFunc.numStates)
   updatePopulation()
   redraw()
-  
+
+doEditAsGeneric = ->
+  console.log "Generate code"
+  unless transitionFunc instanceof BinaryTransitionFunc
+    alert("Active transition function is not a binary")
+    return
+  E('generic-tf-code').value = binaryTransitionFunc2GenericCode(transitionFunc)
+  updateGenericRuleStatus "modified"
+  doSetRuleGeneric()
+
+doDisableGeneric = ->
+  doSetRule()
+
 # ============ Bind Events =================
 E("btn-reset").addEventListener "click", doReset
 E("btn-step").addEventListener "click", doStep
@@ -481,28 +606,88 @@ E("canvas").addEventListener "mouseup", doCanvasMouseUp
 E("canvas").addEventListener "mousemove", doCanvasMouseMove
 E("canvas").addEventListener "mousedrag", doCanvasMouseMove
 E("btn-set-rule").addEventListener "click", doSetRule
+E("btn-set-rule-generic").addEventListener "click", (e)->
+  doSetRuleGeneric()
+  doCloseEditor()
+E("btn-rule-generic-close-editor").addEventListener "click", doCloseEditor
 E("btn-set-grid").addEventListener "click", doSetGrid
+
 E("btn-export").addEventListener "click", doExport
 E('rule-entry').value = transitionFunc.toString()
 E('btn-search').addEventListener 'click', doSearch
 E('btn-random').addEventListener 'click', doRandomFill
+E('btn-rule-make-generic').addEventListener 'click', doEditAsGeneric
+E('btn-edit-rule').addEventListener 'click', doOpenEditor
+E('btn-disable-generic-rule').addEventListener 'click', doDisableGeneric
+#initialize
+GENERIC_TF_TEMPLATE="""//Generic transistion function, coded in JS
+{
+  //number of states
+  'states': 2,
+
+  //Neighbors sum calculation. By default - sum of all.
+  //'plus': function(s,x){ return s+x; },
+  //'plusInitial': 0,
+
+  //Transition function. Takes current state and sum, returns new state.
+  'next': function(x, s){
+    if (s==2) return x;
+    if (s==3) return 1;
+    return 0;
+  }
+}
+"""
+
+binaryTransitionFunc2GenericCode = (binTf) ->
+  row2condition = (row) -> ("s==#{sum}" for nextValue, sum in row when nextValue).join(" || ")
+  
+  conditionBorn = row2condition binTf.table[0]
+  conditionStay = row2condition binTf.table[1]
+  
+  code = ["""//Automatically generated code for binary rule #{binTf}
+{
+    //number of states
+    'states': 2,
+
+    //Neighbors sum calculation is default. Code for reference.
+    //'plus': function(s,x){ return s+x; },
+    //'plusInitial': 0,
+    
+    //Transition function. Takes current state and sum, returns new state.
+    'next': function(x, s){
+        if (x==1 && (#{conditionStay})) return 1;
+        if (x==0 && (#{conditionBorn})) return 1;
+        return 0;
+     }
+}"""]
+
+
+if not E('generic-tf-code').value
+  E('generic-tf-code').value = GENERIC_TF_TEMPLATE
 
 shortcuts =
-  #N
-  '78': doStep
-  #C
-  '67': doReset
-  #S
-  '83': doSearch
-  #R
-  '82': doRandomFill
+  'N': doStep
+  'C': doReset
+  'S': doSearch
+  'R': doRandomFill
+  '1': (e) -> paintStateSelector.setState 1
+  '2': (e) -> paintStateSelector.setState 2
+  '3': (e) -> paintStateSelector.setState 3
+  '4': (e) -> paintStateSelector.setState 4
+  '5': (e) -> paintStateSelector.setState 5
   
 document.addEventListener "keydown", (e)->
-  keyCode = "" + e.keyCode
+  focused = document.activeElement
+  if focused and focused.tagName.toLowerCase() in ['textarea', 'input']
+    return
+  keyCode = if e.keyCode > 32 and e.keyCode < 128
+    String.fromCharCode e.keyCode
+  else
+    '#' + e.keyCode
   keyCode += "C" if e.ctrlKey
   keyCode += "A" if e.altKey
   keyCode += "S" if e.shiftKey
-  #console.log keyCode
+  console.log keyCode
   if (handler = shortcuts[keyCode])?
     e.preventDefault()
     handler(e)

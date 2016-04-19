@@ -27,17 +27,16 @@ exports.mooreNeighborhood = mooreNeighborhood = (n, m, appendRewrite)->(chain)->
   return neighbors
 
 
-exports.neighborsSum = neighborsSum = (cells, getNeighbors)->
+exports.neighborsSum = neighborsSum = (cells, getNeighbors, plus=((x,y)->x+y), plusInitial=0)->
   sums = new NodeHashMap
-  plus = (x,y)->x+y
   cells.forItems (cell, value)->
     for neighbor in getNeighbors cell
-      sums.putAccumulate neighbor, value, plus
+      sums.putAccumulate neighbor, value, plus, plusInitial
   return sums
 
-exports.evaluateTotalisticAutomaton = evaluateTotalisticAutomaton = (cells, getNeighborhood, nextStateFunc)->
+exports.evaluateTotalisticAutomaton = evaluateTotalisticAutomaton = (cells, getNeighborhood, nextStateFunc, plus, plusInitial)->
   newCells = new NodeHashMap
-  sums = neighborsSum cells, getNeighborhood
+  sums = neighborsSum cells, getNeighborhood, plus, plusInitial
   
   sums.forItems (cell, neighSum)->
     #console.log "#{showNode cell}, sum=#{neighSum}"
@@ -152,14 +151,20 @@ exports.importField = (fieldData, cells = new NodeHashMap)->
     return
   putNode unity, fieldData
   return cells
-      
-exports.randomFill = (field, density, center, r, appendRewrite, n, m) ->
+
+#Generate random value in range from 1 to nStates-1
+exports.randomStateGenerator = (nStates) -> ->
+  (Math.floor(Math.random()*(nStates-1))|0) + 1
+  
+exports.randomFill = (field, density, center, r, appendRewrite, n, m, randomState ) ->
   if density < 0 or density > 1.0
     throw new Error "Density must be in [0;1]"
+  #by default, fill with ones.    
+  randomState = randomState ? -> 1
     
   for cell in farNeighborhood center, r, appendRewrite, n, m
     if Math.random() < density
-      field.put cell, 1
+      field.put cell, randomState()
   return
       
   

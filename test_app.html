@@ -2,6 +2,7 @@
   <head>
     <title>Test app</title>
     <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="styles.css">
   </head>
   <body>
     <div id="main">
@@ -10,8 +11,17 @@
 	<button id="btn-reset">Reset</button>
 	<button id="btn-random">Random</button>
 	<button id="btn-step">Step</button>
-	Rule: <input id="rule-entry"></input>
-	<button id="btn-set-rule">Set</button>
+	<span id="controls-rule-simple">
+	  Rule: <input id="rule-entry"></input>
+	  <button id="btn-set-rule">Set</button>
+	  <button id="btn-rule-make-generic">Generic...</button>
+	</span>
+	<span id="controls-rule-generic"  style="display:none">
+	  Generic rule
+	  <button id="btn-edit-rule">Edit...</button>
+	  <button id="btn-disable-generic-rule">Disable</button>	  
+	</span>
+	
 	Population:<span id="population"></span> cells
 	
 	Grid parameters: N=<input id="entry-n"></input>
@@ -20,13 +30,40 @@
 
 	<button id="btn-misc">misc</button>
       </div>
+      <div id="state-selector" style="display:none">
+	States:<span id="state-selector-buttons"></span>
+      </div>
+      
       <div id="canvas-container" style="padding:1em">
 	<canvas id="canvas" width="800" height="800"></canvas>
       </div>
+      
+      <div id="generic-tf-editor" style="display:none" class="popup-container">
+	<div>
+	  <h1>Custom Rule</h1>
+	  Javascript code:<br/>
+	  <textarea id="generic-tf-code" style="width:100%"></textarea>
+	  <div>Status: <span id="generic-tf-status">modified</span></div>
+	  <div class="toolbar">
+	    <button id="btn-set-rule-generic">OK</button>
+	    <button id="btn-rule-generic-close-editor">Cancel</button>
+	  </div>
+	</div>
+      </div>
+      
       <div id="navigator-cluster-list">
       </div>
       <button id="btn-export">Export</button>
-      <textarea id="export"></textarea>
+      <div id="export-dialog" style="display:none" class="popup-container">
+	<div>
+	  <h1>Export data</h1>
+	  <textarea id="export"></textarea>
+	  <div class="toolbar">
+	    <button id="btn-export-close">OK</button>
+	  </div>
+	</div>
+      </div>
+      
       
     </div>
     <script src="test_app_bundle.js"></script>

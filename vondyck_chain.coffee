@@ -162,7 +162,7 @@ exports.NodeHashMap = class NodeHashMap
 
   _index: (chain) -> chain.hash() & @sizeMask
     
-  putAccumulate: (chain, value, accumulateFunc)->
+  putAccumulate: (chain, value, accumulateFunc, accumulateInitial)->
     cell = @table[@_index chain]
 
     for key_value in cell
@@ -171,7 +171,7 @@ exports.NodeHashMap = class NodeHashMap
         key_value[1] = accumulateFunc key_value[1], value
         return
         
-    cell.push [chain, value]
+    cell.push [chain, accumulateFunc(accumulateInitial, value)]
     @count += 1
     if @count > @maxFillRatio*@table.length
       @_growTable()

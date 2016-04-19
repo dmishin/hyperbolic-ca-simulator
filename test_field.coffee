@@ -1,6 +1,6 @@
 
 assert = require "assert"
-{allClusters, mooreNeighborhood, exportField, importField} = require "./field"
+{allClusters, mooreNeighborhood, exportField, importField, neighborsSum, randomStateGenerator} = require "./field"
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {unity, NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
@@ -32,6 +32,39 @@ describe "allClusters", ->
     assert.deepEqual clusters[0].length, 1
 
     assert chainEquals(clusters[0][0], c)
+
+describe "neighborsSum", ->
+  [N, M] = [5, 4]
+  rewriteRuleset = knuthBendix vdRule N, M
+  appendRewrite = makeAppendRewrite rewriteRuleset
+
+
+  getNeighbors = mooreNeighborhood N, M, appendRewrite
+  eliminate = (chain)-> eliminateFinalA chain, appendRewrite, N
+  rewriteChain = (arr) -> appendRewrite unity, arr[..]
+  
+  cells = []
+  cells.push  unity
+
+  field = new NodeHashMap
+  field.put unity, 1
+
+
+  neighSum = neighborsSum field, getNeighbors
+
+  #Checking values.
+  # Initial cell has no neighbors. Its sum is null or 0.
+  assert.equal neighSum.get(unity)?0, 0
+
+  #neighbor of unity has 1 cell.
+  neighbor = eliminate rewriteChain [['b',1]]
+  assert.equal neighSum.get(neighbor), 1
+  
+  
+  #cells.push  eliminate rewriteChain [['b',1]]
+  #cells.push  eliminate rewriteChain [['b', 2]]
+  #cells.push  eliminate rewriteChain [['b', 2],['a', 1]]
+  
 
 describe "mooreNeighborhood", ->
   #prepare data: rewriting ruleset for group 5;4
@@ -101,6 +134,27 @@ describe "exportField", ->
             a: 2
             v: "value"
     }]}]}]}
+
+describe "randomStateGenerator", ->
+  makeStates = (nStates, nValues) ->
+    gen = randomStateGenerator nStates
+    (gen() for _ in [0...nValues])
+    
+  it "must produce random values in required range", ->
+    states = makeStates 5, 1000
+    assert.equal states.length, 1000
+    #should for sure contain at least one of values 1,2,3,4
+    #should not contain 0
+    #should not contain >=5
+    counts = [0,0,0,0,0]
+    for x in states
+      counts[x] += 1
+    assert.equal counts[0],  0      
+    assert(counts[1] > 0)
+    assert(counts[2] > 0)
+    assert(counts[3] > 0)
+    assert(counts[4] > 0)
+    assert.equal counts[1]+counts[2]+counts[3]+counts[4], 1000
     
 describe "importField", ->
   it "must import empty field correctly", ->

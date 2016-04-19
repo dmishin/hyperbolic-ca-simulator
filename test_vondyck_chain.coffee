@@ -83,6 +83,21 @@ describe "NodeHashMap", ->
     assert.equal m.get(unity), null
     assert.equal m.count, 0
 
+  it "should support putting values wtih accumulation", ->
+    m = new NodeHashMap
+    e = unity
+    a1 = newNode("a", 1, unity)
+    b2 = newNode("b", 2, unity)
+    a1b1 = newNode("a", 1, newNode("b", 1, unity))
+
+    #testing initial value for accumulation
+    m.putAccumulate( a1b1, 1, ((x,y)->x+y), 10 )
+    assert.equal m.get(a1b1), 11 #(initial is 10) + 1
+    #for second value, existing is used.
+    m.putAccumulate( a1b1, 1, ((x,y)->x+y), 10 )
+    assert.equal m.get(a1b1), 12 #(previous is 11) + 1
+    
+        
   it "should support putting and removing non - empty chains", ->
     m = new NodeHashMap
     e = unity
