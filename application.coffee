@@ -576,6 +576,11 @@ doExport = ->
   edata = lzw_encode data
   alert "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}"
   E('export').value = edata
+  E('export-dialog').style.display = ''
+
+doExportClose = ->
+  E('export-dialog').style.display = 'none'
+    
 doSearch = ->
   navigator.search cells, tessellation.group.n, tessellation.group.m, appendRewrite
 
@@ -619,6 +624,7 @@ E('btn-random').addEventListener 'click', doRandomFill
 E('btn-rule-make-generic').addEventListener 'click', doEditAsGeneric
 E('btn-edit-rule').addEventListener 'click', doOpenEditor
 E('btn-disable-generic-rule').addEventListener 'click', doDisableGeneric
+E('btn-export-close').addEventListener 'click', doExportClose
 #initialize
 GENERIC_TF_TEMPLATE="""//Generic transistion function, coded in JS
 {

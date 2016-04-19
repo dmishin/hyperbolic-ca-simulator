@@ -21,23 +21,32 @@
 	  <button id="btn-edit-rule">Edit...</button>
 	  <button id="btn-disable-generic-rule">Disable</button>	  
 	</span>
-	
 	Population:<span id="population"></span> cells
-	
 	Grid parameters: N=<input id="entry-n"></input>
 	M=<input id="entry-m"></input>
 	<button id="btn-set-grid">Set</button>
-
 	<button id="btn-misc">misc</button>
+	<button id="btn-export">Export</button>
+	<div id="state-selector" style="display:none">
+	  States:<span id="state-selector-buttons"></span>
+	</div>
       </div>
-      <div id="state-selector" style="display:none">
-	States:<span id="state-selector-buttons"></span>
+
+      <!-- Main content -->
+      <div>
+	<div id="canvas-container" style="padding:1em">
+	  <canvas id="canvas" width="800" height="800"></canvas>
+	</div>
+      
+	<div id="navigator">
+	  <h1>Navigator</h1>
+	  <div id="navigator-cluster-list">
+	  </div>
+	</div>
       </div>
       
-      <div id="canvas-container" style="padding:1em">
-	<canvas id="canvas" width="800" height="800"></canvas>
-      </div>
       
+      <!-- popup dialogs ets -->
       <div id="generic-tf-editor" style="display:none" class="popup-container">
 	<div>
 	  <h1>Custom Rule</h1>
@@ -50,21 +59,16 @@
 	  </div>
 	</div>
       </div>
-      
-      <div id="navigator-cluster-list">
-      </div>
-      <button id="btn-export">Export</button>
+
       <div id="export-dialog" style="display:none" class="popup-container">
 	<div>
 	  <h1>Export data</h1>
-	  <textarea id="export"></textarea>
+	  <textarea id="export" style="width:100%"></textarea>
 	  <div class="toolbar">
 	    <button id="btn-export-close">OK</button>
 	  </div>
 	</div>
       </div>
-      
-      
     </div>
     <script src="test_app_bundle.js"></script>
   </body>
