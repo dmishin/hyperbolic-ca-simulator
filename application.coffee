@@ -1,9 +1,11 @@
 "use strict"
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
-{unity, NodeHashMap, newNode, showNode, chainEquals, node2array} = require "./vondyck_chain.coffee"
+{unity, inverseChain, appendChain, NodeHashMap, newNode, showNode, chainEquals, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
-{mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill, randomStateGenerator} = require "./field.coffee"
+
+{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill, randomStateGenerator} = require "./field.coffee"
+
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {runCommands}= require "./context_delegate.coffee"
 {lzw_encode} = require "./lzw.coffee"
@@ -34,7 +36,7 @@ class FieldObserver
     
     @viewUpdates = 0
     #precision falls from 1e-16 to 1e-9 in 1000 steps.
-    @maxViewUpdatesBeforeCleanup = 500
+    @maxViewUpdatesBeforeCleanup = 50
     @xyt2path = makeXYT2path @tessellation.group, @appendRewrite
     @pattern = ["red", "black", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
 
@@ -43,6 +45,11 @@ class FieldObserver
   getColorForState: (state) ->
     @pattern[ (state % @pattern.length + @pattern.length) % @pattern.length ]
     
+  getViewCenter: ->@center
+  getViewOffsetMatrix: ->@tfm
+  setViewOffsetMatrix: (m) ->
+    @tfm = m
+    @renderGrid @tfm
   rebuildAt: (newCenter) ->
     @center = newCenter
     @cells = for offset in @cellOffsets
@@ -51,10 +58,10 @@ class FieldObserver
     @_observedCellsChanged()
     return
 
-  navigateTo: (chain) ->
+  navigateTo: (chain, offsetMatrix=M.eye()) ->
     console.log "navigated to #{showNode chain}"
     @rebuildAt chain
-    @tfm = M.eye()
+    @tfm = offsetMatrix
     @renderGrid @tfm
     return
         
@@ -96,16 +103,21 @@ class FieldObserver
         
     #true because immediate-mode observer always finishes drawing.
     return true
-  
+    
+  visibleCells: (cells) ->
+    for cell in @cells when (value=cells.get(cell)) isnt null
+      [cell, value]
+        
   checkViewMatrix: ->
     #me = [-1,0,0,  0,-1,0, 0,0,-1]
-    #d = M.add( me, M.mul(tfm, M.hyperbolicInv tfm))
+    #d = M.add( me, M.mul(@tfm, M.hyperbolicInv @tfm))
     #ad = (Math.abs(x) for x in d)
     #maxDiff = Math.max( ad ... )
-    #console.log "Step: #{viewUpdates}, R: #{maxDiff}"
+    #console.log "Step: #{@viewUpdates}, R: #{maxDiff}"
     if (@viewUpdates+=1) > @maxViewUpdatesBeforeCleanup
       @viewUpdates = 0
       @tfm = M.cleanupHyperbolicMoveMatrix @tfm
+      #console.log "cleanup"
     
   modifyView: (m) ->
     @tfm = M.mul m, @tfm
@@ -113,7 +125,8 @@ class FieldObserver
     originDistance = @viewDistanceToOrigin()
     if originDistance > @jumpLimit
       @rebaseView()
-    @renderGrid @tfm
+    else
+      @renderGrid @tfm
     
   renderGrid: (viewMatrix) ->
     #for immediaet mode observer, grid is rendered while drawing.
@@ -140,6 +153,8 @@ class FieldObserver
   rebaseView: ->
     centerCoord = M.mulv (M.inv @tfm), [0.0, 0.0, 1.0]
     pathToCenterCell = @xyt2path centerCoord
+    if pathToCenterCell is unity
+      return
     #console.log "Jump by #{showNode pathToCenterCell}"
     m = pathToCenterCell.repr @tessellation.group
 
@@ -147,8 +162,10 @@ class FieldObserver
     @tfm = M.mul @tfm, m
     @checkViewMatrix()
 
+    #console.log JSON.stringify @tfm
     #move observation point
     @translateBy node2array pathToCenterCell
+    @renderGrid @tfm
 
   #xp, yp in range [-1..1]
   cellFromPoint:(xp,yp) ->
@@ -456,6 +473,12 @@ toggleCellAt = (x,y) ->
 doCanvasClick = (e) ->
   e.preventDefault()
   [x,y] = getCanvasCursorPosition e, canvas
+  toggleCellAt x, y
+  updatePopulation()    
+  
+doCanvasMouseDown = (e) ->
+  e.preventDefault()
+  [x,y] = getCanvasCursorPosition e, canvas
   unless (e.button is 0) and not e.shiftKey
     toggleCellAt x, y
     updatePopulation()    
@@ -596,6 +619,9 @@ class MouseToolCombo extends MouseTool
   
 class MouseToolPan extends MouseTool
   constructor: (@x0, @y0) ->
+    @panEventDebouncer = new Debouncer 1000, =>
+      observer.rebaseView()
+      
   mouseMoved: (e)->
     [x, y] = getCanvasCursorPosition e, canvas
     dx = x - @x0
@@ -604,10 +630,14 @@ class MouseToolPan extends MouseTool
     @x0 = x
     @y0 = y
     k = 2.0 / canvas.height
+    xc = (x - canvas.width*0.5)*k
+    yc = (y - canvas.height*0.5)*k
+
+    r2 = xc*xc + yc*yc
+    s = 2 / Math.max(0.3, 1-r2)
     
-    moveView dx*k , dy*k
-    rotateView 0.07
-    moveView dx*k , dy*k
+    moveView dx*k*s , dy*k*s
+    @panEventDebouncer.fire()
     
 class MouseToolRotate extends MouseTool
   constructor: (x, y) ->
@@ -624,10 +654,22 @@ class MouseToolRotate extends MouseTool
     @angle0 = newAngle
     rotateView dAngle
 
+exportTrivial = (cells) ->
+  parts = []
+  cells.forItems (cell, value)->
+    parts.push showNode cell
+    parts.push ""+value
+  return parts.join " "
+  
 doExport = ->
-  data = JSON.stringify(exportField(cells))
+  #data = JSON.stringify(exportField(cells))
+  data = stringifyFieldData exportField cells
   edata = lzw_encode data
-  alert "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}"
+
+  data1 = exportTrivial cells
+  edata1 = lzw_encode data1
+  
+  alert "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}\n trivial export: #{data1.length}, compressed: #{edata1.length}"
   E('export').value = edata
   E('export-dialog').style.display = ''
 
@@ -637,6 +679,39 @@ doExportClose = ->
 doSearch = ->
   navigator.search cells, tessellation.group.n, tessellation.group.m, appendRewrite
 
+memo = null
+doMemorize = ->
+  memo =
+    cells: cells.copy()
+    viewCenter: observer.getViewCenter()
+    viewOffset: observer.getViewOffsetMatrix()
+  console.log "Position memoized"
+
+doRemember = ->
+  if memo is null
+    console.log "nothing to remember"
+  else
+    cells = memo.cells.copy()
+    observer.navigateTo memo.viewCenter, memo.viewOffset
+
+doClearMemory = ->
+  memo = null        
+  
+
+encodeVisible = ->
+  iCenter = inverseChain observer.cellFromPoint(0,0), appendRewrite
+  visibleCells = new NodeHashMap
+  for [cell, state] in observer.visibleCells cells
+    translatedCell = appendChain iCenter, cell, appendRewrite
+    translatedCell = eliminateFinalA translatedCell, appendRewrite, tessellation.group.n
+    visibleCells.put translatedCell, state
+  return exportField visibleCells
+
+doExportVisible = ->
+  sdata = stringifyFieldData encodeVisible()
+  alert sdata
+  #alert JSON.stringify parseFieldData sdata
+  
 randomFillRadius = 5
 randomFillPercent = 0.4
 doRandomFill = ->
@@ -656,13 +731,31 @@ doEditAsGeneric = ->
 doDisableGeneric = ->
   doSetRule()
 
+doNavigateHome = ->
+  observer.navigateTo unity
+
+doStraightenView = ->
+  observer.setViewOffsetMatrix M.eye()
+  
+class Debouncer
+  constructor: (@timeout, @callback) ->
+    @timer = null
+  fire:  ->
+    if @timer
+      clearTimeout @timer
+    @timer = setTimeout (=>@onTimer()), @timeout
+  onTimer: ->
+    @timer = null
+    @callback()
+
 # ============ Bind Events =================
 E("btn-reset").addEventListener "click", doReset
 E("btn-step").addEventListener "click", doStep
-E("canvas").addEventListener "mousedown", doCanvasClick
+#E("canvas").addEventListener "click", doCanvasClick
+E("canvas").addEventListener "mousedown", doCanvasMouseDown, true
 E("canvas").addEventListener "mouseup", doCanvasMouseUp
-E("canvas").addEventListener "mousemove", doCanvasMouseMove
-E("canvas").addEventListener "mousedrag", doCanvasMouseMove
+E("canvas").addEventListener "mousemove", doCanvasMouseMove, true
+E("canvas").addEventListener "mousedrag", doCanvasMouseMove, true
 E("btn-set-rule").addEventListener "click", doSetRule
 E("btn-set-rule-generic").addEventListener "click", (e)->
   doSetRuleGeneric()
@@ -724,6 +817,12 @@ binaryTransitionFunc2GenericCode = (binTf) ->
 if not E('generic-tf-code').value
   E('generic-tf-code').value = GENERIC_TF_TEMPLATE
 
+E('btn-mem-set').addEventListener 'click', doMemorize
+E('btn-mem-get').addEventListener 'click', doRemember
+E('btn-mem-clear').addEventListener 'click', doClearMemory
+E('btn-exp-visible').addEventListener 'click', doExportVisible
+E('btn-nav-home').addEventListener 'click', doNavigateHome
+
 shortcuts =
   'N': doStep
   'C': doReset
@@ -734,6 +833,14 @@ shortcuts =
   '3': (e) -> paintStateSelector.setState 3
   '4': (e) -> paintStateSelector.setState 4
   '5': (e) -> paintStateSelector.setState 5
+  #M
+  'M': doMemorize
+  #U
+  'U': doRemember
+  'UA': doClearMemory
+  #H
+  'H': doNavigateHome
+  'HS': doStraightenView
   
 document.addEventListener "keydown", (e)->
   focused = document.activeElement

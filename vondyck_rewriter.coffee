@@ -1,6 +1,6 @@
 #Generates JS code that effectively rewrites
 {RewriteRuleset}= require "./knuth_bendix.coffee"
-{unity, NodeA, NodeB, chainEquals, appendSimple, nodeConstructors, newNode, reverseShortlexLess, showNode} = require "./vondyck_chain.coffee"
+{unity, NodeA, NodeB, chainEquals, appendSimple, nodeConstructors, newNode, reverseShortlexLess, showNode, node2array} = require "./vondyck_chain.coffee"
 
 collectPowers = ( elemsWithPowers )->
     ### List (elem, power::int) -> List (elem, power::int)
