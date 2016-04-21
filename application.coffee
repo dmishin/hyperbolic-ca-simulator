@@ -63,6 +63,7 @@ class FieldObserver
   translateBy: (appendArray) ->
     #console.log  "New center at #{showNode newCenter}"
     @rebuildAt @appendRewrite @center, appendArray
+    
   canDraw: -> true        
   draw: (cells, context) ->
     #first borders
@@ -124,6 +125,18 @@ class FieldObserver
     Math.acosh @tfm[8]
     
   #build new view around the cell which is currently at the center
+  rebaseView1: ->
+    centerCoord = M.mulv (M.inv @tfm), [0.0, 0.0, 1.0]
+    pathToCenterCell = @xyt2path centerCoord
+    #console.log "Jump by #{showNode pathToCenterCell}"
+    m = pathToCenterCell.repr @tessellation.group
+
+    #modifyView won't work, since it multiplies in different order.
+    @tfm = M.mul @tfm, m
+    @checkViewMatrix()
+
+    #move observation point
+    @translateBy node2array pathToCenterCell
   rebaseView: ->
     centerCoord = M.mulv (M.inv @tfm), [0.0, 0.0, 1.0]
     pathToCenterCell = @xyt2path centerCoord
@@ -446,7 +459,9 @@ doCanvasClick = (e) ->
   unless (e.button is 0) and not e.shiftKey
     toggleCellAt x, y
     updatePopulation()    
-  else 
+  else
+    dragHandler = new MouseToolCombo x, y
+    return
     cx = canvas.width*0.5
     cy = canvas.height*0.5
     r = Math.min(cx, cy)
@@ -544,6 +559,41 @@ updatePopulation = ->
 updatePopulation()
 redrawLoop()
 
+class MouseToolCombo extends MouseTool
+  constructor: (@x0, @y0) ->
+    @xc = canvas.width * 0.5
+    @yc = canvas.width * 0.5
+    @angle0 = @angle @x0, @y0 
+  angle: (x,y) -> Math.atan2( x-@xc, y-@yc)
+  mouseMoved: (e)->
+    [x, y] = getCanvasCursorPosition e, canvas
+    dx = x - @x0
+    dy = y - @y0
+
+    @x0 = x
+    @y0 = y
+    k = 2.0 / canvas.height
+    newAngle = @angle x, y
+    dAngle = newAngle - @angle0
+    #Wrap angle increment into -PI ... PI diapason.
+    if dAngle > Math.PI
+      dAngle = dAngle - Math.PI*2
+    else if dAngle < -Math.PI
+      dAngle = dAngle + Math.PI*2 
+    @angle0 = newAngle 
+
+    #determine mixing ratio
+    r = Math.min(@xc, @yc)
+
+    r2 = ((x-@xc)**2 + (y-@yc)**2) / (r**2)
+    #pure rotation at the edge,
+    #pure pan at the center
+    q = Math.min(1.0, r2)
+
+    mv = M.translationMatrix(dx*k*(1-q) , dy*k*(1-q))
+    rt = M.rotationMatrix dAngle*q
+    observer.modifyView M.mul(M.mul(mv,rt),mv)
+  
 class MouseToolPan extends MouseTool
   constructor: (@x0, @y0) ->
   mouseMoved: (e)->
@@ -554,6 +604,9 @@ class MouseToolPan extends MouseTool
     @x0 = x
     @y0 = y
     k = 2.0 / canvas.height
+    
+    moveView dx*k , dy*k
+    rotateView 0.07
     moveView dx*k , dy*k
     
 class MouseToolRotate extends MouseTool
