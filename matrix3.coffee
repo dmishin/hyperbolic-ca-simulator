@@ -91,7 +91,7 @@ exports.translationMatrix = translationMatrix = (dx, dy) ->
   # distance is acosh( dx^2 + dy^2 + 1 )
   r2 = dx*dx+dy*dy
   dt = Math.sqrt(r2+1)
-  k = (dt-1)/r2
+  k = if r2 < 1e-6 then 0.5 else (dt-1)/r2
 
   xxk = dx*dx*k
   xyk = dx*dy*k

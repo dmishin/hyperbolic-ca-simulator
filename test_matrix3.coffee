@@ -53,4 +53,15 @@ describe "smul", ->
 
   it "must return same if multiplied by 1", ->
     assert.ok M.approxEq M.eye(), M.smul( 1.0, M.eye())
-        
+
+describe "translationMatrix", ->
+  it "must return unity for zero translation", ->
+    assert.ok M.approxEq M.eye(), M.translationMatrix(0,0)
+  it "must return almost unity for very small translation", ->
+    assert.ok M.approxEq M.eye(), M.translationMatrix(1e-5,1e-5), 1e-4
+
+  it "must return matrix that correctly translates zero", ->
+    T = M.translationMatrix 5,6
+    zero = [0,0,1]
+    expect = [5, 6, Math.sqrt(5**2+6**2+1)]
+    assert.ok M.approxEqv expect, M.mulv(T,zero)
