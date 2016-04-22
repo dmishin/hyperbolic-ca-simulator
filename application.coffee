@@ -4,7 +4,7 @@
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
-{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill, randomStateGenerator} = require "./field.coffee"
+{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, importField, randomFill, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill, randomStateGenerator} = require "./field.coffee"
 
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {runCommands}= require "./context_delegate.coffee"
@@ -437,7 +437,7 @@ drawEverything = ->
   context.restore()
   return true
 
-fpsLimiting = false
+fpsLimiting = true
 lastTime = Date.now()
 fpsDefault = 30
 dtMax = 1000.0/fpsDefault #
@@ -468,8 +468,7 @@ toggleCellAt = (x,y) ->
   else
     cells.put cell, paintStateSelector.state
   redraw()
-    
-    
+
 doCanvasClick = (e) ->
   e.preventDefault()
   [x,y] = getCanvasCursorPosition e, canvas
@@ -477,7 +476,7 @@ doCanvasClick = (e) ->
   updatePopulation()    
   
 doCanvasMouseDown = (e) ->
-  canvas.setCapture true
+  canvas.setCapture true if canvas.setCapture
   e.preventDefault()
   [x,y] = getCanvasCursorPosition e, canvas
   unless (e.button is 0) and not e.shiftKey
@@ -665,13 +664,13 @@ exportTrivial = (cells) ->
 doExport = ->
   #data = JSON.stringify(exportField(cells))
   data = stringifyFieldData exportField cells
-  edata = lzw_encode data
+  #edata = lzw_encode data
 
-  data1 = exportTrivial cells
-  edata1 = lzw_encode data1
+  #data1 = exportTrivial cells
+  #edata1 = lzw_encode data1
   
-  alert "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}\n trivial export: #{data1.length}, compressed: #{edata1.length}"
-  E('export').value = edata
+  #console.log "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}"
+  E('export').value = data
   E('export-dialog').style.display = ''
 
 doExportClose = ->
@@ -710,9 +709,24 @@ encodeVisible = ->
 
 doExportVisible = ->
   sdata = stringifyFieldData encodeVisible()
-  alert sdata
-  #alert JSON.stringify parseFieldData sdata
-  
+  E('export').value = sdata
+  E('export-dialog').style.display = ''
+
+doShowImport = ->  E('import-dialog').style.display = ''
+doImportCancel = ->
+  E('import-dialog').style.display = 'none'
+  E('import').value=''
+doImport = ->
+  try
+    data = parseFieldData E('import').value
+    cells = importField data 
+    updatePopulation()
+    redraw()
+    E('import-dialog').style.display = 'none'
+    E('import').value=''
+  catch e
+    alert "Error parsing: #{e}"
+    
 randomFillRadius = 5
 randomFillPercent = 0.4
 doRandomFill = ->
@@ -813,6 +827,9 @@ E('btn-rule-make-generic').addEventListener 'click', doEditAsGeneric
 E('btn-edit-rule').addEventListener 'click', doOpenEditor
 E('btn-disable-generic-rule').addEventListener 'click', doDisableGeneric
 E('btn-export-close').addEventListener 'click', doExportClose
+E('btn-import').addEventListener 'click', doShowImport
+E('btn-import-cancel').addEventListener 'click', doImportCancel
+E('btn-import-run').addEventListener 'click', doImport
 #initialize
 if not E('generic-tf-code').value
   E('generic-tf-code').value = GENERIC_TF_TEMPLATE
