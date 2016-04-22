@@ -477,6 +477,7 @@ doCanvasClick = (e) ->
   updatePopulation()    
   
 doCanvasMouseDown = (e) ->
+  canvas.setCapture true
   e.preventDefault()
   [x,y] = getCanvasCursorPosition e, canvas
   unless (e.button is 0) and not e.shiftKey
@@ -748,30 +749,6 @@ class Debouncer
     @timer = null
     @callback()
 
-# ============ Bind Events =================
-E("btn-reset").addEventListener "click", doReset
-E("btn-step").addEventListener "click", doStep
-#E("canvas").addEventListener "click", doCanvasClick
-E("canvas").addEventListener "mousedown", doCanvasMouseDown, true
-E("canvas").addEventListener "mouseup", doCanvasMouseUp
-E("canvas").addEventListener "mousemove", doCanvasMouseMove, true
-E("canvas").addEventListener "mousedrag", doCanvasMouseMove, true
-E("btn-set-rule").addEventListener "click", doSetRule
-E("btn-set-rule-generic").addEventListener "click", (e)->
-  doSetRuleGeneric()
-  doCloseEditor()
-E("btn-rule-generic-close-editor").addEventListener "click", doCloseEditor
-E("btn-set-grid").addEventListener "click", doSetGrid
-
-E("btn-export").addEventListener "click", doExport
-E('rule-entry').value = transitionFunc.toString()
-E('btn-search').addEventListener 'click', doSearch
-E('btn-random').addEventListener 'click', doRandomFill
-E('btn-rule-make-generic').addEventListener 'click', doEditAsGeneric
-E('btn-edit-rule').addEventListener 'click', doOpenEditor
-E('btn-disable-generic-rule').addEventListener 'click', doDisableGeneric
-E('btn-export-close').addEventListener 'click', doExportClose
-#initialize
 GENERIC_TF_TEMPLATE="""//Generic transistion function, coded in JS
 {
   //number of states
@@ -813,7 +790,30 @@ binaryTransitionFunc2GenericCode = (binTf) ->
      }
 }"""]
 
+# ============ Bind Events =================
+E("btn-reset").addEventListener "click", doReset
+E("btn-step").addEventListener "click", doStep
+#E("canvas").addEventListener "click", doCanvasClick
+E("canvas").addEventListener "mousedown", doCanvasMouseDown
+E("canvas").addEventListener "mouseup", doCanvasMouseUp
+E("canvas").addEventListener "mousemove", doCanvasMouseMove
+E("canvas").addEventListener "mousedrag", doCanvasMouseMove
+E("btn-set-rule").addEventListener "click", doSetRule
+E("btn-set-rule-generic").addEventListener "click", (e)->
+  doSetRuleGeneric()
+  doCloseEditor()
+E("btn-rule-generic-close-editor").addEventListener "click", doCloseEditor
+E("btn-set-grid").addEventListener "click", doSetGrid
 
+E("btn-export").addEventListener "click", doExport
+E('rule-entry').value = transitionFunc.toString()
+E('btn-search').addEventListener 'click', doSearch
+E('btn-random').addEventListener 'click', doRandomFill
+E('btn-rule-make-generic').addEventListener 'click', doEditAsGeneric
+E('btn-edit-rule').addEventListener 'click', doOpenEditor
+E('btn-disable-generic-rule').addEventListener 'click', doDisableGeneric
+E('btn-export-close').addEventListener 'click', doExportClose
+#initialize
 if not E('generic-tf-code').value
   E('generic-tf-code').value = GENERIC_TF_TEMPLATE
 
@@ -833,12 +833,9 @@ shortcuts =
   '3': (e) -> paintStateSelector.setState 3
   '4': (e) -> paintStateSelector.setState 4
   '5': (e) -> paintStateSelector.setState 5
-  #M
   'M': doMemorize
-  #U
   'U': doRemember
   'UA': doClearMemory
-  #H
   'H': doNavigateHome
   'HS': doStraightenView
   
