@@ -424,8 +424,9 @@ redraw = -> dirty = true
 
 drawEverything = ->
   return false unless observer.canDraw()
-  
-  context.clearRect 0, 0, canvas.width, canvas.height
+  context.fillStyle = "white"  
+  #context.clearRect 0, 0, canvas.width, canvas.height
+  context.fillRect 0, 0, canvas.width, canvas.height
   context.save()
   s = Math.min( canvas.width, canvas.height ) / 2 #
   context.scale s, s
