@@ -6,89 +6,108 @@
   </head>
   <body>
     <div id="main">
-      <div id="toolbar">
-	<button id="btn-search">Search</button>
-	<button id="btn-reset">Reset</button>
-	<button id="btn-random">Random</button>
-	<button id="btn-step">Step</button>
-	<span id="controls-rule-simple">
-	  Rule: <input id="rule-entry"></input>
-	  <button id="btn-set-rule">Set</button>
-	  <button id="btn-rule-make-generic">Generic...</button>
-	</span>
-	<span id="controls-rule-generic"  style="display:none">
-	  Generic rule
-	  <button id="btn-edit-rule">Edit...</button>
-	  <button id="btn-disable-generic-rule">Disable</button>	  
-	</span>
-	Population:<span id="population"></span> cells
-	Grid parameters: N=<input id="entry-n"></input>
-	M=<input id="entry-m"></input>
-	<button id="btn-set-grid">Set</button>
-	<button id="btn-misc">misc</button>
-	<button id="btn-export">Export</button>
-	<button id="btn-import">Import</button>
-	<div id="state-selector" style="display:none">
-	  States:<span id="state-selector-buttons"></span>
+      <div id="main-row">
+      <!--Main toolbar, containing most useful buttons-->
+      <!-- other tools -->
+      <div id="sidebar">
+	<!-- misc status information -->
+	<div id="statusbar" class="control-group">
+	  Population:<span id="population"></span> cells
 	</div>
-	
-	<button id="btn-mem-set">MS</button>
-	<button id="btn-mem-get">MR</button>
-	<button id="btn-mem-clear">MC</button>
-	
-	<button id="btn-nav-home">Home</button>
-	
-	<button id="btn-exp-visible">copy visible</button>
+	<div class="control-group">
+	  <span id="controls-rule-simple">
+	    Rule: <input id="rule-entry"></input>
+	    <button id="btn-set-rule">Set</button>
+	    <button id="btn-rule-make-generic">Generic...</button>
+	  </span>
+	  <span id="controls-rule-generic"  style="display:none">
+	    Generic rule
+	    <button id="btn-edit-rule">Edit...</button>
+	    <button id="btn-disable-generic-rule">Disable</button>	  
+	  </span>
+	</div>
+	<div class="control-group">
+	  Grid
+	  <br/>
+	  N=<input id="entry-n" class="short"></input>
+	  M=<input id="entry-m" class="short"></input>
+	  <button id="btn-set-grid">Set</button>
+	</div>
+
+	<div class="control-group">
+	  <button id="btn-mem-set">MS</button>
+	  <button id="btn-mem-get">MR</button>
+	  <button id="btn-mem-clear">MC</button>
+	</div>
+	<div class="control-group">
+	  <button id="btn-search">Search</button>
+	</div>
+	<div class="control-group">
+	  <button id="btn-export">Export</button>
+	  <button id="btn-exp-visible">Export visible</button>
+	  <button id="btn-import">Import</button>
+	</div>
       </div>
 
       <!-- Main content -->
       <div id="main-content">
-	<div id="canvas-container" style="padding:1em">
+      <div id="toolbar">
+	<button id="btn-reset">Reset</button>
+	<button id="btn-random">Random</button>
+	<button id="btn-step">Step</button>
+	<div id="state-selector" style="display:none">
+	  States:<span id="state-selector-buttons"></span>
+	</div>
+	<button id="btn-nav-home">Home</button>	
+      </div>
+	<div id="canvas-container">
 	  <canvas id="canvas" width="600" height="600"></canvas>
-	</div>
+	</div>      
+      </div>
       
-	<div id="navigator">
-	  <h1>Navigator</h1>
-	  <div id="navigator-cluster-list">
-	  </div>
+      <div id="navigator">
+	<div id="navigator-cluster-list">
 	</div>
       </div>
       
       
-      <!-- popup dialogs ets -->
-      <div id="generic-tf-editor" style="display:none" class="popup-container">
-	<div>
-	  <h1>Custom Rule</h1>
-	  Javascript code:<br/>
-	  <textarea id="generic-tf-code" style="width:100%"></textarea>
-	  <div>Status: <span id="generic-tf-status">modified</span></div>
-	  <div class="toolbar">
-	    <button id="btn-set-rule-generic">OK</button>
-	    <button id="btn-rule-generic-close-editor">Cancel</button>
-	  </div>
-	</div>
       </div>
+    </div>
 
-      <div id="export-dialog" style="display:none" class="popup-container">
-	<div>
-	  <h1>Export data</h1>
-	  <textarea id="export" style="width:100%"></textarea>
-	  <div class="toolbar">
-	    <button id="btn-export-close">OK</button>
-	  </div>
-	</div>
-      </div>
-      <div id="import-dialog" style="display:none" class="popup-container">
-	<div>
-	  <h1>Import data</h1>
-	  <textarea id="import" style="width:100%"></textarea>
-	  <div class="toolbar">
-	    <button id="btn-import-run">OK</button>
-	    <button id="btn-import-cancel">Cancel</button>
-	  </div>
+    <!-- popup dialogs ets -->
+    <div id="generic-tf-editor" style="display:none" class="popup-container">
+      <div>
+	<h1>Custom Rule</h1>
+	Javascript code:<br/>
+	<textarea id="generic-tf-code" style="width:100%"></textarea>
+	<div>Status: <span id="generic-tf-status">modified</span></div>
+	<div class="toolbar">
+	  <button id="btn-set-rule-generic">OK</button>
+	  <button id="btn-rule-generic-close-editor">Cancel</button>
 	</div>
       </div>
     </div>
+
+    <div id="export-dialog" style="display:none" class="popup-container">
+      <div>
+	<h1>Export data</h1>
+	<textarea id="export" style="width:100%"></textarea>
+	<div class="toolbar">
+	  <button id="btn-export-close">OK</button>
+	</div>
+      </div>
+    </div>
+    <div id="import-dialog" style="display:none" class="popup-container">
+      <div>
+	<h1>Import data</h1>
+	<textarea id="import" style="width:100%"></textarea>
+	<div class="toolbar">
+	  <button id="btn-import-run">OK</button>
+	  <button id="btn-import-cancel">Cancel</button>
+	</div>
+      </div>
+    </div>    
+    
     <script src="test_app_bundle.js"></script>
   </body>
 </html>

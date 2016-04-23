@@ -20,15 +20,69 @@
 }
 
 /*Main layout*/
-#main-content{
-    position: relative;
+#main{
+    display: table;
+    text-align: center;
+    width: 100%;
 }
-#navigator {
-//    background-color: blue;
-    position: absolute;
-    top: 0;
-    right: 0;
-//    height: 100%;
-    overflow: scroll;
+#main-row{
+    display: table-row;
+}
+#main-row > div{
+    vertical-align: top;
+    display: table-cell;    
 }
 
+#main-content{
+}
+#navigator {
+}
+#toolbar {
+    text-align:center;
+}
+#sidebar {
+    width: 12em;
+}
+
+#canvas-container{
+    text-align: center;
+    padding: 0;
+    border: 0;
+    background-color: white;
+}
+
+
+/* Tweak controls */
+.control-group {
+    padding: 0.1em;
+    margin: 1em 0.1em;
+    border-top: solid gray 1px;
+}
+
+button{
+    margin: 0.2em 0;
+    padding:0;
+
+ display: inline-block;
+ border: none;
+ color: #000000;
+ border-radius: 0.2em;
+ -webkit-border-radius: 0.2em;
+ -moz-border-radius: 0.2em;
+ font-family: Verdana;
+ width: auto;
+ height: auto;
+ font-size: 1em;
+ padding: 0.5em;
+ -text-shadow: 0 1px 0 #FFFFFF;
+ background-color: #E0E0E0;
+}
+
+button:hover, button:active{
+ border: none;
+ color: #705D07;
+ background-color: #5BDFFC;    
+}
+input.short {
+    width:2em;
+}
