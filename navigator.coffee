@@ -26,20 +26,33 @@ exports.Navigator = class Navigator
   updateClusterList: ->
     dom = new DomBuilder
 
-    dom.tag "ul"
+    dom.tag("table")
+       .tag("thead")
+       .tag('tr')
+          .tag('th').text('Cells').end()
+          .tag('th').text('Distance').end()
+       .end()
+       .end()
+      
+      
     
+    dom.tag "tbody"
     for cluster, idx in @clusters
       size = cluster.length
       dist = chainLen cluster[0]
 
-      dom.tag("li")
-         .rtag("navtag", "a").a("href", "#nav-cluster#{idx}")
-         .text("#{size} cells at distance #{dist}")
+      dom.tag("tr")
+         .tag("td")
+           .rtag("navtag", "a").a("href", "#nav-cluster#{idx}").text("#{size}").end()
+         .end()
+         .tag('td')
+         .rtag("navtag1", "a").a("href", "#nav-cluster#{idx}").text("#{dist}").end()
          .end()
          .end()
-        
-      dom.vars.navtag.addEventListener "click",
-        @makeNavigateTo cluster[0]
+
+      listener = @makeNavigateTo cluster[0]
+      dom.vars.navtag.addEventListener "click", listener
+      dom.vars.navtag1.addEventListener "click", listener        
       
     dom.end()
     

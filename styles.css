@@ -35,8 +35,6 @@
 
 #main-content{
 }
-#navigator {
-}
 #toolbar {
     text-align:center;
 }
@@ -85,4 +83,28 @@ button:hover, button:active{
 }
 input.short {
     width:2em;
+}
+
+
+#navigator {
+    height: 1wh;
+    overflow: auto;
+}
+#navigator table{
+    border-collapse: collapse;
+}
+/* Navigator styles */
+#navigator tr:hover{
+    background-color: silver;
+}
+#navigator td{
+    text-align: center;
+    border: solid 1px  silver;
+}
+
+#navigator table a
+{
+    display:block;
+    text-decoration:none;
+    color: black;
 }
