@@ -65,3 +65,36 @@ describe "translationMatrix", ->
     zero = [0,0,1]
     expect = [5, 6, Math.sqrt(5**2+6**2+1)]
     assert.ok M.approxEqv expect, M.mulv(T,zero)
+
+describe "addScaledInplace", ->
+  it "must modify matrix inplace", ->
+    m = M.eye()
+    m1 = [1,1,1, 1,1,1, 1,1,1]
+
+    M.addScaledInplace m, m1, 1
+    expect = [2,1,1, 1,2,1, 1,1,2]
+    assert.ok M.approxEqv expect, m
+
+  it "must add with coefficient", ->
+    m = M.eye()
+    m1 = [1,1,1, 1,1,1, 1,1,1]
+
+    M.addScaledInplace m, m1, -2
+    expect = [-1,-2,-2, -2,-1,-2, -2,-2,-1]
+    assert.ok M.approxEqv expect, m
+        
+
+describe "powerPade", ->
+  it "must calculate powers of rotation matrices", ->
+    m = M.rotationMatrix 0.6
+    mpow = M.powerPade m, 1.3
+    expect = M.rotationMatrix(0.6*1.3)
+    assert.ok M.approxEqv mpow, expect, 1e-4
+
+  it "must calculate powers of identity matrix", ->
+    e = M.eye()
+
+    assert.ok M.approxEqv e, M.powerPade(e, 1.0)
+    assert.ok M.approxEqv e, M.powerPade(e, 0.5)
+    assert.ok M.approxEqv e, M.powerPade(e, 1.5)        
+

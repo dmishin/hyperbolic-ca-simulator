@@ -28,6 +28,7 @@ exports.hrot = hrot = (i, j, sinhD) ->
   set m, j, j, c
   return m
 
+
 exports.mul = mul = (m1, m2) ->
   m = zero()
   for i in [0...3]
@@ -38,6 +39,7 @@ exports.mul = mul = (m1, m2) ->
       m[i*3+j] = s
   return m
 
+
 exports.approxEq = approxEq = (m1, m2, eps=1e-6)->
   d = 0.0
   for i in [0...9]
@@ -45,6 +47,7 @@ exports.approxEq = approxEq = (m1, m2, eps=1e-6)->
   return d < eps
 
 exports.copy = copy = (m) -> m[..]
+
 exports.mulv = mulv = (m, v) ->
   [m[0]*v[0] + m[1]*v[1] + m[2]*v[2],
    m[3]*v[0] + m[4]*v[1] + m[5]*v[2],
@@ -69,6 +72,10 @@ exports.inv = inv = (m) ->
 
 exports.smul = smul = (k, m) -> (mi*k for mi in m)
 exports.add = add = (m1, m2) -> (m1[i]+m2[i] for i in [0...9])
+exports.addScaledInplace = addScaledInplace = (m, m1, k) ->
+  for i in [0...m.length]
+    m[i] += m1[i]*k
+  return m
 exports.transpose = transpose = (m)->
   [m[0], m[3], m[6],
    m[1], m[4], m[7],
@@ -107,4 +114,36 @@ exports.rotationMatrix = rotationMatrix = (angle) ->
   [c,   s,   0.0,
    -s,  c,   0.0,
    0.0, 0.0, 1.0]
+
+
+exports.powerPade = (m, a) ->
+  #Use pade approximation {3,3} to calculate matrix power
+  #
+  # ( 1/120 (a+3) (a+2) (a+1) x^3 + 1/10 (a+3) (a+2) x^2 + 1/2 (a+3) x+1)
+  # ( 1/120 (3-a) (2-a) (1-a) x^3 + 1/10 (3-a) (2-a) x^2 + 1/2 (3-a) x+1)
+
+  n1 = (a+3)*0.5
+  n2 = n1*(a+2)*0.2
+  n3 = n2*(a+1)*(1.0/12.0)
   
+  d1 = (3-a)*0.5
+  d2 = d1*(2-a)*0.2
+  d3 = d2*(1-a)*(1.0/12.0)
+
+  #Subtract E
+  x = add m, [-1,0,0,0,-1,0,0,0,-1]
+  x2 = mul x, x
+  x3 = mul x2, x
+
+  num = eye()
+  den = eye()
+
+  addScaledInplace num, x, n1
+  addScaledInplace num, x2, n2
+  addScaledInplace num, x3, n3
+
+  addScaledInplace den, x, d1
+  addScaledInplace den, x2, d2
+  addScaledInplace den, x3, d3
+
+  mul num, inv den
