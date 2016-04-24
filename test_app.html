@@ -61,6 +61,8 @@
 	<button id="btn-reset">Reset</button>
 	<button id="btn-random">Random</button>
 	<button id="btn-step">Step</button>
+	<button id="btn-play-start">Go</button>
+	<button id="btn-play-stop" style="display:none">Stop</button>
 	<div id="state-selector" style="display:none">
 	  States:<span id="state-selector-buttons"></span>
 	</div>
@@ -72,8 +74,9 @@
       </div>
       
       <div id="navigator">
-	<button id="btn-nav-clear">Clear</button>
-	<div id="navigator-cluster-list">
+	<button id="btn-nav-clear" style="display:none">Clear</button>
+	<div id="navigator-wrap">
+	  <div id="navigator-cluster-list"></div>
 	</div>
       </div>
       

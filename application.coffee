@@ -22,6 +22,8 @@ MIN_WIDTH = 100
 updateCanvasSize = ->
   docW = documentWidth()
   winW = windowWidth()
+
+  
   if docW > winW
     console.log "overflow"
     usedWidth = docW - canvas.width
@@ -35,7 +37,11 @@ updateCanvasSize = ->
 
   #now calculae available height
   canvasRect = canvas.getBoundingClientRect()
-  h = windowHeight() - canvasRect.top
+  winH = windowHeight()
+  h = winH - canvasRect.top
+
+  navWrap = E('navigator-wrap')
+  navWrap.style.height = "#{winH - navWrap.getBoundingClientRect().top - 16}px"
 
   #get the smaller of both
   w = Math.min(w,h) 
@@ -446,10 +452,43 @@ doReset = ->
   updatePopulation()
   redraw()
 
-doStep = ->
+doStep = (onFinish)->
   cells = evaluateTotalisticAutomaton cells, getNeighbors, transitionFunc.evaluate.bind(transitionFunc), transitionFunc.plus, transitionFunc.plusInitial
   redraw()
   updatePopulation()
+  onFinish?()
+
+player = null
+playerTimeout = 500
+autoplayCriticalPopulation = 90000
+doStartPlayer = ->
+  return if player?
+
+  runPlayerStep = ->
+    if cells.count >= autoplayCriticalPopulation
+      alert "Population reached #{cells.count}, stopping auto-play"
+      player = null
+    else
+      player = setTimeout( (-> doStep(runPlayerStep)), playerTimeout )
+    updatePlayButtons()
+
+  runPlayerStep()
+  
+doStopPlayer = ->
+  if player
+    clearTimeout player
+    player = null
+    updatePlayButtons()
+
+doTogglePlayer = ->
+  if player
+    doStopPlayer()
+  else
+    doStartPlayer()
+
+updatePlayButtons = ->
+  E('btn-play-start').style.display = if player then "none" else ''
+  E('btn-play-stop').style.display = unless player then "none" else ''
 
 dirty = true
 redraw = -> dirty = true
@@ -606,6 +645,7 @@ setGridImpl = (n, m)->
   navigator.setObserver observer
   navigator.clear()
   doClearMemory()
+  doStopPlayer()
 
 moveView = (dx, dy) -> observer.modifyView M.translationMatrix(dx, dy)        
 rotateView = (angle) -> observer.modifyView M.rotationMatrix angle
@@ -881,10 +921,13 @@ binaryTransitionFunc2GenericCode = (binTf) ->
 E("btn-reset").addEventListener "click", doReset
 E("btn-step").addEventListener "click", doStep
 #E("canvas").addEventListener "click", doCanvasClick
-E("canvas").addEventListener "mousedown", doCanvasMouseDown
-E("canvas").addEventListener "mouseup", doCanvasMouseUp
-E("canvas").addEventListener "mousemove", doCanvasMouseMove
-E("canvas").addEventListener "mousedrag", doCanvasMouseMove
+#
+mouseMoveReceiver = E("canvas-container")
+mouseMoveReceiver.addEventListener "mousedown", doCanvasMouseDown
+mouseMoveReceiver.addEventListener "mouseup", doCanvasMouseUp
+mouseMoveReceiver.addEventListener "mousemove", doCanvasMouseMove
+mouseMoveReceiver.addEventListener "mousedrag", doCanvasMouseMove
+
 E("btn-set-rule").addEventListener "click", doSetRule
 E("btn-set-rule-generic").addEventListener "click", (e)->
   doSetRuleGeneric()
@@ -915,6 +958,9 @@ E('btn-nav-home').addEventListener 'click', doNavigateHome
 window.addEventListener 'resize', updateCanvasSize
 E('btn-nav-clear').addEventListener 'click', (e) -> navigator.clear()
 E('btn-upload').addEventListener 'click', doUpload
+E('btn-play-start').addEventListener 'click', doTogglePlayer
+E('btn-play-stop').addEventListener 'click', doTogglePlayer
+
 shortcuts =
   'N': doStep
   'C': doReset
@@ -930,6 +976,8 @@ shortcuts =
   'UA': doClearMemory
   'H': doNavigateHome
   'HS': doStraightenView
+  'G': doTogglePlayer
+  '#32': doTogglePlayer
   
 document.addEventListener "keydown", (e)->
   focused = document.activeElement
@@ -949,4 +997,5 @@ document.addEventListener "keydown", (e)->
 updateCanvasSize()
 updateGrid()
 updateMemoryButtons()
+updatePlayButtons()
 redraw()
