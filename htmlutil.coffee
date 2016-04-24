@@ -82,3 +82,4 @@ if not HTMLCanvasElement.prototype.toBlob?
          arr[i] = binStr.charCodeAt(i)
       callback new Blob [arr], {type: type || 'image/png'}
   }
+
