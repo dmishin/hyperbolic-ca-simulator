@@ -913,4 +913,5 @@ document.addEventListener "keydown", (e)->
   if (handler = shortcuts[keyCode])?
     e.preventDefault()
     handler(e)
+updateCanvasSize()    
 redraw()
