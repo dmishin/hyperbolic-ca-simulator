@@ -425,7 +425,7 @@ class PaintStateSelector
         @state2id[state] = btnId
         id2state[btnId] = state
         dom.tag('button').store('btn')\
-           .CLASS(if state is @state then 'btn-active' else '')\
+           .CLASS(if state is @state then 'btn-selected' else '')\
            .ID(btnId)\
            .a('style', "background-color:#{color}")\
            .text(''+state)\
@@ -1061,6 +1061,8 @@ E('animate-set-start').addEventListener 'click', -> animator.setStart observer
 E('animate-set-end').addEventListener 'click', -> animator.setEnd observer
 E('btn-upload-animation').addEventListener 'click', (e)->
   animator.animate observer, parseInt(E('animate-frame-per-generation').value,10), parseInt(E('animate-generations').value, 10), (-> null)
+
+E('view-straighten').addEventListener 'click', (e)-> observer.straightenView()
 
 E('view-straighten').addEventListener 'click', (e)-> observer.straightenView()
 

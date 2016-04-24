@@ -87,22 +87,42 @@ button{
 
 }
 
-button:disabled, button[disabled]:hover{
+button:disabled,
+button[disabled]:hover{
     background-color: #F0F0F0;
     color: #C0C0C0;
 }
-
-
-button:hover,
-button:active{
-    border: none;
-    color: #705D07;
-    background-color: #5BDFFC;    
+button:hover{
+    background-color: #C0E0E0;    
 }
+button:active{
+    background-color: #C0F0F0;    
+}
+
+button.dangerous:hover{
+    background-color: #E0C0C0;    
+}
+button.dangerous:active{
+    background-color: #F0C0C0;    
+}
+
+#state-selector button{
+    color: white;
+    margin: 0 0.2em;
+}
+#state-selector button.btn-selected{
+    padding: 0.8em;
+}
+
+input{
+    background-color: white;
+    border: solid  1px #C0C0C0;
+    padding: 0.3em 0.1em;
+}
+
 input.short {
     width:2em;
 }
-
 
 #navigator-wrap {
     overflow-y: auto;
