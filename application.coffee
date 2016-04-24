@@ -425,7 +425,7 @@ class PaintStateSelector
         @state2id[state] = btnId
         id2state[btnId] = state
         dom.tag('button').store('btn')\
-           .CLASS(if state is @state then 'btn-active' else '')\
+           .CLASS(if state is @state then 'btn-selected' else '')\
            .ID(btnId)\
            .a('style', "background-color:#{color}")\
            .text(''+state)\
