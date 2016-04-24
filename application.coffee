@@ -865,10 +865,13 @@ binaryTransitionFunc2GenericCode = (binTf) ->
 E("btn-reset").addEventListener "click", doReset
 E("btn-step").addEventListener "click", doStep
 #E("canvas").addEventListener "click", doCanvasClick
-E("canvas").addEventListener "mousedown", doCanvasMouseDown
-E("canvas").addEventListener "mouseup", doCanvasMouseUp
-E("canvas").addEventListener "mousemove", doCanvasMouseMove
-E("canvas").addEventListener "mousedrag", doCanvasMouseMove
+#
+mouseMoveReceiver = E("canvas-container")
+mouseMoveReceiver.addEventListener "mousedown", doCanvasMouseDown
+mouseMoveReceiver.addEventListener "mouseup", doCanvasMouseUp
+mouseMoveReceiver.addEventListener "mousemove", doCanvasMouseMove
+mouseMoveReceiver.addEventListener "mousedrag", doCanvasMouseMove
+
 E("btn-set-rule").addEventListener "click", doSetRule
 E("btn-set-rule-generic").addEventListener "click", (e)->
   doSetRuleGeneric()
