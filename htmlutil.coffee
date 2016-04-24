@@ -1,5 +1,7 @@
 #I am learning JS and want to implement this functionality by hand
 
+exports.E = E = (id) -> document.getElementById id
+
 # Remove class from the element
 exports.removeClass = removeClass = (e, c) ->
   e.className = (ci for ci in e.className.split " " when c isnt ci).join " "
@@ -53,3 +55,18 @@ exports.ButtonGroup = class ButtonGroup
       @_changeActiveButton null, null
     else
       @_changeActiveButton document.getElementById(newId), null
+
+exports.windowWidth = ->
+  #http://stackoverflow.com/questions/3437786/get-the-size-of-the-screen-current-web-page-and-browser-window
+  window.innerWidth \
+    || document.documentElement.clientWidth\
+    || document.body.clientWidth
+exports.windowHeight = ->
+  window.innerHeight \
+    || document.documentElement.clientHeight\
+    || document.body.clientHeight
+
+exports.documentWidth = ->
+    document.documentElement.scrollWidth\
+    || document.body.scrollWidth
+

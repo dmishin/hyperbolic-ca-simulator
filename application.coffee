@@ -13,28 +13,11 @@
 #{shortcut} = require "./shortcut.coffee"
 {makeXYT2path, poincare2hyperblic, visibleNeighborhood} = require "./poincare_view.coffee"
 {DomBuilder} = require "./dom_builder.coffee"
-{ButtonGroup} = require "./htmlutil.coffee"
+{E, ButtonGroup, windowWidth, windowHeight, documentWidth} = require "./htmlutil.coffee"
 
 M = require "./matrix3.coffee"
 
-E = (id) -> document.getElementById id
-
-
 MIN_WIDTH = 100
-
-windowWidth = ->
-  #http://stackoverflow.com/questions/3437786/get-the-size-of-the-screen-current-web-page-and-browser-window
-  window.innerWidth \
-    || document.documentElement.clientWidth\
-    || document.body.clientWidth
-windowHeight = ->
-  window.innerHeight \
-    || document.documentElement.clientHeight\
-    || document.body.clientHeight
-
-documentWidth = ->
-    document.documentElement.scrollWidth\
-    || document.body.scrollWidth
 
 updateCanvasSize = ->
   docW = documentWidth()
