@@ -587,6 +587,11 @@ doSetGrid = ->
   catch e
     alert ""+e
 
+updateGrid = ->
+  E('entry-n').value = "" + tessellation.group.n
+  E('entry-m').value = "" + tessellation.group.m
+  return
+
 setGridImpl = (n, m)->
   tessellation = new Tessellation n, m
   console.log "Running knuth-bendix algorithm for {#{n}, #{m}}...."
@@ -599,6 +604,7 @@ setGridImpl = (n, m)->
   observer = new ObserverClass tessellation, appendRewrite, minVisibleSize
   observer.onFinish = -> redraw()
   navigator.setObserver observer
+  navigator.clear()
 
 moveView = (dx, dy) -> observer.modifyView M.translationMatrix(dx, dy)        
 rotateView = (angle) -> observer.modifyView M.rotationMatrix angle
@@ -874,7 +880,7 @@ E('btn-mem-clear').addEventListener 'click', doClearMemory
 E('btn-exp-visible').addEventListener 'click', doExportVisible
 E('btn-nav-home').addEventListener 'click', doNavigateHome
 window.addEventListener 'resize', updateCanvasSize
-
+E('btn-nav-clear').addEventListener 'click', (e) -> navigator.clear()
 
 shortcuts =
   'N': doStep
@@ -907,5 +913,6 @@ document.addEventListener "keydown", (e)->
   if (handler = shortcuts[keyCode])?
     e.preventDefault()
     handler(e)
-updateCanvasSize()    
+updateCanvasSize()
+updateGrid()
 redraw()

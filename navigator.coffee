@@ -3,16 +3,20 @@
 {eliminateFinalA, NodeHashMap, chainLen} = require "./vondyck_chain.coffee"
 {mooreNeighborhood, allClusters} = require "./field.coffee"
 {DomBuilder} = require "./dom_builder.coffee"
+{E} = require "./htmlutil.coffee"
 
 exports.Navigator = class Navigator
-  constructor: (@observer) ->
-    @clustersElem = document.getElementById "navigator-cluster-list"
+  constructor: (@observer, navigatorElemId="navigator-cluster-list", btnClearId="btn-nav-clear") ->
+    @clustersElem = E navigatorElemId
+    @btnClear = E btnClearId
     @clusters = []
+    @btnClear.style.display = 'none'
     
   search: (field, n, m, appendRewrite)->
     #field is NodeHashMap
     @clusters = allClusters field, n, m, appendRewrite
     @updateClusterList()
+    @btnClear.style.display = if @clusters then '' else 'none'  
 
   setObserver: (o) -> @observer = o
   
@@ -22,6 +26,11 @@ exports.Navigator = class Navigator
     if @observer?
       @observer.navigateTo chain
     return
+    
+  clear: ->
+    @clusters = []
+    @clustersElem.innerHTML = ""
+    @btnClear.style.display = 'none'
     
   updateClusterList: ->
     dom = new DomBuilder
