@@ -8,5 +8,5 @@ test:
 	mocha test*.coffee --compilers coffee:coffee-script/register
 
 start:
-	python -m http.server &
+	python simple_http_server_with_upload &
 	xdg-open http://localhost:8000/test_app.html
