@@ -715,18 +715,27 @@ doExport = ->
 doExportClose = ->
   E('export-dialog').style.display = 'none'
 
-doUpload = ->
-  dataURL = canvas.toDataURL();
-  xmlHttpReq = false;       
+getAjax = ->
   if window.XMLHttpRequest?
-    ajax = new XMLHttpRequest()
+    return new XMLHttpRequest()
   else if window.ActiveXObject?
-    ajax = new ActiveXObject("Microsoft.XMLHTTP")
-  ajax.open 'POST', '', false
-  ajax.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-  ajax.onreadystatechange = ->
-     console.log ajax.responseText
-  ajax.send dataURL
+    return new ActiveXObject("Microsoft.XMLHTTP")
+  
+doUpload = ->
+  uploadToServer "canvas.png", ->
+    console.log ajax.responseText
+    
+uploadToServer = (imgname, ajaxCallback)->
+  dataURL = canvas.toDataURL();  
+  cb = (blob) ->
+    formData = new FormData()
+    formData.append "file", blob, imgname
+    ajax = getAjax()
+    ajax.open 'POST', '/', false
+    ajax.onreadystatechange = callback
+    ajax.send(formData)
+  canvas.toBlob cb, "image/png"
+
 
 doSearch = ->
   navigator.search cells, tessellation.group.n, tessellation.group.m, appendRewrite

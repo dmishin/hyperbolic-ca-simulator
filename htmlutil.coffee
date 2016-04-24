@@ -70,3 +70,15 @@ exports.documentWidth = ->
     document.documentElement.scrollWidth\
     || document.body.scrollWidth
 
+
+
+if not HTMLCanvasElement.prototype.toBlob?
+  Object.defineProperty HTMLCanvasElement.prototype, 'toBlob', {
+    value: (callback, type, quality) -> 
+      binStr = atob @toDataURL(type, quality).split(',')[1]
+      len = binStr.length
+      arr = new Uint8Array(len)
+      for i in [0...len] by 1
+         arr[i] = binStr.charCodeAt(i)
+      callback new Blob [arr], {type: type || 'image/png'}
+  }

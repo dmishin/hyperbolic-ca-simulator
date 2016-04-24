@@ -115,6 +115,7 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             remainbytes -= len(line)
             line = self.rfile.readline()
             remainbytes -= len(line)
+            print ("###", path, fn, fn[0])
             try:
                 out = open(fn, 'wb')
             except IOError:
