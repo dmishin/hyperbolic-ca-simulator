@@ -20,8 +20,46 @@ M = require "./matrix3.coffee"
 E = (id) -> document.getElementById id
 
 
+MIN_WIDTH = 100
 
+windowWidth = ->
+  #http://stackoverflow.com/questions/3437786/get-the-size-of-the-screen-current-web-page-and-browser-window
+  window.innerWidth \
+    || document.documentElement.clientWidth\
+    || document.body.clientWidth
 
+documentWidth = ->
+    document.documentElement.scrollWidth\
+    || document.body.scrollWidth
+
+updateCanvasSize = ->
+  docW = documentWidth()
+  winW = windowWidth()
+  if docW > winW
+    console.log "overflow"
+    usedWidth = docW - canvas.width
+    #console.log "#Win: #{windowWidth()}, doc: #{documentWidth()}, used: #{usedWidth}"
+    w = winW - usedWidth
+  else
+    #console.log "underflow"
+    containerAvail=E('canvas-container').clientWidth
+    #console.log "awail width: #{containerAvail}"
+    w = containerAvail
+  #reduce it a bit
+  w -= 16
+  
+  #make width multiple of 16
+  w = w & ~ 15
+  
+  #console.log "New w is #{w}"
+  if w <= MIN_WIDTH
+    w = MIN_WIDTH
+
+  if canvas.width isnt w
+    canvas.width = w
+    canvas.height = w
+    redraw()
+  return
 
 
 class FieldObserver
@@ -679,6 +717,7 @@ doExportClose = ->
     
 doSearch = ->
   navigator.search cells, tessellation.group.n, tessellation.group.m, appendRewrite
+  updateCanvasSize()
 
 memo = null
 doMemorize = ->
@@ -840,6 +879,8 @@ E('btn-mem-get').addEventListener 'click', doRemember
 E('btn-mem-clear').addEventListener 'click', doClearMemory
 E('btn-exp-visible').addEventListener 'click', doExportVisible
 E('btn-nav-home').addEventListener 'click', doNavigateHome
+window.addEventListener 'resize', updateCanvasSize
+
 
 shortcuts =
   'N': doStep
