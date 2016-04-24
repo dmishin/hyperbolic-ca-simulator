@@ -1,6 +1,6 @@
 "use strict"
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
-{unity, inverseChain, appendChain, NodeHashMap, newNode, showNode, chainEquals, node2array} = require "./vondyck_chain.coffee"
+{unity, inverseChain, appendChain, appendInverseChain, NodeHashMap, newNode, showNode, chainEquals, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
@@ -415,8 +415,67 @@ class PaintStateSelector
     @state = newState
     if @buttons
       @buttons.setButton @state2id[newState]
+
+class Animator
+  constructor: ->
+    @reset
+    
+  reset: ->
+    @startChain = null
+    @startOffset = null
+    @endChain = null
+    @endOffset = null
+
+  setStart: (observer) ->
+    @startChain = observer.getViewCenter()
+    @startOffset = observer.getViewOffsetMatrix()
+    E('animate-info').innerHTML = "Start: #{showNode @startChain}, #{JSON.stringify @startOffset}"
+        
+  setEnd: (observer) ->
+    @endChain = observer.getViewCenter()
+    @endOffset = observer.getViewOffsetMatrix()
+    E('animate-info').innerHTML = "Start: #{showNode @startChain}, #{JSON.stringify @startOffset}<br/>End: #{showNode @endChain}, #{JSON.stringify @endOffset}"
+
+  animate: (observer, stepsPerGen, generations, callback)->
+    #global (surreally big) view matrix is:
+    # 
+    # Moffset * M(chain)
+    #
+    # where Moffset is view offset, and M(chain) is transformation matrix of the chain.
+    # We need to find matrix T such that
+    #
+    #  T * MoffsetStart * M(chainStart) = MoffsetEnd * M(chainEnd)
+    #
+    # Solvign this, get:
+    # T = MoffsetEnd * (M(chainEnd) * M(chainStart)^-1) * MoffsetStart^-1
+    #
+    # T = MoffsetEnd * M(chainEnd + invChain(chainStart) * MoffsetStart^-1
+
+    #Not very sure but lets try
+    Mdelta = appendInverseChain(@endChain, @startChain,appendRewrite).repr(tessellation.group)
+
+    T = M.mul(M.mul(@endOffset, Mdelta), M.hyperbolicInv(@startOffset))
+
+    dT = M.powerPade T, 1.0/(stepsPerGen * generations)
+    console.log "Offset matrix determined: #{JSON.stringify T}"
+
+    observer.navigateTo @startChain, @startOffset
+    drawEverything()
+    steps = generations * stepsPerGen
+    timerId = setInterval (->
+      observer.modifyView dT
+      steps -=1
+      console.log "offset! remaining steps: #{steps}"
+      console.log "cur tfm: #{JSON.stringify observer.getViewOffsetMatrix()}"
+      drawEverything()
+      if steps <= 0
+        clearInterval timerId
+        console.log "End animation"
+      ), 500
+    
 # ============================================  app code ===============
 #
+animator = new Animator()
 
 canvas = E "canvas"
 context = canvas.getContext "2d"
@@ -960,6 +1019,10 @@ E('btn-nav-clear').addEventListener 'click', (e) -> navigator.clear()
 E('btn-upload').addEventListener 'click', doUpload
 E('btn-play-start').addEventListener 'click', doTogglePlayer
 E('btn-play-stop').addEventListener 'click', doTogglePlayer
+E('animate-set-start').addEventListener 'click', -> animator.setStart observer
+E('animate-set-end').addEventListener 'click', -> animator.setEnd observer
+E('btn-upload-animation').addEventListener 'click', (e)->
+  animator.animate observer, parseInt(E('animate-frame-per-generation').value,10), parseInt(E('animate-generations').value, 10), (-> null)
 
 shortcuts =
   'N': doStep
