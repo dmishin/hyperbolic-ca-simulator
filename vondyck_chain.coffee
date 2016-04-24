@@ -229,12 +229,16 @@ exports.NodeHashMap = class NodeHashMap
   
 
 #Inverse element of the chain
-exports.inverseChain = inverseChain = (c, appendRewrite) ->
+exports.inverseChain = (c, appendRewrite) -> appendInverseChain unity, c, appendRewrite
+
+# appends c^-1 to a
+exports.appendInverseChain = appendInverseChain = (a, c, appendRewrite) ->
   elementsWithPowers = node2array c
   elementsWithPowers.reverse()
   for e_p in elementsWithPowers
     e_p[1] *= -1
-  appendRewrite unity, elementsWithPowers
+  appendRewrite a, elementsWithPowers
+
 
 exports.appendChain = appendChain = (c1, c2, appendRewrite) ->
   appendRewrite c1, node2array(c2)  

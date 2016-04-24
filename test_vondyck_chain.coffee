@@ -1,5 +1,5 @@
 assert = require "assert"
-{unity, reverseShortlexLess, nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, NodeHashMap, reverseShortlexLess, inverseChain, appendChain} = require "./vondyck_chain.coffee"
+{unity, reverseShortlexLess, nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, NodeHashMap, reverseShortlexLess, inverseChain, appendChain, appendInverseChain} = require "./vondyck_chain.coffee"
 
 M = require "./matrix3.coffee"
 
@@ -287,6 +287,25 @@ describe "inverseChain", ->
     iic = inverseChain ic, appendRewrite
 
     assert chainEquals c, iic
+
+describe "appendInverseChain", ->
+  n = 5
+  m = 4
+  rewriteRuleset = knuthBendix vdRule n, m
+  appendRewrite = makeAppendRewrite rewriteRuleset
+  
+  it "unity * unity^-1 = unity", ->
+    assert chainEquals unity, appendInverseChain(unity, unity, appendRewrite)
+    
+  it "For simple 1-element values, x * (x^-1) = unity", ->
+    c = newNode 'a', 1, unity
+    assert chainEquals appendInverseChain(c, c, appendRewrite), unity
+
+
+  it "For non-simple chain, x*(x^-1) = unitu", ->
+    c = appendRewrite unity, [['b',1],['a',2],['b',-2],['a',3],['b',1]]
+    assert appendInverseChain(c, c, appendRewrite), unity
+
 
 describe "appendChain", ->
   n = 5
