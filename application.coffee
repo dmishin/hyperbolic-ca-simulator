@@ -437,6 +437,7 @@ class Animator
     E('animate-info').innerHTML = "Start: #{showNode @startChain}, #{JSON.stringify @startOffset}<br/>End: #{showNode @endChain}, #{JSON.stringify @endOffset}"
 
   animate: (observer, stepsPerGen, generations, callback)->
+    return unless @startChain? and @endChain?
     #global (surreally big) view matrix is:
     # 
     # Moffset * M(chain)
@@ -452,23 +453,33 @@ class Animator
     # T = MoffsetEnd * M(chainEnd + invChain(chainStart) * MoffsetStart^-1
 
     #Not very sure but lets try
-    Mdelta = appendInverseChain(@endChain, @startChain,appendRewrite).repr(tessellation.group)
+    #Mdelta = appendInverseChain(@endChain, @startChain,appendRewrite).repr(tessellation.group)
+    inv = (c) -> inverseChain(c, appendRewrite)
+    app = (c1, c2) -> appendChain(c1,c2, appendRewrite)
 
+    # e, S bad
+    # S, e bad
+    # 
+    # E, s good? Seems to be good, but power calculation is wrong.
+    Mdelta = app(inv(@endChain), @startChain ).repr(tessellation.group)
+    
+    
     T = M.mul(M.mul(@endOffset, Mdelta), M.hyperbolicInv(@startOffset))
 
-    dT = M.powerPade T, 1.0/(stepsPerGen * generations)
-    console.log "Offset matrix determined: #{JSON.stringify T}"
+    #dT = M.powerPade T, 1.0/(stepsPerGen * generations)
+    #console.log "Offset matrix determined: #{JSON.stringify T}"
 
-    observer.navigateTo @startChain, @startOffset
-    drawEverything()
     steps = generations * stepsPerGen
-    timerId = setInterval (->
+    timerId = setInterval (=>
+      observer.navigateTo @startChain, @startOffset
+      p = 1.0-steps/(stepsPerGen * generations)
+      dT = M.powerPade T, p
       observer.modifyView dT
-      steps -=1
-      console.log "offset! remaining steps: #{steps}"
-      console.log "cur tfm: #{JSON.stringify observer.getViewOffsetMatrix()}"
       drawEverything()
-      if steps <= 0
+      steps -=1
+      #console.log "offset! remaining steps: #{steps}"
+      #console.log "cur tfm: #{JSON.stringify observer.getViewOffsetMatrix()}"
+      if steps < 0
         clearInterval timerId
         console.log "End animation"
       ), 500
