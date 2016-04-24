@@ -452,10 +452,43 @@ doReset = ->
   updatePopulation()
   redraw()
 
-doStep = ->
+doStep = (onFinish)->
   cells = evaluateTotalisticAutomaton cells, getNeighbors, transitionFunc.evaluate.bind(transitionFunc), transitionFunc.plus, transitionFunc.plusInitial
   redraw()
   updatePopulation()
+  onFinish?()
+
+player = null
+playerTimeout = 500
+autoplayCriticalPopulation = 90000
+doStartPlayer = ->
+  return if player?
+
+  runPlayerStep = ->
+    if cells.count >= autoplayCriticalPopulation
+      alert "Population reached #{cells.count}, stopping auto-play"
+      player = null
+    else
+      player = setTimeout( (-> doStep(runPlayerStep)), playerTimeout )
+    updatePlayButtons()
+
+  runPlayerStep()
+  
+doStopPlayer = ->
+  if player
+    clearTimeout player
+    player = null
+    updatePlayButtons()
+
+doTogglePlayer = ->
+  if player
+    doStopPlayer()
+  else
+    doStartPlayer()
+
+updatePlayButtons = ->
+  E('btn-play-start').style.display = if player then "none" else ''
+  E('btn-play-stop').style.display = unless player then "none" else ''
 
 dirty = true
 redraw = -> dirty = true
@@ -612,6 +645,7 @@ setGridImpl = (n, m)->
   navigator.setObserver observer
   navigator.clear()
   doClearMemory()
+  doStopPlayer()
 
 moveView = (dx, dy) -> observer.modifyView M.translationMatrix(dx, dy)        
 rotateView = (angle) -> observer.modifyView M.rotationMatrix angle
@@ -901,6 +935,8 @@ E('btn-exp-visible').addEventListener 'click', doExportVisible
 E('btn-nav-home').addEventListener 'click', doNavigateHome
 window.addEventListener 'resize', updateCanvasSize
 E('btn-nav-clear').addEventListener 'click', (e) -> navigator.clear()
+E('btn-play-start').addEventListener 'click', doTogglePlayer
+E('btn-play-stop').addEventListener 'click', doTogglePlayer
 
 shortcuts =
   'N': doStep
@@ -917,6 +953,8 @@ shortcuts =
   'UA': doClearMemory
   'H': doNavigateHome
   'HS': doStraightenView
+  'G': doTogglePlayer
+  '#32': doTogglePlayer
   
 document.addEventListener "keydown", (e)->
   focused = document.activeElement
@@ -936,4 +974,5 @@ document.addEventListener "keydown", (e)->
 updateCanvasSize()
 updateGrid()
 updateMemoryButtons()
+updatePlayButtons()
 redraw()
