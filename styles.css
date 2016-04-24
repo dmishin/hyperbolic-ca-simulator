@@ -126,3 +126,7 @@ input.short {
     text-decoration:none;
     color: black;
 }
+
+textarea.code-entry {
+    height: 20em;
+}

@@ -710,8 +710,7 @@ doExport = ->
   #edata1 = lzw_encode data1
   
   #console.log "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}"
-  E('export').value = data
-  E('export-dialog').style.display = ''
+  showExporDialog data
 
 doExportClose = ->
   E('export-dialog').style.display = 'none'
@@ -752,12 +751,19 @@ encodeVisible = ->
     visibleCells.put translatedCell, state
   return exportField visibleCells
 
-doExportVisible = ->
-  sdata = stringifyFieldData encodeVisible()
+showExporDialog = (sdata) ->
   E('export').value = sdata
   E('export-dialog').style.display = ''
-
-doShowImport = ->  E('import-dialog').style.display = ''
+  E('export').focus()
+  E('export').select()
+  
+doExportVisible = ->
+  showExporDialog stringifyFieldData encodeVisible()
+  
+doShowImport = ->
+  E('import-dialog').style.display = ''
+  E('import').focus()
+  
 doImportCancel = ->
   E('import-dialog').style.display = 'none'
   E('import').value=''
