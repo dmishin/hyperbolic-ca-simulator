@@ -104,9 +104,10 @@ input.short {
 }
 
 
-#navigator {
-    height: 1wh;
-    overflow: auto;
+#navigator-wrap {
+    overflow-y: auto;
+    -overflow-x: visible;
+    padding-left: 0.1em;
 }
 #navigator table{
     border-collapse: collapse;
