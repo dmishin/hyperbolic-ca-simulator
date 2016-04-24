@@ -27,6 +27,10 @@ windowWidth = ->
   window.innerWidth \
     || document.documentElement.clientWidth\
     || document.body.clientWidth
+windowHeight = ->
+  window.innerHeight \
+    || document.documentElement.clientHeight\
+    || document.body.clientHeight
 
 documentWidth = ->
     document.documentElement.scrollWidth\
@@ -45,6 +49,13 @@ updateCanvasSize = ->
     containerAvail=E('canvas-container').clientWidth
     #console.log "awail width: #{containerAvail}"
     w = containerAvail
+
+  #now calculae available height
+  canvasRect = canvas.getBoundingClientRect()
+  h = windowHeight() - canvasRect.top
+
+  #get the smaller of both
+  w = Math.min(w,h) 
   #reduce it a bit
   w -= 16
   
