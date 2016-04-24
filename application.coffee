@@ -204,6 +204,33 @@ class FieldObserver
     #move observation point
     @translateBy node2array pathToCenterCell
     @renderGrid @tfm
+    
+  straightenView: ->
+    @rebaseView()
+    originalTfm = @getViewOffsetMatrix()
+
+    dAngle = Math.PI/@tessellation.group.n
+    minusEye = M.smul(-1, M.eye())
+    distanceToEye = (m) ->
+      d = M.add m, minusEye
+      Math.max (Math.abs(di) for di in d) ...
+    
+    bestRotationMtx = null
+    bestDifference = null
+
+    angleOffsets = [0.0]
+    angleOffsets.push Math.PI/2 if tessellation.group.n % 2 is 1
+    for additionalAngle in angleOffsets
+      for i in [0...2*@tessellation.group.n]
+        angle = dAngle*i + additionalAngle
+        rotMtx = M.rotationMatrix angle
+        difference = distanceToEye M.mul originalTfm, M.hyperbolicInv rotMtx
+        if (bestDifference is null) or (bestDifference > difference)
+          bestDifference = difference
+          bestRotationMtx = rotMtx
+    @setViewOffsetMatrix bestRotationMtx
+      
+    
 
   #xp, yp in range [-1..1]
   cellFromPoint:(xp,yp) ->
@@ -938,6 +965,8 @@ E('btn-nav-clear').addEventListener 'click', (e) -> navigator.clear()
 E('btn-play-start').addEventListener 'click', doTogglePlayer
 E('btn-play-stop').addEventListener 'click', doTogglePlayer
 
+E('view-straighten').addEventListener 'click', (e)-> observer.straightenView()
+
 shortcuts =
   'N': doStep
   'C': doReset
@@ -954,6 +983,7 @@ shortcuts =
   'H': doNavigateHome
   'HS': doStraightenView
   'G': doTogglePlayer
+  'S': (e) -> observer.straightenView()
   '#32': doTogglePlayer
   
 document.addEventListener "keydown", (e)->
