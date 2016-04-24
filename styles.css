@@ -51,35 +51,46 @@
 
 
 /* Tweak controls */
+.numdisplay {
+    width: 3em;
+    display: inline-block;
+    text-align: right;
+    background-color: #f0f0f0;
+}
+
 .control-group {
-    padding: 0.1em;
-    margin: 1em 0.1em;
-    border-top: solid gray 1px;
+    padding: 0.5em 0;
+    margin: 0;
+    border-top: solid #CCC 1px;
+}
+.control-group:first-child {
+    border-top: none;
 }
 
 button{
     margin: 0.2em 0;
     padding:0;
 
- display: inline-block;
- border: none;
- color: #000000;
- border-radius: 0.2em;
- -webkit-border-radius: 0.2em;
- -moz-border-radius: 0.2em;
- font-family: Verdana;
- width: auto;
- height: auto;
- font-size: 1em;
- padding: 0.5em;
- -text-shadow: 0 1px 0 #FFFFFF;
- background-color: #E0E0E0;
+    display: inline-block;
+    border: none;
+    color: #000000;
+    border-radius: 0.2em;
+    -webkit-border-radius: 0.2em;
+    -moz-border-radius: 0.2em;
+    font-family: Verdana;
+    width: auto;
+    height: auto;
+    font-size: 1em;
+    padding: 0.5em;
+    -text-shadow: 0 1px 0 #FFFFFF;
+    background-color: #E0E0E0;
 }
 
-button:hover, button:active{
- border: none;
- color: #705D07;
- background-color: #5BDFFC;    
+button:hover,
+button:active{
+    border: none;
+    color: #705D07;
+    background-color: #5BDFFC;    
 }
 input.short {
     width:2em;

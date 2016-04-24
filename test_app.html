@@ -12,18 +12,18 @@
       <div id="sidebar">
 	<!-- misc status information -->
 	<div id="statusbar" class="control-group">
-	  Population:<span id="population"></span> cells
+	  Population: <span id="population" class="numdisplay"></span>
 	</div>
 	<div class="control-group">
 	  <span id="controls-rule-simple">
-	    Rule: <input id="rule-entry"></input>
+	    Rule<br/><input id="rule-entry"></input>
 	    <button id="btn-set-rule">Set</button>
 	    <button id="btn-rule-make-generic">Generic...</button>
 	  </span>
 	  <span id="controls-rule-generic"  style="display:none">
-	    Generic rule
+	    Generic rule<br/>
 	    <button id="btn-edit-rule">Edit...</button>
-	    <button id="btn-disable-generic-rule">Disable</button>	  
+	    <button id="btn-disable-generic-rule">Disable</button>
 	  </span>
 	</div>
 	<div class="control-group">
@@ -43,8 +43,11 @@
 	  <button id="btn-search">Search</button>
 	</div>
 	<div class="control-group">
-	  <button id="btn-export">Export</button>
-	  <button id="btn-exp-visible">Export visible</button>
+	  Export <br/>
+	  <button id="btn-export">All</button>
+	  <button id="btn-exp-visible">Visible</button>
+	</div>
+	<div class="control-group">
 	  <button id="btn-import">Import</button>
 	</div>
       </div>
