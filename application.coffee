@@ -714,7 +714,20 @@ doExport = ->
 
 doExportClose = ->
   E('export-dialog').style.display = 'none'
-    
+
+doUpload = ->
+  dataURL = canvas.toDataURL();
+  xmlHttpReq = false;       
+  if window.XMLHttpRequest?
+    ajax = new XMLHttpRequest()
+  else if window.ActiveXObject?
+    ajax = new ActiveXObject("Microsoft.XMLHTTP")
+  ajax.open 'POST', '', false
+  ajax.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  ajax.onreadystatechange = ->
+     console.log ajax.responseText
+  ajax.send dataURL
+
 doSearch = ->
   navigator.search cells, tessellation.group.n, tessellation.group.m, appendRewrite
   updateCanvasSize()
@@ -892,7 +905,7 @@ E('btn-exp-visible').addEventListener 'click', doExportVisible
 E('btn-nav-home').addEventListener 'click', doNavigateHome
 window.addEventListener 'resize', updateCanvasSize
 E('btn-nav-clear').addEventListener 'click', (e) -> navigator.clear()
-
+E('btn-upload').addEventListener 'click', doUpload
 shortcuts =
   'N': doStep
   'C': doReset
