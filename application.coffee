@@ -605,6 +605,7 @@ setGridImpl = (n, m)->
   observer.onFinish = -> redraw()
   navigator.setObserver observer
   navigator.clear()
+  doClearMemory()
 
 moveView = (dx, dy) -> observer.modifyView M.translationMatrix(dx, dy)        
 rotateView = (angle) -> observer.modifyView M.rotationMatrix angle
@@ -726,7 +727,8 @@ doMemorize = ->
     viewCenter: observer.getViewCenter()
     viewOffset: observer.getViewOffsetMatrix()
   console.log "Position memoized"
-
+  updateMemoryButtons()
+  
 doRemember = ->
   if memo is null
     console.log "nothing to remember"
@@ -736,7 +738,10 @@ doRemember = ->
 
 doClearMemory = ->
   memo = null        
+  updateMemoryButtons()
   
+updateMemoryButtons = ->
+  E('btn-mem-get').disabled = E('btn-mem-clear').disabled = memo is null
 
 encodeVisible = ->
   iCenter = inverseChain observer.cellFromPoint(0,0), appendRewrite
@@ -915,4 +920,5 @@ document.addEventListener "keydown", (e)->
     handler(e)
 updateCanvasSize()
 updateGrid()
+updateMemoryButtons()
 redraw()

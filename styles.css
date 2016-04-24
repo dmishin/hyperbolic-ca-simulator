@@ -52,7 +52,7 @@
 
 /* Tweak controls */
 .numdisplay {
-    width: 3em;
+    min-width: 3em;
     display: inline-block;
     text-align: right;
     background-color: #f0f0f0;
@@ -84,7 +84,14 @@ button{
     padding: 0.5em;
     -text-shadow: 0 1px 0 #FFFFFF;
     background-color: #E0E0E0;
+
 }
+
+button:disabled, button[disabled]:hover{
+    background-color: #F0F0F0;
+    color: #C0C0C0;
+}
+
 
 button:hover,
 button:active{
