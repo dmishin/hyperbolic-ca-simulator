@@ -983,7 +983,7 @@ shortcuts =
   'H': doNavigateHome
   'HS': doStraightenView
   'G': doTogglePlayer
-  'S': (e) -> observer.straightenView()
+  'SA': (e) -> observer.straightenView()
   '#32': doTogglePlayer
   
 document.addEventListener "keydown", (e)->
