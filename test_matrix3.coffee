@@ -90,6 +90,11 @@ describe "powerPade", ->
     mpow = M.powerPade m, 1.3
     expect = M.rotationMatrix(0.6*1.3)
     assert.ok M.approxEqv mpow, expect, 1e-4
+    
+  it "must calculate zeroth power of rotation matrix", ->
+    m = M.rotationMatrix 0.6
+    mpow = M.powerPade m, 0.0
+    assert.ok M.approxEqv mpow, M.eye(), 1e-4
 
   it "must calculate powers of identity matrix", ->
     e = M.eye()
@@ -97,4 +102,33 @@ describe "powerPade", ->
     assert.ok M.approxEqv e, M.powerPade(e, 1.0)
     assert.ok M.approxEqv e, M.powerPade(e, 0.5)
     assert.ok M.approxEqv e, M.powerPade(e, 1.5)        
+    assert.ok M.approxEqv e, M.powerPade(e, 0.0)
+    
+  it "must calculate powers of zero matrix", ->
+    z = M.smul 0, M.eye()
+    assert.equal M.amplitude(z), 0
 
+    assert.ok M.approxEqv z, M.powerPade(z, 1.0)
+    assert.ok M.approxEqv z, M.powerPade(z, 0.5)
+    assert.ok M.approxEqv z, M.powerPade(z, 0.0)
+
+describe "amplitude", ->
+  it "must return maximal absolute value of matrix element", ->
+    m = [1,2,3,4,5,6,7,8,9]
+    assert.equal M.amplitude(m), 9
+
+    m = [1,-2,3,-4,5,-6,7,8,-9]
+    assert.equal M.amplitude(m), 9
+
+    m = [-9,2,3,4,5,6,7,8,1]
+    assert.equal M.amplitude(m), 9
+
+    m = [9,-2,3,-4,5,-6,7,8,1]
+    assert.equal M.amplitude(m), 9
+
+    m = [-3,2,3,9,5,6,7,8,1]
+    assert.equal M.amplitude(m), 9
+
+    m = [3,-2,3,-9,5,-6,7,8,1]
+    assert.equal M.amplitude(m), 9
+                                

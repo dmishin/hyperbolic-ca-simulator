@@ -62,7 +62,7 @@ exports.approxEqv = approxEqv = (v1, v2, eps = 1e-6) ->
 ###
 # m: matrix( [m0, m1, m2], [m3,m4,m5], [m6,m7,m8] );
 # ratsimp(invert(m)*determinant(m));
-# determinant(m);
+# determinant(
 ###
 exports.inv = inv = (m) ->
   #Calculated with maxima
@@ -115,7 +115,7 @@ exports.rotationMatrix = rotationMatrix = (angle) ->
    -s,  c,   0.0,
    0.0, 0.0, 1.0]
 
-
+exports.amplitude = amplitude = (m) -> Math.max (Math.abs(mi) for mi in m) ...
 exports.powerPade = (m, a) ->
   #Use pade approximation {3,3} to calculate matrix power
   #
@@ -131,7 +131,13 @@ exports.powerPade = (m, a) ->
   d3 = d2*(1-a)*(1.0/12.0)
 
   #Subtract E
-  x = add m, [-1,0,0,0,-1,0,0,0,-1]
+  x = [-1,0,0,0,-1,0,0,0,-1]
+  s = amplitude m
+  return m[..] if s is 0
+  addScaledInplace x, m, (1.0/s)
+
+  #x = m/s - e
+    
   x2 = mul x, x
   x3 = mul x2, x
 
@@ -146,4 +152,4 @@ exports.powerPade = (m, a) ->
   addScaledInplace den, x2, d2
   addScaledInplace den, x3, d3
 
-  mul num, inv den
+  smul (s**a), mul num, inv den
