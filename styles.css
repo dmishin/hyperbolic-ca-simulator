@@ -99,6 +99,10 @@ button:active{
     background-color: #C0F0F0;    
 }
 
+button.button-active{
+    background-color: #C0F0C0;    
+}
+
 button.dangerous:hover{
     background-color: #E0C0C0;    
 }

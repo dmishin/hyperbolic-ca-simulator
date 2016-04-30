@@ -15,18 +15,18 @@
 	  Population: <span id="population" class="numdisplay"></span>
 	</div>
 	<div class="control-group">
-	  <button id="view-straighten">Straighten view</button>
+	  <button id="view-straighten" title="(Alt+S) Fix rotation and position of the view">Straighten view</button>
 	</div>
 	<div class="control-group">
 	  <span id="controls-rule-simple">
 	    Rule<br/><input id="rule-entry"></input>
-	    <button id="btn-set-rule">Set</button>
-	    <button id="btn-rule-make-generic">Generic...</button>
+	    <button id="btn-set-rule" title="Apply this rule">Set</button>
+	    <button id="btn-rule-make-generic" title="Make custom rule, defined by JS code">Generic...</button>
 	  </span>
 	  <span id="controls-rule-generic"  style="display:none">
 	    Generic rule<br/>
-	    <button id="btn-edit-rule">Edit...</button>
-	    <button id="btn-disable-generic-rule">Disable</button>
+	    <button id="btn-edit-rule" title="Edit JS code of the rule">Edit...</button>
+	    <button id="btn-disable-generic-rule" title="Return to the binary rule mode">Disable</button>
 	  </span>
 	</div>
 	<div class="control-group">
@@ -34,36 +34,36 @@
 	  <br/>
 	  N=<input id="entry-n" class="short"></input>
 	  M=<input id="entry-m" class="short"></input>
-	  <button id="btn-set-grid">Set</button>
+	  <button id="btn-set-grid" title="Apply grid">Set</button>
 	</div>
 
 	<div class="control-group">
-	  <button id="btn-mem-set">MS</button>
-	  <button id="btn-mem-get">MR</button>
-	  <button id="btn-mem-clear">MC</button>
+	  <button id="btn-mem-set" title="(M) Store field in the momory">MS</button>
+	  <button id="btn-mem-get" title="(U) Restore field from memory">MR</button>
+	  <button id="btn-mem-clear" title="(Alt+M) Clear memory">MC</button>
 	</div>
 	<div class="control-group">
-	  <button id="btn-search">Search</button>
+	  <button id="btn-search" title="Search for all cell groups in the field">Search</button>
 	</div>
 	<div class="control-group">
 	  Export <br/>
-	  <button id="btn-export">All</button>
-	  <button id="btn-exp-visible">Visible</button>
+	  <button id="btn-export" title="Export whole field to text">All</button>
+	  <button id="btn-exp-visible" title="Export visible part of the field to text">Visible</button>
 	</div>
 	<div class="control-group">
-	  <button id="btn-import">Import</button>
+	  <button id="btn-import" title="Import field from text">Import</button>
 	</div>
       </div>
 
       <!-- Main content -->
       <div id="main-content">
       <div id="toolbar">
-	<button id="btn-reset" class="dangerous">Reset</button>
-	<button id="btn-random">Random</button>
-	<button id="btn-step">Step</button>
-	<button id="btn-play-start">Go</button>
-	<button id="btn-play-stop" style="display:none">Stop</button>
-	<button id="btn-nav-home">Home</button>	
+	<button id="btn-reset" class="dangerous" title="(C) Clear field and reset view">Reset</button>
+	<button id="btn-random" title="(R) Fill with random cells">Random</button>
+	<button id="btn-step" title="(N) Evaluate for one generation">Step</button>
+	<button id="btn-play-start" title="(G or Space) Start continuous evaluation">Go</button>
+	<button id="btn-play-stop" style="display:none" class="button-active" title="(G or Space) Stop continuous evaluation">Stop</button>
+	<button id="btn-nav-home" title="(H) Navigate to the origin">Home</button>	
       </div>
       <div id="state-selector" style="display:none">
 	States:<span id="state-selector-buttons"></span>
@@ -74,7 +74,7 @@
       </div>
       
       <div id="navigator">
-	<button id="btn-nav-clear" style="display:none">Clear</button>
+	<button id="btn-nav-clear" style="display:none" title="Clear list of cell groups">Clear</button>
 	<div id="navigator-wrap">
 	  <div id="navigator-cluster-list"></div>
 	</div>
