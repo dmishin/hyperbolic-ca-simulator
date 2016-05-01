@@ -477,15 +477,15 @@ class Animator
   constructor: ->
     @oldSize = null
     @uploadWorker = null
+    @busy = false
     @reset()
 
   assertNotBusy: ->
-    if @uploadWorker isnt null
+    if @busy
       throw new Error "Animator is busy"
       
   reset: ->
-    if @uploadWorker isnt null
-      @cancelWork()
+    @cancelWork() if @busy
     @startChain = null
     @startOffset = null
     @endChain = null
@@ -529,20 +529,23 @@ class Animator
     [canvas.width, canvas.height] = @oldSize
     @oldSize = null
     canvasSizeUpdateBlocked = false
+    redraw()
 
-  beginWork: ->
+  _beginWork: ->
+    @busy = true
     @_setCanvasSize()
     console.log "Started animation"
     
-  endWork: ->
+  _endWork: ->
     @_restoreCanvasSize()
     console.log "End animation"
+    @busy = false
         
   cancelWork: ->
-    return unless @uploadWorker
-    clearInterval @uploadWorker
+    return unless @busy
+    clearTimeout @uploadWorker is @uploadWorker
     @uploadWorker = null
-    @endWork()
+    @_endWork()
     
   animate: (observer, stepsPerGen, generations, callback)->
     return unless @startChain? and @endChain?
@@ -583,30 +586,37 @@ class Animator
     framesBeforeGeneration = stepsPerGen
 
     imageNameTemplate = E('upload-name').value
-    @beginWork()
-    @uploadWorker = setInterval (=>
+    @_beginWork()
+    uploadStep = =>
+      @uploadWorker = null
       observer.navigateTo @startChain, @startOffset
       p = index / totalSteps
       observer.modifyView M.hyperbolicInv Tinterp(p)
       drawEverything()
+      
       imageName = formatString imageNameTemplate, [pad(index,4)]
-      uploadToServer imageName, (ajax)->
+      uploadToServer imageName, (ajax)=>
         if ajax.readyState is XMLHttpRequest.DONE and ajax.status is 200
           console.log "Upload success"
-        else
-          console.log "Upload failure"
-          console.log ajax.responseText
-      index +=1
-      framesBeforeGeneration -= 1
-      if framesBeforeGeneration is 0
-        doStep()
-        framesBeforeGeneration = stepsPerGen
+          index +=1
+          framesBeforeGeneration -= 1
+          if framesBeforeGeneration is 0
+            doStep()
+            framesBeforeGeneration = stepsPerGen
 
-      if index > totalSteps
-        clearInterval @uploadWorker
-        @uploadWorker = null
-        @endWork()
-      ), 100
+          if index <= totalSteps
+            console.log "request next frame"
+            @uploadWorker = flipSetTimeout 1, uploadStep
+          else
+            @_endWork()
+        else
+          console.log "Upload failure, cancel"
+          console.log ajax.responseText
+          @_endWork()
+          
+    uploadStep()
+    
+flipSetTimeout = (t, cb) -> setTimeout cb, t
 
 serverSupportsUpload = -> ((""+window.location).match /:8000\//) and true
 # ============================================  app code ===============
