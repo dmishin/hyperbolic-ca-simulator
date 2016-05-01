@@ -66,7 +66,18 @@
 .control-group:first-child {
     border-top: none;
 }
-
+div.control-table {
+    display: table;
+    margin-left:auto;
+    margin-right:auto;
+}
+div.control-table > div {
+    display: table-row;
+}
+div.control-table > div > div {
+    display: table-cell;
+    text-align:left;
+}
 button{
     margin: 0.2em 0;
     padding:0;
@@ -126,6 +137,9 @@ input{
 
 input.short {
     width:2em;
+}
+input.medium {
+    width:4em;
 }
 
 #navigator-wrap {

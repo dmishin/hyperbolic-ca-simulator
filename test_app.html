@@ -54,21 +54,30 @@
 	  <button id="btn-import" title="Import field from text">Import</button>
 	</div>
 	<div class="control-group" id="animate-controls" style="display:none">
-	  Name: <input id="upload-name" type="text" value="frame-{0}.png"/>
-	  <br/>
-	  Size: <input id="animate-size" class="short" type="text" value="640"/>
-	  <br/>
-	  Steps: <input id="animate-generations" class="short" type="text" value="1"/>
-	  <br/>
-	  Frames/step: <input id="animate-frame-per-generation" class="short" type="text" value="10"/>     
+	  Upload animation<br/>
+	  <input id="upload-name" type="text" value="frame-{0}.png"/>
 	  
-	  <br/>	  
-	  Start: <button id="animate-set-start">Set</button><button id="animate-view-start">View</button>
+	  <div class="control-table">
+	    <div>
+	      <div>Size:</div><div><input id="animate-size" class="medium" type="text" value="640"/></div>
+	    </div>
+	    <div>
+	      <div>Steps:</div><div><input id="animate-generations" class="medium" type="text" value="1"/></div>
+	    </div>
+	    <div>
+	      <div>Frames/step:</div><div><input id="animate-frame-per-generation" class="medium" type="text" value="10"/></div>
+	    </div>
+	  </div>
 	  <br/>
 	  
-	  End: <button id="animate-set-end">Set</button><button id="animate-view-end">View</button>
-	  <br/>
-	  
+	  <div class="control-table">
+	    <div>
+	      <div>Start:</div><div><button id="animate-set-start">Set</button><button id="animate-view-start">View</button></div>
+	    </div>
+	    <div>
+	      <div>End:</div><div><button id="animate-set-end">Set</button><button id="animate-view-end">View</button></div>
+	    </div>
+	  </div>
 	  <button id="btn-upload-animation">Upload animation</button>	  
 	</div>
       </div>
