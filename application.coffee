@@ -19,7 +19,11 @@ M = require "./matrix3.coffee"
 
 MIN_WIDTH = 100
 
+canvasSizeUpdateBlocked = false
+
 updateCanvasSize = ->
+  return if canvasSizeUpdateBlocked
+  
   docW = documentWidth()
   winW = windowWidth()
 
@@ -379,14 +383,15 @@ updateGenericRuleStatus = (status)->
   span.innerHTML = status
   span.setAttribute('class', 'generic-tf-status-#{status.toLowerCase()}')  
       
+parseIntChecked = (s)->
+  v = parseInt s, 10
+  throw new Error("Bad number: #{s}") if Number.isNaN v
+  return v
+  
 # BxxxSxxx
 parseTransitionFunction = (str, n, m) ->
   match = str.match /B([\d\s]+)S([\d\s]+)/
   throw new Error("Bad function string: #{str}") unless match?
-  parseIntChecked = (s)->
-    v = parseInt s, 10
-    throw new Error("Bad number: #{s}") if Number.isNaN v
-    v
     
   strings2array = (s)->
     for part in s.split ' ' when part
@@ -469,7 +474,8 @@ interpolateHyperbolic = (T) ->
   
 class Animator
   constructor: ->
-    @reset
+    @reset()
+    @oldSize = null
     
   reset: ->
     @startChain = null
@@ -487,6 +493,21 @@ class Animator
     @endOffset = observer.getViewOffsetMatrix()
     E('animate-info').innerHTML = "Start: #{showNode @startChain}, #{JSON.stringify @startOffset}<br/>End: #{showNode @endChain}, #{JSON.stringify @endOffset}"
 
+  _setCanvasSize: ->
+    size = parseIntChecked E('animate-size').value
+    if size <=0 or size >= 65536
+      throw new Error("Size #{size} is inappropriate")
+      
+    canvasSizeUpdateBlocked = true
+    @oldSize = [canvas.width, canvas.height]
+    canvas.width = canvas.height = size
+    
+  _restoreCanvasSize: ->
+    throw new Error("rewsore withou set")  unless @oldSize
+    [canvas.width, canvas.height] = @oldSize
+    @oldSize = null
+    canvasSizeUpdateBlocked = false
+    
   animate: (observer, stepsPerGen, generations, callback)->
     return unless @startChain? and @endChain?
     #global (surreally big) view matrix is:
@@ -522,7 +543,8 @@ class Animator
     
     steps = generations * stepsPerGen
     framesBeforeGeneration = stepsPerGen
-    
+
+    @_setCanvasSize()  
     timerId = setInterval (=>
       observer.navigateTo @startChain, @startOffset
       p = 1.0-steps/(stepsPerGen * generations)      
@@ -537,8 +559,9 @@ class Animator
 
       if steps < 0
         clearInterval timerId
+        @_restoreCanvasSize()
         console.log "End animation"
-      ), 500
+      ), 100
     
 # ============================================  app code ===============
 #

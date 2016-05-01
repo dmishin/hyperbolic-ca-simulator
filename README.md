@@ -16,6 +16,7 @@ Things left to implement
 * [ ] Random fill fills fixed number of cells, not radius
 * [ ] Adavnced settings: fill percent, size; autostop population;
 * [ ] Pan / Edit button
+* [ ] Home pointer
 
 **Internal code structure**
 * [ ] Reorganize code, to make appendRewrite, eliminateFinalA, group a parts of a single entity.
