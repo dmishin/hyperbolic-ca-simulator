@@ -443,6 +443,30 @@ class PaintStateSelector
     if @buttons
       @buttons.setButton @state2id[newState]
 
+
+interpolateHyperbolic = (T) ->
+  [Trot, Tdx, Tdy] = M.hyperbolicDecompose T
+  #Real distance translated is acosh( sqrt(1+dx^2+dy^2))
+  Tr2 = Tdx**2 + Tdy**2
+  Tdist = Math.acosh Math.sqrt(Tr2+1.0)
+  Tr = Math.sqrt Tr2
+  if Tr < 1e-6
+    dirX = 0.0
+    dirY = 0.0
+  else
+    dirX = Tdx / Tr
+    dirY = Tdy / Tr
+
+  return (p) ->
+    rot = Trot * p
+    dist = Tdist * p
+    r = Math.sqrt(Math.cosh(dist)**2-1.0)
+    dx = r*dirX
+    dy = r*dirY
+    
+    M.mul M.translationMatrix(dx, dy), M.rotationMatrix(rot)  
+    
+  
 class Animator
   constructor: ->
     @reset
@@ -493,18 +517,16 @@ class Animator
     
     T = M.mul(M.mul(@endOffset, Mdelta), M.hyperbolicInv(@startOffset))
 
-    #dT = M.powerPade T, 1.0/(stepsPerGen * generations)
-    #console.log "Offset matrix determined: #{JSON.stringify T}"
-
+    #Make interpolator for this matrix
+    Tinterp = interpolateHyperbolic T
+    
     steps = generations * stepsPerGen
     timerId = setInterval (=>
       observer.navigateTo @startChain, @startOffset
-      p = 1.0-steps/(stepsPerGen * generations)
-      dT = M.powerPade T, p
-      observer.modifyView dT
+      p = 1.0-steps/(stepsPerGen * generations)      
+      observer.modifyView Tinterp(p)
       drawEverything()
       steps -=1
-      #console.log "offset! remaining steps: #{steps}"
       #console.log "cur tfm: #{JSON.stringify observer.getViewOffsetMatrix()}"
       if steps < 0
         clearInterval timerId
@@ -755,9 +777,6 @@ class MouseTool
 updatePopulation = ->
   E('population').innerHTML = ""+cells.count
     
-#redraw()
-updatePopulation()
-redrawLoop()
 
 class MouseToolCombo extends MouseTool
   constructor: (@x0, @y0) ->
@@ -1100,8 +1119,12 @@ document.addEventListener "keydown", (e)->
   if (handler = shortcuts[keyCode])?
     e.preventDefault()
     handler(e)
+    
+##Application startup    
+updatePopulation()
 updateCanvasSize()
 updateGrid()
 updateMemoryButtons()
 updatePlayButtons()
-redraw()
+redrawLoop()
+#redraw()
