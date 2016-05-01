@@ -483,17 +483,23 @@ class Animator
     @startOffset = null
     @endChain = null
     @endOffset = null
+    E('animate-view-start').disabled = true
+    E('animate-view-end').disabled = true
 
   setStart: (observer) ->
     @startChain = observer.getViewCenter()
     @startOffset = observer.getViewOffsetMatrix()
-    E('animate-info').innerHTML = "Start: #{showNode @startChain}, #{JSON.stringify @startOffset}"
-        
+    E('animate-view-start').disabled = false
+    
   setEnd: (observer) ->
     @endChain = observer.getViewCenter()
     @endOffset = observer.getViewOffsetMatrix()
-    E('animate-info').innerHTML = "Start: #{showNode @startChain}, #{JSON.stringify @startOffset}<br/>End: #{showNode @endChain}, #{JSON.stringify @endOffset}"
-
+    E('animate-view-end').disabled = false
+  viewStart: (observer) ->
+    observer.navigateTo @startChain, @startOffset
+  viewEnd: (observer) ->
+    observer.navigateTo @endChain, @endOffset
+        
   _setCanvasSize: ->
     size = parseIntChecked E('animate-size').value
     if size <=0 or size >= 65536
@@ -1116,8 +1122,13 @@ window.addEventListener 'resize', updateCanvasSize
 E('btn-nav-clear').addEventListener 'click', (e) -> navigator.clear()
 E('btn-play-start').addEventListener 'click', doTogglePlayer
 E('btn-play-stop').addEventListener 'click', doTogglePlayer
+
 E('animate-set-start').addEventListener 'click', -> animator.setStart observer
 E('animate-set-end').addEventListener 'click', -> animator.setEnd observer
+
+E('animate-view-start').addEventListener 'click', -> animator.viewStart observer
+E('animate-view-end').addEventListener 'click', -> animator.viewEnd observer
+
 E('btn-upload-animation').addEventListener 'click', (e)->
   animator.animate observer, parseInt(E('animate-frame-per-generation').value,10), parseInt(E('animate-generations').value, 10), (-> null)
 

@@ -56,16 +56,19 @@
 	<div class="control-group">
 	  Name: <input id="upload-name" type="text" value="frame-{0}.png"/>
 	  <br/>
-	  Gens: <input id="animate-generations" type="text" value="1"/>
-	  <br/>
 	  Size: <input id="animate-size" type="text" value="640"/>
 	  <br/>
+	  Steps: <input id="animate-generations" type="text" value="1"/>
+	  <br/>
+	  Frames/step: <input id="animate-frame-per-generation" type="text" value="10"/>     
 	  
-	  <button id="animate-set-start">Set start</button>
-	  <button id="animate-set-end">Set end</button>
+	  <br/>	  
+	  Start: <button id="animate-set-start">Set</button><button id="animate-view-start">View</button>
+	  <br/>
 	  
-	  Frames per generation: <input id="animate-frame-per-generation" type="text" value="10"/>     
-	  <div id="animate-info" style="max-width:10em"></div>
+	  End: <button id="animate-set-end">Set</button><button id="animate-view-end">View</button>
+	  <br/>
+	  
 	  <button id="btn-upload-animation">Upload animation</button>	  
 	</div>
       </div>
