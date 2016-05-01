@@ -961,7 +961,7 @@ uploadToServer = (imgname, callback)->
     formData = new FormData()
     formData.append "file", blob, imgname
     ajax = getAjax()
-    ajax.open 'POST', '/', false
+    ajax.open 'POST', '/uploads/', false
     ajax.onreadystatechange = -> callback(ajax)
     ajax.send(formData)
   canvas.toBlob cb, "image/png"
