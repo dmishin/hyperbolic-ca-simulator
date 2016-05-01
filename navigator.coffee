@@ -15,9 +15,24 @@ exports.Navigator = class Navigator
   search: (field, n, m, appendRewrite)->
     #field is NodeHashMap
     @clusters = allClusters field, n, m, appendRewrite
+    @sortByDistance()
     @updateClusterList()
     @btnClear.style.display = if @clusters then '' else 'none'  
 
+  sortByDistance: ->
+    @clusters.sort (a, b) ->
+      d = chainLen(b[0]) - chainLen(a[0])
+      return d if d isnt 0
+      d = b.length - a.length
+      return d
+      
+  sortBySize: ->
+    @clusters.sort (a, b) ->
+      d = b.length - a.length
+      return d if d isnt 0
+      d = chainLen(b[0]) - chainLen(a[0])
+      return d
+      
   setObserver: (o) -> @observer = o
   
   makeNavigateTo: (chain) -> (e) =>
@@ -38,12 +53,19 @@ exports.Navigator = class Navigator
     dom.tag("table")
        .tag("thead")
        .tag('tr')
-          .tag('th').text('Cells').end()
-          .tag('th').text('Distance').end()
+          .tag('th').rtag('ssort').a("href","#sort-size").text('Cells').end().end()
+          .tag('th').rtag('dsort').a("href","#sort-dist").text('Distance').end().end()
        .end()
        .end()
       
-      
+    dom.vars.ssort.addEventListener 'click', (e)=>
+      e.preventDefault()
+      @sortBySize()
+      @updateClusterList()
+    dom.vars.dsort.addEventListener 'click', (e)=>
+      e.preventDefault()
+      @sortByDistance()
+      @updateClusterList()
     
     dom.tag "tbody"
     for cluster, idx in @clusters
