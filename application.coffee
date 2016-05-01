@@ -490,20 +490,24 @@ class Animator
     @startOffset = null
     @endChain = null
     @endOffset = null
-    E('animate-view-start').disabled = true
-    E('animate-view-end').disabled = true
-  
+    @_updateButtons()
+    
+  _updateButtons: ->
+    E('animate-view-start').disabled = @startChain is null
+    E('animate-view-end').disabled = @endChain is null
+    E('btn-upload-animation').disabled = (@startChain is null) or (@endChain is null)
+    
   setStart: (observer) ->
     @assertNotBusy()
     @startChain = observer.getViewCenter()
     @startOffset = observer.getViewOffsetMatrix()
-    E('animate-view-start').disabled = false
+    @_updateButtons()
     
   setEnd: (observer) ->
     @assertNotBusy()
     @endChain = observer.getViewCenter()
     @endOffset = observer.getViewOffsetMatrix()
-    E('animate-view-end').disabled = false
+    @_updateButtons()
   viewStart: (observer) ->
     @assertNotBusy()
     observer.navigateTo @startChain, @startOffset
@@ -600,6 +604,7 @@ class Animator
 
       if index > totalSteps
         clearInterval @uploadWorker
+        @uploadWorker = null
         @endWork()
       ), 100
 
