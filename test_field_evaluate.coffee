@@ -22,7 +22,7 @@ describe "evaluateTotalisticAutomaton", ->
     
     #prepare field with only one cell
     field = new NodeHashMap
-    field.put unity
+    field.put unity, 1
 
     field1 = evaluateTotalisticAutomaton field, getNeighbors, ruleNext
 
@@ -37,6 +37,7 @@ describe "evaluateTotalisticAutomaton", ->
         if s is 3 then 1 else 0
       else if x is 1
         if s in [2,3] then 1 else 0
+      else throw new Error("bad state #{x}")
 
     [N, M] = [7, 3]
     rewriteRuleset = knuthBendix vdRule N, M
@@ -45,7 +46,7 @@ describe "evaluateTotalisticAutomaton", ->
     
     #prepare field with only one cell
     field = new NodeHashMap
-    field.put unity
+    field.put unity, 1
 
     field1 = evaluateTotalisticAutomaton field, getNeighbors, ruleNext
 

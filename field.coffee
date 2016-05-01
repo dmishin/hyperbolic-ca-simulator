@@ -32,14 +32,15 @@ exports.neighborsSum = neighborsSum = (cells, getNeighbors, plus=((x,y)->x+y), p
   cells.forItems (cell, value)->
     for neighbor in getNeighbors cell
       sums.putAccumulate neighbor, value, plus, plusInitial
+    #don't forget the cell itself! It must also present, with zero (initial) neighbor sum
+    if sums.get(cell) is null
+      sums.put(cell, plusInitial)
   return sums
 
 exports.evaluateTotalisticAutomaton = evaluateTotalisticAutomaton = (cells, getNeighborhood, nextStateFunc, plus, plusInitial)->
   newCells = new NodeHashMap
   sums = neighborsSum cells, getNeighborhood, plus, plusInitial
-  
   sums.forItems (cell, neighSum)->
-    #console.log "#{showNode cell}, sum=#{neighSum}"
     cellState = cells.get(cell) ? 0
     nextState = nextStateFunc cellState, neighSum
     if nextState isnt 0
