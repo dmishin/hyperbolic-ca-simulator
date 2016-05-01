@@ -521,13 +521,20 @@ class Animator
     Tinterp = interpolateHyperbolic T
     
     steps = generations * stepsPerGen
+    framesBeforeGeneration = stepsPerGen
+    
     timerId = setInterval (=>
       observer.navigateTo @startChain, @startOffset
       p = 1.0-steps/(stepsPerGen * generations)      
       observer.modifyView Tinterp(p)
       drawEverything()
       steps -=1
-      #console.log "cur tfm: #{JSON.stringify observer.getViewOffsetMatrix()}"
+      framesBeforeGeneration -= 1
+      if framesBeforeGeneration is 0
+        console.log "Next generaion!"
+        doStep()
+        framesBeforeGeneration = stepsPerGen
+
       if steps < 0
         clearInterval timerId
         console.log "End animation"
