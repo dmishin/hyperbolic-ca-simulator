@@ -14,6 +14,7 @@
 {makeXYT2path, poincare2hyperblic, visibleNeighborhood} = require "./poincare_view.coffee"
 {DomBuilder} = require "./dom_builder.coffee"
 {E, ButtonGroup, windowWidth, windowHeight, documentWidth} = require "./htmlutil.coffee"
+{formatString} = require "./utils.coffee"
 
 M = require "./matrix3.coffee"
 
@@ -539,25 +540,29 @@ class Animator
     T = M.mul(M.mul(@endOffset, Mdelta), M.hyperbolicInv(@startOffset))
 
     #Make interpolator for this matrix
-    Tinterp = interpolateHyperbolic T
-    
-    steps = generations * stepsPerGen
+    Tinterp = interpolateHyperbolic M.hyperbolicInv T
+
+    index = 0
+    totalSteps = generations * stepsPerGen
     framesBeforeGeneration = stepsPerGen
 
+    imageNameTemplate = E('upload-name').value
+    
     @_setCanvasSize()  
     timerId = setInterval (=>
       observer.navigateTo @startChain, @startOffset
-      p = 1.0-steps/(stepsPerGen * generations)      
-      observer.modifyView Tinterp(p)
+      p = index / totalSteps
+      observer.modifyView M.hyperbolicInv Tinterp(p)
       drawEverything()
-      steps -=1
+      imageName = formatString imageNameTemplate, [index]
+      index +=1
       framesBeforeGeneration -= 1
       if framesBeforeGeneration is 0
         console.log "Next generaion!"
         doStep()
         framesBeforeGeneration = stepsPerGen
 
-      if steps < 0
+      if index > totalSteps
         clearInterval timerId
         @_restoreCanvasSize()
         console.log "End animation"
