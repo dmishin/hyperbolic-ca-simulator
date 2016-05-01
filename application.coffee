@@ -496,6 +496,9 @@ class Animator
     E('animate-view-start').disabled = @startChain is null
     E('animate-view-end').disabled = @endChain is null
     E('btn-upload-animation').disabled = (@startChain is null) or (@endChain is null)
+    E('btn-animate-cancel').style.display = if @busy then '' else 'none'
+    E('btn-upload-animation').style.display = unless @busy then '' else 'none'
+    
     
   setStart: (observer) ->
     @assertNotBusy()
@@ -525,7 +528,7 @@ class Animator
     canvas.width = canvas.height = size
     
   _restoreCanvasSize: ->
-    throw new Error("rewsore withou set")  unless @oldSize
+    throw new Error("restore withou set")  unless @oldSize
     [canvas.width, canvas.height] = @oldSize
     @oldSize = null
     canvasSizeUpdateBlocked = false
@@ -534,16 +537,18 @@ class Animator
   _beginWork: ->
     @busy = true
     @_setCanvasSize()
+    @_updateButtons()
     console.log "Started animation"
     
   _endWork: ->
     @_restoreCanvasSize()
     console.log "End animation"
     @busy = false
+    @_updateButtons()
         
   cancelWork: ->
     return unless @busy
-    clearTimeout @uploadWorker is @uploadWorker
+    clearTimeout @uploadWorker if @uploadWorker
     @uploadWorker = null
     @_endWork()
     
@@ -589,6 +594,8 @@ class Animator
     @_beginWork()
     uploadStep = =>
       @uploadWorker = null
+      #If we were cancelled - return quickly
+      return unless @busy 
       observer.navigateTo @startChain, @startOffset
       p = index / totalSteps
       observer.modifyView M.hyperbolicInv Tinterp(p)
@@ -596,6 +603,8 @@ class Animator
       
       imageName = formatString imageNameTemplate, [pad(index,4)]
       uploadToServer imageName, (ajax)=>
+        #if we were cancelled, return quickly
+        return unless @busy 
         if ajax.readyState is XMLHttpRequest.DONE and ajax.status is 200
           console.log "Upload success"
           index +=1
@@ -606,7 +615,7 @@ class Animator
 
           if index <= totalSteps
             console.log "request next frame"
-            @uploadWorker = flipSetTimeout 1, uploadStep
+            @uploadWorker = flipSetTimeout 50, uploadStep
           else
             @_endWork()
         else
@@ -1172,7 +1181,8 @@ E('animate-view-start').addEventListener 'click', -> animator.viewStart observer
 E('animate-view-end').addEventListener 'click', -> animator.viewEnd observer
 
 E('btn-upload-animation').addEventListener 'click', (e)->
-  animator.animate observer, parseInt(E('animate-frame-per-generation').value,10), parseInt(E('animate-generations').value, 10), (-> null)
+  animator.animate observer, parseIntChecked(E('animate-frame-per-generation').value), parseIntChecked(E('animate-generations').value), (-> null)
+E('btn-animate-cancel').addEventListener 'click', (e)->animator.cancelWork()
 
 E('view-straighten').addEventListener 'click', (e)-> observer.straightenView()
 

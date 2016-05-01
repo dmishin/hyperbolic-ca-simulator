@@ -17,6 +17,8 @@ Things left to implement
 * [ ] Adavnced settings: fill percent, size; autostop population;
 * [ ] Pan / Edit button
 * [ ] Home pointer
+* [ ] Manually setting imase size
+* [x] Upload frames of smooth animations
 
 **Internal code structure**
 * [ ] Reorganize code, to make appendRewrite, eliminateFinalA, group a parts of a single entity.
@@ -24,5 +26,5 @@ Things left to implement
 * [ ] Split application.coffee into modules. It is too big.
 * [ ] Create application class.
 
-**Major rewrites
+**Major rewrites**
 * [ ] Use web worker for calculations.
