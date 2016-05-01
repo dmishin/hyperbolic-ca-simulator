@@ -116,40 +116,23 @@ exports.rotationMatrix = rotationMatrix = (angle) ->
    0.0, 0.0, 1.0]
 
 exports.amplitude = amplitude = (m) -> Math.max (Math.abs(mi) for mi in m) ...
-exports.powerPade = (m, a) ->
-  #Use pade approximation {3,3} to calculate matrix power
-  #
-  # ( 1/120 (a+3) (a+2) (a+1) x^3 + 1/10 (a+3) (a+2) x^2 + 1/2 (a+3) x+1)
-  # ( 1/120 (3-a) (2-a) (1-a) x^3 + 1/10 (3-a) (2-a) x^2 + 1/2 (3-a) x+1)
 
-  n1 = (a+3)*0.5
-  n2 = n1*(a+2)*0.2
-  n3 = n2*(a+1)*(1.0/12.0)
-  
-  d1 = (3-a)*0.5
-  d2 = d1*(2-a)*0.2
-  d3 = d2*(1-a)*(1.0/12.0)
-
-  #Subtract E
-  x = [-1,0,0,0,-1,0,0,0,-1]
-  s = amplitude m
-  return m[..] if s is 0
-  addScaledInplace x, m, (1.0/s)
-
-  #x = m/s - e
     
-  x2 = mul x, x
-  x3 = mul x2, x
+#Decompose hyperbolic matrix to translation and rotation
+# returns 3 values: rotation angle, dx, dy
+# dx and dy are parameters of the translationMatrix
+exports.hyperbolicDecompose = (m)->
+  #first, detect translation, look, how far it translates origin
+  [dx, dy, t] = mulv m, [0,0,1]
 
-  num = eye()
-  den = eye()
+  #multiply out the translation
+  T = translationMatrix -dx, -dy
+  R = mul T, m
 
-  addScaledInplace num, x, n1
-  addScaledInplace num, x2, n2
-  addScaledInplace num, x3, n3
+  #now R shoulw be purely rotation matrix
+  #TODO validate this?
 
-  addScaledInplace den, x, d1
-  addScaledInplace den, x2, d2
-  addScaledInplace den, x3, d3
+  cos = (R[0]+R[4])*0.5
+  sin = (R[1]-R[3])*0.5
 
-  smul (s**a), mul num, inv den
+  [Math.atan2(sin, cos), dx, dy]
