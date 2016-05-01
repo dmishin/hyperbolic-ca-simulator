@@ -475,29 +475,40 @@ interpolateHyperbolic = (T) ->
   
 class Animator
   constructor: ->
-    @reset()
     @oldSize = null
-    
+    @uploadWorker = null
+    @reset()
+
+  assertNotBusy: ->
+    if @uploadWorker isnt null
+      throw new Error "Animator is busy"
+      
   reset: ->
+    if @uploadWorker isnt null
+      @cancelWork()
     @startChain = null
     @startOffset = null
     @endChain = null
     @endOffset = null
     E('animate-view-start').disabled = true
     E('animate-view-end').disabled = true
-
+  
   setStart: (observer) ->
+    @assertNotBusy()
     @startChain = observer.getViewCenter()
     @startOffset = observer.getViewOffsetMatrix()
     E('animate-view-start').disabled = false
     
   setEnd: (observer) ->
+    @assertNotBusy()
     @endChain = observer.getViewCenter()
     @endOffset = observer.getViewOffsetMatrix()
     E('animate-view-end').disabled = false
   viewStart: (observer) ->
+    @assertNotBusy()
     observer.navigateTo @startChain, @startOffset
   viewEnd: (observer) ->
+    @assertNotBusy()
     observer.navigateTo @endChain, @endOffset
         
   _setCanvasSize: ->
@@ -514,9 +525,24 @@ class Animator
     [canvas.width, canvas.height] = @oldSize
     @oldSize = null
     canvasSizeUpdateBlocked = false
+
+  beginWork: ->
+    @_setCanvasSize()
+    console.log "Started animation"
+    
+  endWork: ->
+    @_restoreCanvasSize()
+    console.log "End animation"
+        
+  cancelWork: ->
+    return unless @uploadWorker
+    clearInterval @uploadWorker
+    @uploadWorker = null
+    @endWork()
     
   animate: (observer, stepsPerGen, generations, callback)->
     return unless @startChain? and @endChain?
+    @assertNotBusy()
     #global (surreally big) view matrix is:
     # 
     # Moffset * M(chain)
@@ -553,9 +579,8 @@ class Animator
     framesBeforeGeneration = stepsPerGen
 
     imageNameTemplate = E('upload-name').value
-    
-    @_setCanvasSize()  
-    timerId = setInterval (=>
+    @beginWork()
+    @uploadWorker = setInterval (=>
       observer.navigateTo @startChain, @startOffset
       p = index / totalSteps
       observer.modifyView M.hyperbolicInv Tinterp(p)
@@ -570,19 +595,21 @@ class Animator
       index +=1
       framesBeforeGeneration -= 1
       if framesBeforeGeneration is 0
-        console.log "Next generaion!"
         doStep()
         framesBeforeGeneration = stepsPerGen
 
       if index > totalSteps
-        clearInterval timerId
-        @_restoreCanvasSize()
-        console.log "End animation"
+        clearInterval @uploadWorker
+        @endWork()
       ), 100
-    
+
+serverSupportsUpload = -> ((""+window.location).match /:8000\//) and true
 # ============================================  app code ===============
 #
 animator = new Animator()
+if serverSupportsUpload()
+  console.log "Enable upload"
+  E('animate-controls').style.display=''
 
 canvas = E "canvas"
 context = canvas.getContext "2d"
