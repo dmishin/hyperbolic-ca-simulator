@@ -1,6 +1,12 @@
 Cellular automata on hyperbolic fields
 ======================================
 
+BUGS
+----
+
+### Serious problem: rule B3 S023 does not actually works!
+seems that only neighbored cells are evaluated!
+
 
 TODO List
 ---------
