@@ -840,6 +840,7 @@ doSetGrid = ->
       throw new Error "Tessellation {#{n}; #{m}} is not hyperbolic and not supported."
     setGridImpl n, m
     doReset()
+    animator.reset()
   catch e
     alert ""+e
 
