@@ -14,7 +14,7 @@
 {makeXYT2path, poincare2hyperblic, visibleNeighborhood} = require "./poincare_view.coffee"
 {DomBuilder} = require "./dom_builder.coffee"
 {E, ButtonGroup, windowWidth, windowHeight, documentWidth} = require "./htmlutil.coffee"
-{formatString} = require "./utils.coffee"
+{formatString, pad} = require "./utils.coffee"
 
 M = require "./matrix3.coffee"
 
@@ -554,7 +554,13 @@ class Animator
       p = index / totalSteps
       observer.modifyView M.hyperbolicInv Tinterp(p)
       drawEverything()
-      imageName = formatString imageNameTemplate, [index]
+      imageName = formatString imageNameTemplate, [pad(index,4)]
+      uploadToServer imageName, (ajax)->
+        if ajax.readyState is XMLHttpRequest.DONE and ajax.status is 200
+          console.log "Upload success"
+        else
+          console.log "Upload failure"
+          console.log ajax.responseText
       index +=1
       framesBeforeGeneration -= 1
       if framesBeforeGeneration is 0
@@ -913,17 +919,17 @@ getAjax = ->
     return new ActiveXObject("Microsoft.XMLHTTP")
   
 doUpload = ->
-  uploadToServer "canvas.png", ->
-    console.log ajax.responseText
+  uploadToServer "canvas.png", (e)->
+    console.log e
     
-uploadToServer = (imgname, ajaxCallback)->
+uploadToServer = (imgname, callback)->
   dataURL = canvas.toDataURL();  
   cb = (blob) ->
     formData = new FormData()
     formData.append "file", blob, imgname
     ajax = getAjax()
     ajax.open 'POST', '/', false
-    ajax.onreadystatechange = callback
+    ajax.onreadystatechange = -> callback(ajax)
     ajax.send(formData)
   canvas.toBlob cb, "image/png"
 
@@ -1108,7 +1114,6 @@ E('btn-exp-visible').addEventListener 'click', doExportVisible
 E('btn-nav-home').addEventListener 'click', doNavigateHome
 window.addEventListener 'resize', updateCanvasSize
 E('btn-nav-clear').addEventListener 'click', (e) -> navigator.clear()
-E('btn-upload').addEventListener 'click', doUpload
 E('btn-play-start').addEventListener 'click', doTogglePlayer
 E('btn-play-stop').addEventListener 'click', doTogglePlayer
 E('animate-set-start').addEventListener 'click', -> animator.setStart observer
