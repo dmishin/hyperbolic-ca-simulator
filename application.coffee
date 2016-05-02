@@ -17,6 +17,7 @@
 {FieldObserverWithRemoreRenderer} = require "./observer_remote.coffee"
 {parseIntChecked} = require "./utils.coffee"
 {Animator} = require "./animator.coffee"
+{MouseToolCombo} = require "./mousetool.coffee"
 M = require "./matrix3.coffee"
 
 MIN_WIDTH = 100
@@ -358,7 +359,7 @@ doCanvasMouseDown = (e) ->
     toggleCellAt x, y
     updatePopulation()    
   else
-    dragHandler = new MouseToolCombo x, y
+    dragHandler = new MouseToolCombo application, x, y
 
 doSetPanMode = (mode) ->
   isPanMode = mode
@@ -453,90 +454,10 @@ setGridImpl = (n, m)->
   doClearMemory()
   doStopPlayer()
 
-moveView = (dx, dy) -> observer.modifyView M.translationMatrix(dx, dy)        
-rotateView = (angle) -> observer.modifyView M.rotationMatrix angle
-  
-class MouseTool
-  mouseMoved: ->
-  mouseUp: ->
-  mouseDown: ->
-
 updatePopulation = ->
   E('population').innerHTML = ""+cells.count
 updateGeneration = ->
   E('generation').innerHTML = ""+generation    
-
-class MouseToolCombo extends MouseTool
-  constructor: (@x0, @y0) ->
-    @xc = canvas.width * 0.5
-    @yc = canvas.width * 0.5
-    @angle0 = @angle @x0, @y0 
-  angle: (x,y) -> Math.atan2( x-@xc, y-@yc)
-  mouseMoved: (e)->
-    [x, y] = getCanvasCursorPosition e, canvas
-    dx = x - @x0
-    dy = y - @y0
-
-    @x0 = x
-    @y0 = y
-    k = 2.0 / canvas.height
-    newAngle = @angle x, y
-    dAngle = newAngle - @angle0
-    #Wrap angle increment into -PI ... PI diapason.
-    if dAngle > Math.PI
-      dAngle = dAngle - Math.PI*2
-    else if dAngle < -Math.PI
-      dAngle = dAngle + Math.PI*2 
-    @angle0 = newAngle 
-
-    #determine mixing ratio
-    r = Math.min(@xc, @yc)
-
-    r2 = ((x-@xc)**2 + (y-@yc)**2) / (r**2)
-    #pure rotation at the edge,
-    #pure pan at the center
-    q = Math.min(1.0, r2)
-
-    mv = M.translationMatrix(dx*k*(1-q) , dy*k*(1-q))
-    rt = M.rotationMatrix dAngle*q
-    observer.modifyView M.mul(M.mul(mv,rt),mv)
-  
-class MouseToolPan extends MouseTool
-  constructor: (@x0, @y0) ->
-    @panEventDebouncer = new Debouncer 1000, =>
-      observer.rebaseView()
-      
-  mouseMoved: (e)->
-    [x, y] = getCanvasCursorPosition e, canvas
-    dx = x - @x0
-    dy = y - @y0
-
-    @x0 = x
-    @y0 = y
-    k = 2.0 / canvas.height
-    xc = (x - canvas.width*0.5)*k
-    yc = (y - canvas.height*0.5)*k
-
-    r2 = xc*xc + yc*yc
-    s = 2 / Math.max(0.3, 1-r2)
-    
-    moveView dx*k*s , dy*k*s
-    @panEventDebouncer.fire()
-    
-class MouseToolRotate extends MouseTool
-  constructor: (x, y) ->
-    @xc = canvas.width * 0.5
-    @yc = canvas.width * 0.5
-    @angle0 = @angle x, y 
-    
-  angle: (x,y) -> Math.atan2( x-@xc, y-@yc)
-    
-  mouseMoved: (e)->
-    [x, y] = getCanvasCursorPosition e, canvas
-    newAngle = @angle x, y
-    dAngle = newAngle - @angle0
-    @angle0 = newAngle
-    rotateView dAngle
 
 exportTrivial = (cells) ->
   parts = []
@@ -671,17 +592,6 @@ doNavigateHome = ->
 doStraightenView = ->
   observer.setViewOffsetMatrix M.eye()
   
-class Debouncer
-  constructor: (@timeout, @callback) ->
-    @timer = null
-  fire:  ->
-    if @timer
-      clearTimeout @timer
-    @timer = setTimeout (=>@onTimer()), @timeout
-  onTimer: ->
-    @timer = null
-    @callback()
-
 GENERIC_TF_TEMPLATE="""//Generic transistion function, coded in JS
 {
   //number of states

@@ -85,3 +85,15 @@ if not HTMLCanvasElement.prototype.toBlob?
       callback new Blob [arr], {type: type || 'image/png'}
   }
 
+
+exports.Debouncer = class Debouncer
+  constructor: (@timeout, @callback) ->
+    @timer = null
+  fire:  ->
+    if @timer
+      clearTimeout @timer
+    @timer = setTimeout (=>@onTimer()), @timeout
+  onTimer: ->
+    @timer = null
+    @callback()
+
