@@ -97,3 +97,10 @@ exports.Debouncer = class Debouncer
     @timer = null
     @callback()
 
+
+exports.getAjax = ->
+  if window.XMLHttpRequest?
+    return new XMLHttpRequest()
+  else if window.ActiveXObject?
+    return new ActiveXObject("Microsoft.XMLHTTP")
+  

@@ -4,14 +4,12 @@
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
-{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, importField, randomFill, evaluateTotalisticAutomaton, exportField, randomFill, randomStateGenerator} = require "./field.coffee"
-
+{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, importField, randomFill, exportField, randomStateGenerator} = require "./field.coffee"
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {lzw_encode} = require "./lzw.coffee"
 {Navigator} = require "./navigator.coffee"
-#{shortcut} = require "./shortcut.coffee"
 {DomBuilder} = require "./dom_builder.coffee"
-{E, ButtonGroup, windowWidth, windowHeight, documentWidth, removeClass, addClass} = require "./htmlutil.coffee"
+{E, getAjax, ButtonGroup, windowWidth, windowHeight, documentWidth, removeClass, addClass} = require "./htmlutil.coffee"
 {FieldObserver} = require "./observer.coffee"
 #{FieldObserverWithRemoreRenderer} = require "./observer_remote.coffee"
 {parseIntChecked} = require "./utils.coffee"
@@ -174,6 +172,7 @@ observer.onFinish = -> redraw()
 navigator = new Navigator application
 
 transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
+lastBinaryTransitionFunc = transitionFunc
 dragHandler = null
 
 generation = 0
@@ -332,12 +331,15 @@ doCanvasMouseUp = (e) ->
 doSetRule =  ->
   try
     transitionFunc = parseTransitionFunction E('rule-entry').value, tessellation.group.n, tessellation.group.m
+    lastBinaryTransitionFunc = transitionFunc
     paintStateSelector.update transitionFunc
     console.log transitionFunc
-    E('controls-rule-simple').style.display=""
-    E('controls-rule-generic').style.display="none"
   catch e
     alert "Failed to parse function: #{e}"
+    transitionFunc = lastBinaryTransitionFunc ? transitionFunc
+    
+  E('controls-rule-simple').style.display=""
+  E('controls-rule-generic').style.display="none"
 
 doOpenEditor = ->
   E('generic-tf-editor').style.display = ''
@@ -422,16 +424,6 @@ doExport = ->
 doExportClose = ->
   E('export-dialog').style.display = 'none'
 
-getAjax = ->
-  if window.XMLHttpRequest?
-    return new XMLHttpRequest()
-  else if window.ActiveXObject?
-    return new ActiveXObject("Microsoft.XMLHTTP")
-  
-doUpload = ->
-  uploadToServer "canvas.png", (e)->
-    console.log e
-    
 uploadToServer = (imgname, callback)->
   dataURL = canvas.toDataURL();  
   cb = (blob) ->
