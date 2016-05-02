@@ -13,7 +13,7 @@
 #{shortcut} = require "./shortcut.coffee"
 {makeXYT2path, poincare2hyperblic, visibleNeighborhood} = require "./poincare_view.coffee"
 {DomBuilder} = require "./dom_builder.coffee"
-{E, ButtonGroup, windowWidth, windowHeight, documentWidth} = require "./htmlutil.coffee"
+{E, ButtonGroup, windowWidth, windowHeight, documentWidth, removeClass, addClass} = require "./htmlutil.coffee"
 {formatString, pad} = require "./utils.coffee"
 
 M = require "./matrix3.coffee"
@@ -789,10 +789,15 @@ doCanvasMouseDown = (e) ->
   else
     dragHandler = new MouseToolCombo x, y
 
-doTogglePanMode = ->
-  isPanMode = not isPanMode
-  E('btn-mode-pan').style.display = if isPanMode then '' else 'none'
-  E('btn-mode-edit').style.display = unless isPanMode then '' else 'none'
+doSetPanMode = (mode) ->
+  isPanMode = mode
+
+  bpan = E('btn-mode-pan')
+  bedit = E('btn-mode-edit')
+  removeClass bpan, 'button-active'
+  removeClass bedit, 'button-active'
+
+  addClass (if isPanMode then bpan else bedit), 'button-active'
   
 doCanvasMouseMove = (e) ->
   
@@ -1202,8 +1207,8 @@ E('image-fix-size').addEventListener 'click', (e)-> doSetFixedSize E('image-fix-
 E('image-size').addEventListener 'change', (e) ->
   E('image-fix-size').checked=true
   doSetFixedSize true
-E('btn-mode-edit').addEventListener 'click', doTogglePanMode
-E('btn-mode-pan').addEventListener 'click', doTogglePanMode
+E('btn-mode-edit').addEventListener 'click', (e) -> doSetPanMode false
+E('btn-mode-pan').addEventListener 'click', (e) -> doSetPanMode true
   
 shortcuts =
   'N': doStep
@@ -1223,7 +1228,8 @@ shortcuts =
   'G': doTogglePlayer
   'SA': (e) -> observer.straightenView()
   '#32': doTogglePlayer
-  'P': doTogglePanMode
+  'P': (e) -> doSetPanMode true
+  'E': (e) -> doSetPanMode false
   
 document.addEventListener "keydown", (e)->
   focused = document.activeElement
@@ -1243,6 +1249,7 @@ document.addEventListener "keydown", (e)->
     
 ##Application startup    
 E('rule-entry').value = transitionFunc.toString()
+doSetPanMode true
 updatePopulation()
 updateCanvasSize()
 updateGrid()

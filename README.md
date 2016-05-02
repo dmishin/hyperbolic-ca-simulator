@@ -21,9 +21,9 @@ Things left to implement
 * [ ] Notifications
 * [ ] Random fill fills fixed number of cells, not radius
 * [ ] Adavnced settings: fill percent, size; autostop population;
-* [ ] Pan / Edit button
+* [x] Pan / Edit button
 * [ ] Home pointer
-* [ ] Manually setting imase size
+* [x] Manually setting imase size
 * [x] Upload frames of smooth animations
 
 **Internal code structure**

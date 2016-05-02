@@ -38,6 +38,22 @@
 #toolbar {
     text-align:center;
 }
+/*To position floating toolbars*/
+#floating-wrapper{
+    position: relative;
+}
+div.overlay-toolbar{
+    position: absolute;
+    display: inline-block;
+    top: 1em;
+}
+
+#edit-button-container{
+    left:1em;
+}
+#pan-button-container{
+    right:1em;
+}
 span.button-group{
     padding: 0 0.5em 0 0.5em;
     border-left: solid #CCC 1px;

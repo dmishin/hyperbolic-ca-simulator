@@ -94,18 +94,27 @@
 	<button id="btn-random" title="(R) Fill with random cells">Random</button>
 	</span>	
 	<span class="button-group">
-	  <button id="btn-mode-pan" title="(P) Use left button to pan, middle to edit">Pan</button>
-	  <button id="btn-mode-edit" title="(P) Use lefg button to edit, middle to pan" style="display:none">Edit</button>
-	</span>
-	<span class="button-group">
 	  <button id="btn-step" title="(N) Evaluate for one generation">Step</button>
 	  <button id="btn-play-start" title="(G or Space) Start continuous evaluation">Go</button>
 	  <button id="btn-play-stop" style="display:none" class="button-active" title="(G or Space) Stop continuous evaluation">Stop</button>
+	</span>	
+	<span class="button-group">
 	  <button id="btn-nav-home" title="(H) Navigate to the origin">Home</button>	
 	</span>
       </div>
       <div id="state-selector" style="display:none">
 	States:<span id="state-selector-buttons"></span>
+      </div>
+
+      <!-- Main control -->
+      <div id="floating-wrapper">
+	<!-- Floating buttons: PAN/EDIT-->
+	<div id="pan-button-container" class="overlay-toolbar">
+	  <button id="btn-mode-pan" title="(P) Use left button to pan, middle or left+shift to edit">Pan</button>
+	</div>      
+	<div id="edit-button-container" class="overlay-toolbar">
+	  <button id="btn-mode-edit" title="(E) Use left button to edit, middle or left+shift to pan">Edit</button>
+	</div>
       </div>
       <div id="canvas-container" tabindex="0">
 	<canvas id="canvas" width="600" height="600"></canvas>
