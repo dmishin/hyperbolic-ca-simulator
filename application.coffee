@@ -1,25 +1,23 @@
 "use strict"
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
-{unity, inverseChain, appendChain, appendInverseChain, NodeHashMap, newNode, showNode, chainEquals, node2array} = require "./vondyck_chain.coffee"
+{unity, inverseChain, appendChain, appendInverseChain, NodeHashMap, showNode} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
-{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, importField, randomFill, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill, randomStateGenerator} = require "./field.coffee"
+{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, importField, randomFill, evaluateTotalisticAutomaton, exportField, randomFill, randomStateGenerator} = require "./field.coffee"
 
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {lzw_encode} = require "./lzw.coffee"
 {Navigator} = require "./navigator.coffee"
 #{shortcut} = require "./shortcut.coffee"
-{makeXYT2path, poincare2hyperblic, visibleNeighborhood} = require "./poincare_view.coffee"
 {DomBuilder} = require "./dom_builder.coffee"
 {E, ButtonGroup, windowWidth, windowHeight, documentWidth, removeClass, addClass} = require "./htmlutil.coffee"
 {FieldObserver} = require "./observer.coffee"
-{FieldObserverWithRemoreRenderer} = require "./observer_remote.coffee"
+#{FieldObserverWithRemoreRenderer} = require "./observer_remote.coffee"
 {parseIntChecked} = require "./utils.coffee"
 {Animator} = require "./animator.coffee"
 {MouseToolCombo} = require "./mousetool.coffee"
 {GenericTransitionFunc, BinaryTransitionFunc,binaryTransitionFunc2GenericCode, parseGenericTransitionFunction, parseTransitionFunction} = require "./rule.coffee"
-
 M = require "./matrix3.coffee"
 
 MIN_WIDTH = 100

@@ -1,7 +1,7 @@
 #search for cell  clusters and navigate through them
 
-{eliminateFinalA, NodeHashMap, chainLen} = require "./vondyck_chain.coffee"
-{mooreNeighborhood, allClusters} = require "./field.coffee"
+{chainLen} = require "./vondyck_chain.coffee"
+{allClusters} = require "./field.coffee"
 {DomBuilder} = require "./dom_builder.coffee"
 {E} = require "./htmlutil.coffee"
 
