@@ -1,21 +1,22 @@
 "use strict"
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
 {unity, inverseChain, appendChain, appendInverseChain, NodeHashMap, newNode, showNode, chainEquals, node2array} = require "./vondyck_chain.coffee"
-{makeAppendRewrite, makeAppendRewriteRef, makeAppendRewriteVerified, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
+{makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
 {stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, importField, randomFill, mooreNeighborhood, evaluateTotalisticAutomaton, exportField, randomFill, randomStateGenerator} = require "./field.coffee"
 
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
-{runCommands}= require "./context_delegate.coffee"
 {lzw_encode} = require "./lzw.coffee"
 {Navigator} = require "./navigator.coffee"
 #{shortcut} = require "./shortcut.coffee"
 {makeXYT2path, poincare2hyperblic, visibleNeighborhood} = require "./poincare_view.coffee"
 {DomBuilder} = require "./dom_builder.coffee"
 {E, ButtonGroup, windowWidth, windowHeight, documentWidth, removeClass, addClass} = require "./htmlutil.coffee"
-{formatString, pad} = require "./utils.coffee"
-
+{FieldObserver} = require "./observer.coffee"
+{FieldObserverWithRemoreRenderer} = require "./observer_remote.coffee"
+{parseIntChecked} = require "./utils.coffee"
+{Animator} = require "./animator.coffee"
 M = require "./matrix3.coffee"
 
 MIN_WIDTH = 100
@@ -24,12 +25,25 @@ canvasSizeUpdateBlocked = false
 randomFillRadius = 5
 randomFillPercent = 0.4
 
+class Application
+  constructor: ->
+
+  getAppendRewrite: -> appendRewrite
+  setCanvasResize: (enable) -> canvasSizeUpdateBlocked = enable
+  getCanvasResize: -> canvasSizeUpdateBlocked
+  redraw: -> redraw()
+  getObserver: -> observer
+  drawEverything: -> drawEverything()
+  uploadToServer: (name, cb) -> uploadToServer name, cb
+  doStep: -> doStep()
+  getCanvas: -> canvas
+  getGroup: -> tessellation.group
+  
 updateCanvasSize = ->
   return if canvasSizeUpdateBlocked
   
   docW = documentWidth()
   winW = windowWidth()
-
   
   if docW > winW
     console.log "overflow"
@@ -80,274 +94,6 @@ doSetFixedSize = (isFixed) ->
     canvasSizeUpdateBlocked = false
     updateCanvasSize()
 
-class FieldObserver
-  constructor: (@tessellation, @appendRewrite, @minCellSize=1.0/400.0)->
-    @center = unity
-    @cells = visibleNeighborhood @tessellation, @appendRewrite, @minCellSize
-    @cellOffsets = (node2array(c) for c in @cells)
-    @cellTransforms = (c.repr(@tessellation.group) for c in @cells)
-    @drawEmpty = true
-    @jumpLimit = 1.5
-    @tfm = M.eye()
-    
-    @viewUpdates = 0
-    #precision falls from 1e-16 to 1e-9 in 1000 steps.
-    @maxViewUpdatesBeforeCleanup = 50
-    @xyt2path = makeXYT2path @tessellation.group, @appendRewrite
-    @pattern = ["red", "black", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
-
-    @onFinish = null
-    
-  getColorForState: (state) ->
-    @pattern[ (state % @pattern.length + @pattern.length) % @pattern.length ]
-    
-  getViewCenter: ->@center
-  getViewOffsetMatrix: ->@tfm
-  setViewOffsetMatrix: (m) ->
-    @tfm = m
-    @renderGrid @tfm
-  rebuildAt: (newCenter) ->
-    @center = newCenter
-    @cells = for offset in @cellOffsets
-      #it is important to make copy since AR empties the array!
-      eliminateFinalA @appendRewrite(newCenter, offset[..]), @appendRewrite, @tessellation.group.n
-    @_observedCellsChanged()
-    return
-
-  navigateTo: (chain, offsetMatrix=M.eye()) ->
-    console.log "navigated to #{showNode chain}"
-    @rebuildAt chain
-    @tfm = offsetMatrix
-    @renderGrid @tfm
-    return
-        
-  _observedCellsChanged: ->
-    
-  translateBy: (appendArray) ->
-    #console.log  "New center at #{showNode newCenter}"
-    @rebuildAt @appendRewrite @center, appendArray
-    
-  canDraw: -> true        
-  draw: (cells, context) ->
-    #first borders
-    #cells grouped by state
-    state2cellIndexList = {}
-    
-    for cell, i in @cells
-      state = cells.get(cell) ? 0
-      if (state isnt 0) or @drawEmpty
-        stateCells = state2cellIndexList[state]
-        unless stateCells?
-          state2cellIndexList[state] = stateCells = []
-        stateCells.push i
-        
-    for strState, cellIndices of state2cellIndexList
-      state = parseInt strState, 10
-      #console.log "Group: #{state}, #{JSON.stringify cellIndices}"
-      
-      context.beginPath()
-      for cellIndex in cellIndices
-        cellTfm = @cellTransforms[cellIndex]
-        mtx = M.mul @tfm, cellTfm
-        @tessellation.makeCellShapePoincare mtx, context
-        
-      if state is 0
-        context.stroke()
-      else
-        context.fillStyle = @getColorForState state
-        context.fill()
-        
-    #true because immediate-mode observer always finishes drawing.
-    return true
-    
-  visibleCells: (cells) ->
-    for cell in @cells when (value=cells.get(cell)) isnt null
-      [cell, value]
-        
-  checkViewMatrix: ->
-    #me = [-1,0,0,  0,-1,0, 0,0,-1]
-    #d = M.add( me, M.mul(@tfm, M.hyperbolicInv @tfm))
-    #ad = (Math.abs(x) for x in d)
-    #maxDiff = Math.max( ad ... )
-    #console.log "Step: #{@viewUpdates}, R: #{maxDiff}"
-    if (@viewUpdates+=1) > @maxViewUpdatesBeforeCleanup
-      @viewUpdates = 0
-      @tfm = M.cleanupHyperbolicMoveMatrix @tfm
-      #console.log "cleanup"
-    
-  modifyView: (m) ->
-    @tfm = M.mul m, @tfm
-    @checkViewMatrix()
-    originDistance = @viewDistanceToOrigin()
-    if originDistance > @jumpLimit
-      @rebaseView()
-    else
-      @renderGrid @tfm
-    
-  renderGrid: (viewMatrix) ->
-    #for immediaet mode observer, grid is rendered while drawing.
-    @onFinish?()
-    
-  viewDistanceToOrigin: ->
-    #viewCenter = M.mulv tfm, [0.0,0.0,1.0]
-    #Math.acosh(viewCenter[2])
-    Math.acosh @tfm[8]
-    
-  #build new view around the cell which is currently at the center
-  rebaseView1: ->
-    centerCoord = M.mulv (M.inv @tfm), [0.0, 0.0, 1.0]
-    pathToCenterCell = @xyt2path centerCoord
-    #console.log "Jump by #{showNode pathToCenterCell}"
-    m = pathToCenterCell.repr @tessellation.group
-
-    #modifyView won't work, since it multiplies in different order.
-    @tfm = M.mul @tfm, m
-    @checkViewMatrix()
-
-    #move observation point
-    @translateBy node2array pathToCenterCell
-  rebaseView: ->
-    centerCoord = M.mulv (M.inv @tfm), [0.0, 0.0, 1.0]
-    pathToCenterCell = @xyt2path centerCoord
-    if pathToCenterCell is unity
-      return
-    #console.log "Jump by #{showNode pathToCenterCell}"
-    m = pathToCenterCell.repr @tessellation.group
-
-    #modifyView won't work, since it multiplies in different order.
-    @tfm = M.mul @tfm, m
-    @checkViewMatrix()
-
-    #console.log JSON.stringify @tfm
-    #move observation point
-    @translateBy node2array pathToCenterCell
-    @renderGrid @tfm
-    
-  straightenView: ->
-    @rebaseView()
-    originalTfm = @getViewOffsetMatrix()
-
-    dAngle = Math.PI/@tessellation.group.n
-    minusEye = M.smul(-1, M.eye())
-    distanceToEye = (m) ->
-      d = M.add m, minusEye
-      Math.max (Math.abs(di) for di in d) ...
-    
-    bestRotationMtx = null
-    bestDifference = null
-
-    angleOffsets = [0.0]
-    angleOffsets.push Math.PI/2 if tessellation.group.n % 2 is 1
-    for additionalAngle in angleOffsets
-      for i in [0...2*@tessellation.group.n]
-        angle = dAngle*i + additionalAngle
-        rotMtx = M.rotationMatrix angle
-        difference = distanceToEye M.mul originalTfm, M.hyperbolicInv rotMtx
-        if (bestDifference is null) or (bestDifference > difference)
-          bestDifference = difference
-          bestRotationMtx = rotMtx
-    @setViewOffsetMatrix bestRotationMtx
-      
-    
-
-  #xp, yp in range [-1..1]
-  cellFromPoint:(xp,yp) ->
-    xyt = poincare2hyperblic xp, yp
-    throw new Error("point outside") if xyt is null
-    #inverse transform it...
-    xyt = M.mulv (M.inv @tfm), xyt
-    visibleCell = @xyt2path xyt
-    eliminateFinalA @appendRewrite(@center, node2array(visibleCell)), @appendRewrite, @tessellation.group.n
-    
-  shutdown: -> #nothing to do.
-  
-class FieldObserverWithRemoreRenderer extends FieldObserver
-  constructor: (tessellation, appendRewrite, minCellSize=1.0/400.0)->
-    super tessellation, appendRewrite, minCellSize
-    @worker = new Worker "./render_worker.js"
-    console.log "Worker created: #{@worker}"
-    @worker.onmessage = (e) => @onMessage e
-
-    @cellShapes = null
-
-    @workerReady = false
-
-    @rendering = true
-    @cellSetState = 0
-    @worker.postMessage ["I", [tessellation.group.n, tessellation.group.m, @cellTransforms]]
-    
-    @postponedRenderRequest = null
-
-      
-  _observedCellsChanged: ->
-    console.log "Ignore all responces before answer..."
-    @cellShapes = null
-    @cellSetState+= 1
-    return
-        
-  onMessage: (e) ->
-    #console.log "message received: #{JSON.stringify e.data}"
-    switch e.data[0]    
-      when "I" then @onInitialized e.data[1] ...
-      when "R" then @renderFinished e.data[1], e.data[2]
-      else throw new Error "Unexpected answer from worker: #{JSON.stringify e.data}"
-    return
-    
-  onInitialized: (n,m) ->
-    if (n is @tessellation.group.n) and (m is @tessellation.group.m)
-      console.log "Worker initialized"
-      @workerReady = true
-      #now waiting for first rendered field.
-    else
-      console.log "Init OK message received, but mismatched. Probably, late message"
-      
-  _runPostponed: ->
-    if @postponedRenderRequest isnt null
-      @renderGrid @postponedRenderRequest
-      @postponedRenderRequest = null
-          
-  renderFinished: (renderedCells, cellSetState) ->
-    #console.log "worker finished rendering #{renderedCells.length} cells"
-    @rendering = false
-    if cellSetState is @cellSetState
-      @cellShapes = renderedCells
-      @onFinish?()
-    #else
-    #  console.log "mismatch cell states: answer for #{cellSetState}, but current is #{@cellSetState}"
-    @_runPostponed()
-    
-  renderGrid: (viewMatrix) ->
-    if @rendering or not @workerReady
-      @postponedRenderRequest = viewMatrix
-    else
-      @rendering = true
-      @worker.postMessage ["R", viewMatrix, @cellSetState]
-      
-  canDraw: -> @cellShapes and @workerReady
-  
-  draw: (cells, context) ->
-    if @cellShapes is null
-      console.log "cell shapes null"
-    return false if (not @cellShapes) or (not @workerReady)
-    #first borders
-    if @drawEmpty
-      context.beginPath()
-      for cell, i in @cells
-        unless cells.get cell
-          runCommands context, @cellShapes[i]
-      context.stroke()
-
-    #then cells
-    context.beginPath()
-    for cell, i in @cells
-      if cells.get cell
-        runCommands context, @cellShapes[i]
-    context.fill()
-    return true
-  shutdown: ->
-    @worker.terminate()
-
-
 class GenericTransitionFunc
   constructor: ( @numStates, @plus, @plusInitial, @evaluate ) ->
     if @numStates <= 0 then throw new Error "Number if states incorrect"
@@ -397,11 +143,6 @@ updateGenericRuleStatus = (status)->
   span.innerHTML = status
   span.setAttribute('class', 'generic-tf-status-#{status.toLowerCase()}')  
       
-parseIntChecked = (s)->
-  v = parseInt s, 10
-  throw new Error("Bad number: #{s}") if Number.isNaN v
-  return v
-  
 # BxxxSxxx
 parseTransitionFunction = (str, n, m) ->
   match = str.match /B([\d\s]+)S([\d\s]+)/
@@ -462,184 +203,6 @@ class PaintStateSelector
     if @buttons
       @buttons.setButton @state2id[newState]
 
-
-interpolateHyperbolic = (T) ->
-  [Trot, Tdx, Tdy] = M.hyperbolicDecompose T
-  #Real distance translated is acosh( sqrt(1+dx^2+dy^2))
-  Tr2 = Tdx**2 + Tdy**2
-  Tdist = Math.acosh Math.sqrt(Tr2+1.0)
-  Tr = Math.sqrt Tr2
-  if Tr < 1e-6
-    dirX = 0.0
-    dirY = 0.0
-  else
-    dirX = Tdx / Tr
-    dirY = Tdy / Tr
-
-  return (p) ->
-    rot = Trot * p
-    dist = Tdist * p
-    r = Math.sqrt(Math.cosh(dist)**2-1.0)
-    dx = r*dirX
-    dy = r*dirY
-    
-    M.mul M.translationMatrix(dx, dy), M.rotationMatrix(rot)  
-    
-  
-class Animator
-  constructor: ->
-    @oldSize = null
-    @uploadWorker = null
-    @busy = false
-    @reset()
-
-  assertNotBusy: ->
-    if @busy
-      throw new Error "Animator is busy"
-      
-  reset: ->
-    @cancelWork() if @busy
-    @startChain = null
-    @startOffset = null
-    @endChain = null
-    @endOffset = null
-    @_updateButtons()
-    
-  _updateButtons: ->
-    E('animate-view-start').disabled = @startChain is null
-    E('animate-view-end').disabled = @endChain is null
-    E('btn-upload-animation').disabled = (@startChain is null) or (@endChain is null)
-    E('btn-animate-cancel').style.display = if @busy then '' else 'none'
-    E('btn-upload-animation').style.display = unless @busy then '' else 'none'
-    
-    
-  setStart: (observer) ->
-    @assertNotBusy()
-    @startChain = observer.getViewCenter()
-    @startOffset = observer.getViewOffsetMatrix()
-    @_updateButtons()
-    
-  setEnd: (observer) ->
-    @assertNotBusy()
-    @endChain = observer.getViewCenter()
-    @endOffset = observer.getViewOffsetMatrix()
-    @_updateButtons()
-  viewStart: (observer) ->
-    @assertNotBusy()
-    observer.navigateTo @startChain, @startOffset
-  viewEnd: (observer) ->
-    @assertNotBusy()
-    observer.navigateTo @endChain, @endOffset
-        
-  _setCanvasSize: ->
-    size = parseIntChecked E('animate-size').value
-    if size <=0 or size >= 65536
-      throw new Error("Size #{size} is inappropriate")
-      
-    canvasSizeUpdateBlocked = true
-    @oldSize = [canvas.width, canvas.height]
-    canvas.width = canvas.height = size
-    
-  _restoreCanvasSize: ->
-    throw new Error("restore withou set")  unless @oldSize
-    [canvas.width, canvas.height] = @oldSize
-    @oldSize = null
-    canvasSizeUpdateBlocked = false
-    redraw()
-
-  _beginWork: ->
-    @busy = true
-    @_setCanvasSize()
-    @_updateButtons()
-    console.log "Started animation"
-    
-  _endWork: ->
-    @_restoreCanvasSize()
-    console.log "End animation"
-    @busy = false
-    @_updateButtons()
-        
-  cancelWork: ->
-    return unless @busy
-    clearTimeout @uploadWorker if @uploadWorker
-    @uploadWorker = null
-    @_endWork()
-    
-  animate: (observer, stepsPerGen, generations, callback)->
-    return unless @startChain? and @endChain?
-    @assertNotBusy()
-    #global (surreally big) view matrix is:
-    # 
-    # Moffset * M(chain)
-    #
-    # where Moffset is view offset, and M(chain) is transformation matrix of the chain.
-    # We need to find matrix T such that
-    #
-    #  T * MoffsetStart * M(chainStart) = MoffsetEnd * M(chainEnd)
-    #
-    # Solvign this, get:
-    # T = MoffsetEnd * (M(chainEnd) * M(chainStart)^-1) * MoffsetStart^-1
-    #
-    # T = MoffsetEnd * M(chainEnd + invChain(chainStart) * MoffsetStart^-1
-
-    #Not very sure but lets try
-    #Mdelta = appendInverseChain(@endChain, @startChain,appendRewrite).repr(tessellation.group)
-    inv = (c) -> inverseChain(c, appendRewrite)
-    app = (c1, c2) -> appendChain(c1,c2, appendRewrite)
-
-    # e, S bad
-    # S, e bad
-    # 
-    # E, s good? Seems to be good, but power calculation is wrong.
-    Mdelta = app(inv(@endChain), @startChain ).repr(tessellation.group)
-    
-    
-    T = M.mul(M.mul(@endOffset, Mdelta), M.hyperbolicInv(@startOffset))
-
-    #Make interpolator for this matrix
-    Tinterp = interpolateHyperbolic M.hyperbolicInv T
-
-    index = 0
-    totalSteps = generations * stepsPerGen
-    framesBeforeGeneration = stepsPerGen
-
-    imageNameTemplate = E('upload-name').value
-    @_beginWork()
-    uploadStep = =>
-      @uploadWorker = null
-      #If we were cancelled - return quickly
-      return unless @busy 
-      observer.navigateTo @startChain, @startOffset
-      p = index / totalSteps
-      observer.modifyView M.hyperbolicInv Tinterp(p)
-      drawEverything()
-      
-      imageName = formatString imageNameTemplate, [pad(index,4)]
-      uploadToServer imageName, (ajax)=>
-        #if we were cancelled, return quickly
-        return unless @busy 
-        if ajax.readyState is XMLHttpRequest.DONE and ajax.status is 200
-          console.log "Upload success"
-          index +=1
-          framesBeforeGeneration -= 1
-          if framesBeforeGeneration is 0
-            doStep()
-            framesBeforeGeneration = stepsPerGen
-
-          if index <= totalSteps
-            console.log "request next frame"
-            @uploadWorker = flipSetTimeout 50, uploadStep
-          else
-            @_endWork()
-        else
-          console.log "Upload failure, cancel"
-          console.log ajax.responseText
-          @_endWork()
-          
-    uploadStep()
-    
-flipSetTimeout = (t, cb) -> setTimeout cb, t
-
 serverSupportsUpload = -> ((""+window.location).match /:8000\//) and true
 # ============================================  app code ===============
 #
@@ -647,7 +210,8 @@ if serverSupportsUpload()
   console.log "Enable upload"
   E('animate-controls').style.display=''
 
-animator = new Animator()
+application = new Application
+animator = new Animator application
 canvas = E "canvas"
 context = canvas.getContext "2d"
 minVisibleSize = 1/100

@@ -1,5 +1,7 @@
 #I am learning JS and want to implement this functionality by hand
 
+exports.flipSetTimeout = (t, cb) -> setTimeout cb, t
+
 exports.E = E = (id) -> document.getElementById id
 
 # Remove class from the element
