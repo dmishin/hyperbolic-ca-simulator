@@ -32,8 +32,8 @@
 	<div class="control-group">
 	  Grid
 	  <br/>
-	  N=<input id="entry-n" class="short"></input>
-	  M=<input id="entry-m" class="short"></input>
+	  N=<input id="entry-n" type="number" class="short"></input>
+	  M=<input id="entry-m" type="number" class="short"></input>
 	  <button id="btn-set-grid" title="Apply grid">Set</button>
 	</div>
 
@@ -53,19 +53,22 @@
 	<div class="control-group">
 	  <button id="btn-import" title="Import field from text">Import</button>
 	</div>
+	<div class="control-group">
+	  <input type="checkbox" id="image-fix-size">Fix size:</input><input id="image-size" class="medium"></input>
+	</div>
 	<div class="control-group" id="animate-controls" style="display:none">
 	  Upload animation<br/>
 	  <input id="upload-name" type="text" value="frame-{0}.png"/>
 	  
 	  <div class="control-table">
 	    <div>
-	      <div>Size:</div><div><input id="animate-size" class="medium" type="text" value="640"/></div>
+	      <div>Size:</div><div><input id="animate-size" class="medium" type="number" value="640"/></div>
 	    </div>
 	    <div>
-	      <div>Steps:</div><div><input id="animate-generations" class="medium" type="text" value="1"/></div>
+	      <div>Steps:</div><div><input id="animate-generations" class="medium" type="number" value="1"/></div>
 	    </div>
 	    <div>
-	      <div>Frames/step:</div><div><input id="animate-frame-per-generation" class="medium" type="text" value="10"/></div>
+	      <div>Frames/step:</div><div><input id="animate-frame-per-generation" class="medium" type="number" value="10"/></div>
 	    </div>
 	  </div>
 	  <br/>
@@ -96,7 +99,7 @@
       <div id="state-selector" style="display:none">
 	States:<span id="state-selector-buttons"></span>
       </div>
-	<div id="canvas-container">
+	<div id="canvas-container" tabindex="0">
 	  <canvas id="canvas" width="600" height="600"></canvas>
 	</div>      
       </div>

@@ -136,10 +136,10 @@ input{
 }
 
 input.short {
-    width:2em;
+    width:3em;
 }
 input.medium {
-    width:4em;
+    width:4.5em;
 }
 
 #navigator-wrap {

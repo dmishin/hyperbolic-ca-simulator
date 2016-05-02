@@ -61,11 +61,22 @@ updateCanvasSize = ->
     w = MIN_WIDTH
 
   if canvas.width isnt w
-    canvas.width = w
-    canvas.height = w
+    canvas.width = canvas.height = w
     redraw()
+    E('image-size').value = ""+w
   return
 
+doSetFixedSize = (isFixed) ->
+  if isFixed
+    size = parseIntChecked E('image-size').value
+    if size <= 0 or size >=65536
+      throw new Error "Bad size: #{size}"
+    canvasSizeUpdateBlocked = true
+    canvas.width = canvas.height = size
+    redraw()
+  else
+    canvasSizeUpdateBlocked = false
+    updateCanvasSize()
 
 class FieldObserver
   constructor: (@tessellation, @appendRewrite, @minCellSize=1.0/400.0)->
@@ -1144,6 +1155,7 @@ mouseMoveReceiver.addEventListener "mousemove", doCanvasMouseMove
 mouseMoveReceiver.addEventListener "mousedrag", doCanvasMouseMove
 
 E("btn-set-rule").addEventListener "click", doSetRule
+E("rule-entry").addEventListener "change", doSetRule
 E("btn-set-rule-generic").addEventListener "click", (e)->
   doSetRuleGeneric()
   doCloseEditor()
@@ -1151,7 +1163,6 @@ E("btn-rule-generic-close-editor").addEventListener "click", doCloseEditor
 E("btn-set-grid").addEventListener "click", doSetGrid
 
 E("btn-export").addEventListener "click", doExport
-E('rule-entry').value = transitionFunc.toString()
 E('btn-search').addEventListener 'click', doSearch
 E('btn-random').addEventListener 'click', doRandomFill
 E('btn-rule-make-generic').addEventListener 'click', doEditAsGeneric
@@ -1188,7 +1199,10 @@ E('btn-animate-cancel').addEventListener 'click', (e)->animator.cancelWork()
 E('view-straighten').addEventListener 'click', (e)-> observer.straightenView()
 
 E('view-straighten').addEventListener 'click', (e)-> observer.straightenView()
-
+E('image-fix-size').addEventListener 'click', (e)-> doSetFixedSize E('image-fix-size').checked
+E('image-size').addEventListener 'change', (e) ->
+  E('image-fix-size').checked=true
+  doSetFixedSize true
 shortcuts =
   'N': doStep
   'C': doReset
@@ -1225,6 +1239,7 @@ document.addEventListener "keydown", (e)->
     handler(e)
     
 ##Application startup    
+E('rule-entry').value = transitionFunc.toString()
 updatePopulation()
 updateCanvasSize()
 updateGrid()
