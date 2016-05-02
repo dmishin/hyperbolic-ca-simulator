@@ -9,8 +9,10 @@ class BaseFunc
 exports.GenericTransitionFunc = class GenericTransitionFunc extends BaseFunc
   constructor: ( @numStates, @plus, @plusInitial, @evaluate ) ->
     if @numStates <= 0 then throw new Error "Number if states incorrect"
+    @generation = 0
   toString: -> "GenericFunction( #{@numStates} states )"
   isStable: -> @evaluate(0,0) is 0
+  setGeneration: (g) -> @generation = g
 
 #DayNight functions are those, who transform empty field to filled and back.
 # They can be effectively simulated as a pair of 2 rules, applying one rule for even generations and another for odd.
@@ -112,10 +114,46 @@ exports.binaryTransitionFunc2GenericCode = (binTf) ->
     //'plusInitial': 0,
     
     //Transition function. Takes current state and sum, returns new state.
+    //this.generation stores current generation number
     'next': function(x, s){
         if (x==1 && (#{conditionStay})) return 1;
         if (x==0 && (#{conditionBorn})) return 1;
         return 0;
+     }
+}"""]
+
+
+exports.dayNightBinaryTransitionFunc2GenericCode = (binTf) ->
+  row2condition = (row) -> ("s==#{sum}" for nextValue, sum in row when nextValue).join(" || ")
+  row2conditionInv = (row) -> ("s==#{binTf.base.numNeighbors-sum}" for nextValue, sum in row when nextValue).join(" || ")
+  
+  conditionBorn = row2condition binTf.base.table[0]
+  conditionStay = row2condition binTf.base.table[1]
+  conditionBornInv = row2conditionInv binTf.base.table[0]
+  conditionStayInv = row2conditionInv binTf.base.table[1]
+  
+  code = ["""//Automatically generated code for binary rule #{binTf}
+{
+    //number of states
+    'states': 2,
+
+    //Neighbors sum calculation is default. Code for reference.
+    //'plus': function(s,x){ return s+x; },
+    //'plusInitial': 0,
+    
+    //Transition function. Takes current state and sum, returns new state.
+    'next': function(x, s){
+        var phase = this.generation & 1;
+
+        if (phase === 0){
+            if (x==1 && (#{conditionStay})) return 0;
+            if (x==0 && (#{conditionBorn})) return 0;
+            return 1
+        } else {
+            if (x==0 && (#{conditionStayInv})) return 1;
+            if (x==1 && (#{conditionBornInv})) return 1;
+            return 0;
+        }
      }
 }"""]
 

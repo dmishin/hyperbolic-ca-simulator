@@ -15,7 +15,7 @@
 {parseIntChecked} = require "./utils.coffee"
 {Animator} = require "./animator.coffee"
 {MouseToolCombo} = require "./mousetool.coffee"
-{GenericTransitionFunc, BinaryTransitionFunc,binaryTransitionFunc2GenericCode, parseGenericTransitionFunction, parseTransitionFunction} = require "./rule.coffee"
+{GenericTransitionFunc, BinaryTransitionFunc,DayNightTransitionFunc,binaryTransitionFunc2GenericCode, dayNightBinaryTransitionFunc2GenericCode, parseGenericTransitionFunction, parseTransitionFunction} = require "./rule.coffee"
 M = require "./matrix3.coffee"
 
 MIN_WIDTH = 100
@@ -514,10 +514,14 @@ doRandomFill = ->
 
 doEditAsGeneric = ->
   console.log "Generate code"
-  unless transitionFunc instanceof BinaryTransitionFunc
+  if transitionFunc instanceof BinaryTransitionFunc
+    code = binaryTransitionFunc2GenericCode(transitionFunc)
+  else if transitionFunc instanceof DayNightTransitionFunc
+    code = dayNightBinaryTransitionFunc2GenericCode(transitionFunc)
+  else
     alert("Active transition function is not a binary")
     return
-  E('generic-tf-code').value = binaryTransitionFunc2GenericCode(transitionFunc)
+  E('generic-tf-code').value = code
   updateGenericRuleStatus "modified"
   doSetRuleGeneric()
 
