@@ -769,34 +769,36 @@ toggleCellAt = (x,y) ->
     cells.put cell, paintStateSelector.state
   redraw()
 
-doCanvasClick = (e) ->
-  e.preventDefault()
-  [x,y] = getCanvasCursorPosition e, canvas
-  toggleCellAt x, y
-  updatePopulation()    
-  
+isPanMode = true
 doCanvasMouseDown = (e) ->
-  canvas.setCapture true if canvas.setCapture
+  #Allow normal right-click to support image sacing
+  E('canvas-container').focus()
+  return if e.button is 2
+
+  #Only in mozilla?
+  canvas.setCapture? true
+  
   e.preventDefault()
   [x,y] = getCanvasCursorPosition e, canvas
-  unless (e.button is 0) and not e.shiftKey
+
+  isPanAction = (e.button is 1) ^ (e.shiftKey) ^ (isPanMode)
+  console.log "Pan: #{isPanAction}"
+  unless isPanAction
     toggleCellAt x, y
     updatePopulation()    
   else
     dragHandler = new MouseToolCombo x, y
-    return
-    cx = canvas.width*0.5
-    cy = canvas.height*0.5
-    r = Math.min(cx, cy)
 
-    dx = x-cx
-    dy = y-cy
-    if dx*dx + dy*dy <= r*r*(0.8*0.8)
-      dragHandler = new MouseToolPan x, y
-    else
-      dragHandler = new MouseToolRotate x, y
-
+doTogglePanMode = ->
+  isPanMode = not isPanMode
+  E('btn-mode-pan').style.display = if isPanMode then '' else 'none'
+  E('btn-mode-edit').style.display = unless isPanMode then '' else 'none'
+  
 doCanvasMouseMove = (e) ->
+  
+  isPanAction = (e.shiftKey) ^ (isPanMode)
+  E('canvas-container').style.cursor = if isPanAction then 'move' else 'default'
+    
   if dragHandler isnt null
     e.preventDefault()
     dragHandler.mouseMoved e
@@ -807,7 +809,6 @@ doCanvasMouseUp = (e) ->
     dragHandler?.mouseUp e
     dragHandler = null
 
-                        
 doSetRule =  ->
   try
     transitionFunc = parseTransitionFunction E('rule-entry').value, tessellation.group.n, tessellation.group.m
@@ -1146,8 +1147,6 @@ binaryTransitionFunc2GenericCode = (binTf) ->
 # ============ Bind Events =================
 E("btn-reset").addEventListener "click", doReset
 E("btn-step").addEventListener "click", doStep
-#E("canvas").addEventListener "click", doCanvasClick
-#
 mouseMoveReceiver = E("canvas-container")
 mouseMoveReceiver.addEventListener "mousedown", doCanvasMouseDown
 mouseMoveReceiver.addEventListener "mouseup", doCanvasMouseUp
@@ -1203,6 +1202,9 @@ E('image-fix-size').addEventListener 'click', (e)-> doSetFixedSize E('image-fix-
 E('image-size').addEventListener 'change', (e) ->
   E('image-fix-size').checked=true
   doSetFixedSize true
+E('btn-mode-edit').addEventListener 'click', doTogglePanMode
+E('btn-mode-pan').addEventListener 'click', doTogglePanMode
+  
 shortcuts =
   'N': doStep
   'C': doReset
@@ -1221,6 +1223,7 @@ shortcuts =
   'G': doTogglePlayer
   'SA': (e) -> observer.straightenView()
   '#32': doTogglePlayer
+  'P': doTogglePanMode
   
 document.addEventListener "keydown", (e)->
   focused = document.activeElement

@@ -43,7 +43,7 @@
 	  <button id="btn-mem-clear" title="(Alt+M) Clear memory">MC</button>
 	</div>
 	<div class="control-group">
-	  <button id="btn-search" title="Search for all cell groups in the field">Search</button>
+	  <button id="btn-search" title="(S) Search for all cell groups in the field">Search</button>
 	</div>
 	<div class="control-group">
 	  Export <br/>
@@ -54,7 +54,7 @@
 	  <button id="btn-import" title="Import field from text">Import</button>
 	</div>
 	<div class="control-group">
-	  <input type="checkbox" id="image-fix-size">Fix size:</input><input id="image-size" type="number" class="medium"></input>
+	  <input type="checkbox" id="image-fix-size" title="Fix field size in pixels">Fix size:</input><input id="image-size" type="number" class="medium" title="Fix field size in pixels"></input>
 	</div>
 	<div class="control-group" id="animate-controls" style="display:none">
 	  Upload animation<br/>
@@ -62,10 +62,10 @@
 	  
 	  <div class="control-table">
 	    <div>
-	      <div>Size:</div><div><input id="animate-size" class="medium" type="number" value="640"/></div>
+	      <div>Size:</div><div><input id="animate-size" class="medium" type="number" value="640" title="Image size in pixels"/></div>
 	    </div>
 	    <div>
-	      <div>Steps:</div><div><input id="animate-generations" class="medium" type="number" value="1"/></div>
+	      <div>Steps:</div><div><input id="animate-generations" class="medium" type="number" value="1" title="How many generations to simulate for"/></div>
 	    </div>
 	    <div>
 	      <div>Frames/step:</div><div><input id="animate-frame-per-generation" class="medium" type="number" value="10"/></div>
@@ -75,10 +75,10 @@
 	  
 	  <div class="control-table">
 	    <div>
-	      <div>Start:</div><div><button id="animate-set-start">Set</button><button id="animate-view-start">View</button></div>
+	      <div>Start:</div><div><button id="animate-set-start" title="Set initial position for animation. Hint: use straighten view button">Set</button><button id="animate-view-start">View</button></div>
 	    </div>
 	    <div>
-	      <div>End:</div><div><button id="animate-set-end">Set</button><button id="animate-view-end">View</button></div>
+	      <div>End:</div><div><button id="animate-set-end" title="Set final position for animation. Hint: use straighten view button">Set</button><button id="animate-view-end">View</button></div>
 	    </div>
 	  </div>
 	  <button id="btn-upload-animation">Upload animation</button>
@@ -89,19 +89,27 @@
       <!-- Main content -->
       <div id="main-content">
       <div id="toolbar">
+	<span class="button-group">
 	<button id="btn-reset" class="dangerous" title="(C) Clear field and reset view">Reset</button>
 	<button id="btn-random" title="(R) Fill with random cells">Random</button>
-	<button id="btn-step" title="(N) Evaluate for one generation">Step</button>
-	<button id="btn-play-start" title="(G or Space) Start continuous evaluation">Go</button>
-	<button id="btn-play-stop" style="display:none" class="button-active" title="(G or Space) Stop continuous evaluation">Stop</button>
-	<button id="btn-nav-home" title="(H) Navigate to the origin">Home</button>	
+	</span>	
+	<span class="button-group">
+	  <button id="btn-mode-pan" title="(P) Use left button to pan, middle to edit">Pan</button>
+	  <button id="btn-mode-edit" title="(P) Use lefg button to edit, middle to pan" style="display:none">Edit</button>
+	</span>
+	<span class="button-group">
+	  <button id="btn-step" title="(N) Evaluate for one generation">Step</button>
+	  <button id="btn-play-start" title="(G or Space) Start continuous evaluation">Go</button>
+	  <button id="btn-play-stop" style="display:none" class="button-active" title="(G or Space) Stop continuous evaluation">Stop</button>
+	  <button id="btn-nav-home" title="(H) Navigate to the origin">Home</button>	
+	</span>
       </div>
       <div id="state-selector" style="display:none">
 	States:<span id="state-selector-buttons"></span>
       </div>
-	<div id="canvas-container" tabindex="0">
-	  <canvas id="canvas" width="600" height="600"></canvas>
-	</div>      
+      <div id="canvas-container" tabindex="0">
+	<canvas id="canvas" width="600" height="600"></canvas>
+      </div>      
       </div>
       
       <div id="navigator">

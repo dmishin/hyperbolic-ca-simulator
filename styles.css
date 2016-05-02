@@ -38,6 +38,15 @@
 #toolbar {
     text-align:center;
 }
+span.button-group{
+    padding: 0 0.5em 0 0.5em;
+    border-left: solid #CCC 1px;
+}
+span.button-group:first-child {
+    border-left: none;
+    
+}
+
 #sidebar {
     width: 12em;
 }
@@ -46,6 +55,7 @@
     text-align: center;
     padding: 0;
     border: 0;
+    margin: 1em;
     background-color: white;
 }
 
