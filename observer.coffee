@@ -162,7 +162,7 @@ exports.FieldObserver = class FieldObserver
     bestDifference = null
 
     angleOffsets = [0.0]
-    angleOffsets.push Math.PI/2 if tessellation.group.n % 2 is 1
+    angleOffsets.push Math.PI/2 if @tessellation.group.n % 2 is 1
     for additionalAngle in angleOffsets
       for i in [0...2*@tessellation.group.n]
         angle = dAngle*i + additionalAngle
