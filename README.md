@@ -5,7 +5,7 @@ BUGS
 ----
 ### Rule editor problems:
 
-* If bad rule entered, switch from generic to binary does not work
+* *fixed* If bad rule entered, switch from generic to binary does not work
 * if clicked OK in generic editor, then it closes even if not compiled.
 
 ### Fixed. Problem: rule B3 S023 does not actually works!
@@ -23,7 +23,7 @@ Things left to implement
 * [ ] Select manually, export selection (remove export visible)
 * [ ] Write short help
 * [x] Display generation
-* [ ] Support Day/Night rules
+* [x] Support Day/Night rules
 * [ ] Notifications
 * [ ] Random fill fills fixed number of cells, not radius
 * [ ] Adavnced settings: fill percent, size; autostop population;

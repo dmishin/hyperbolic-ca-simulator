@@ -1,13 +1,44 @@
 {parseIntChecked} = require "./utils.coffee"
 
 
-exports.GenericTransitionFunc = class GenericTransitionFunc
+class BaseFunc
+  plus: (x,y) -> x+y
+  plusInitial: 0
+  setGeneration: (g)->
+    
+exports.GenericTransitionFunc = class GenericTransitionFunc extends BaseFunc
   constructor: ( @numStates, @plus, @plusInitial, @evaluate ) ->
     if @numStates <= 0 then throw new Error "Number if states incorrect"
   toString: -> "GenericFunction( #{@numStates} states )"
   isStable: -> @evaluate(0,0) is 0
-  
-exports.BinaryTransitionFunc = class BinaryTransitionFunc
+
+#DayNight functions are those, who transform empty field to filled and back.
+# They can be effectively simulated as a pair of 2 rules, applying one rule for even generations and another for odd.
+
+isDayNightRule = (binaryFunc)->
+  binaryFunc.evaluate(0,0) == 1 and binaryFunc.evaluate(1, binaryFunc.numNeighbors) == 0
+   
+exports.DayNightTransitionFunc = class DayNightTransitionFunc extends BaseFunc
+  constructor: (@base) ->
+    throw new Error("base function is not flashing") if not isDayNightRule @base
+    @phase = 0
+    
+  toString: -> @base.toString()
+  numStates: 2
+
+  setGeneration: (g)->
+    @phase = g & 1
+
+  isStable: ->
+    @base.evaluate(0,0) is 1 and @base.evaluate(1,@base.numNeighbors) is 0
+    
+  evaluate: (x, s) ->
+    if @phase
+      1 - @base.evaluate(x,s)
+    else
+      @base.evaluate(1-x, @base.numNeighbors-s)
+
+exports.BinaryTransitionFunc = class BinaryTransitionFunc extends BaseFunc
   constructor: ( @n, @m, bornAt, stayAt ) ->
     @numNeighbors = @n*(@m-2)
     @table = for arr in [bornAt, stayAt]
@@ -46,7 +77,7 @@ exports.parseGenericTransitionFunction = (str) ->
   return new GenericTransitionFunc tfObject.states, (tfObject.sum ? ((x,y)->x+y)), (tfObject.sumInitial ? 0), tfObject.next
 
 # BxxxSxxx
-exports.parseTransitionFunction = (str, n, m) ->
+exports.parseTransitionFunction = (str, n, m, allowDayNight=true) ->
   match = str.match /B([\d\s]+)S([\d\s]+)/
   throw new Error("Bad function string: #{str}") unless match?
     
@@ -56,7 +87,13 @@ exports.parseTransitionFunction = (str, n, m) ->
 
   bArray = strings2array match[1]
   sArray = strings2array match[2]
-  return new BinaryTransitionFunc n, m, bArray, sArray
+  func = new BinaryTransitionFunc n, m, bArray, sArray
+
+  #If allowed, convert function to day/night rule
+  if allowDayNight and isDayNightRule func
+    new DayNightTransitionFunc func
+  else
+    func
 
 
 exports.binaryTransitionFunc2GenericCode = (binTf) ->

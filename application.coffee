@@ -188,6 +188,8 @@ doReset = ->
   redraw()
 
 doStep = (onFinish)->
+  #Set generation for thse rules who depend on it
+  transitionFunc.setGeneration generation
   cells = evaluateTotalisticAutomaton cells, getNeighbors, transitionFunc.evaluate.bind(transitionFunc), transitionFunc.plus, transitionFunc.plusInitial
   generation += 1
   redraw()
