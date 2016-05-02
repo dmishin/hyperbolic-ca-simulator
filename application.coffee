@@ -173,7 +173,7 @@ ObserverClass = FieldObserver
 observer = new ObserverClass tessellation, appendRewrite, minVisibleSize
 observer.onFinish = -> redraw()
 
-navigator = new Navigator observer
+navigator = new Navigator application
 
 transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
 dragHandler = null
@@ -394,7 +394,6 @@ setGridImpl = (n, m)->
   observer?.shutdown()
   observer = new ObserverClass tessellation, appendRewrite, minVisibleSize
   observer.onFinish = -> redraw()
-  navigator.setObserver observer
   navigator.clear()
   doClearMemory()
   doStopPlayer()
@@ -448,9 +447,11 @@ uploadToServer = (imgname, callback)->
 
 
 doSearch = ->
-  navigator.search cells, tessellation.group.n, tessellation.group.m, appendRewrite
+  found = navigator.search cells
   updateCanvasSize()
-
+  if found > 0
+    navigator.navigateToResult 0
+    
 memo = null
 doMemorize = ->
   memo =

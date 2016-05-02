@@ -6,18 +6,22 @@
 {E} = require "./htmlutil.coffee"
 
 exports.Navigator = class Navigator
-  constructor: (@observer, navigatorElemId="navigator-cluster-list", btnClearId="btn-nav-clear") ->
+  constructor: (@application, navigatorElemId="navigator-cluster-list", btnClearId="btn-nav-clear") ->
     @clustersElem = E navigatorElemId
     @btnClear = E btnClearId
     @clusters = []
     @btnClear.style.display = 'none'
     
-  search: (field, n, m, appendRewrite)->
+  search: (field)->
     #field is NodeHashMap
-    @clusters = allClusters field, n, m, appendRewrite
+    n = @application.getGroup().n
+    m = @application.getGroup().m
+    
+    @clusters = allClusters field, n, m, @application.getAppendRewrite()
     @sortByDistance()
     @updateClusterList()
-    @btnClear.style.display = if @clusters then '' else 'none'  
+    @btnClear.style.display = if @clusters then '' else 'none'
+    return @clusters.length
 
   sortByDistance: ->
     @clusters.sort (a, b) ->
@@ -33,15 +37,19 @@ exports.Navigator = class Navigator
       d = chainLen(b[0]) - chainLen(a[0])
       return d
       
-  setObserver: (o) -> @observer = o
-  
   makeNavigateTo: (chain) -> (e) =>
     e.preventDefault()
     #console.log JSON.stringify chain
-    if @observer?
-      @observer.navigateTo chain
+    observer = @application.getObserver()
+    if observer?
+      observer.navigateTo chain
     return
-    
+
+  navigateToResult: (index) ->
+    observer = @application.getObserver()
+    if observer?
+      observer.navigateTo @clusters[index][0]
+        
   clear: ->
     @clusters = []
     @clustersElem.innerHTML = ""
