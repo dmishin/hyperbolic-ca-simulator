@@ -53,7 +53,8 @@ exports.MouseToolCombo = class MouseToolCombo extends MouseTool
     mv = M.translationMatrix(dx*k*(1-q) , dy*k*(1-q))
     rt = M.rotationMatrix dAngle*q
     @application.getObserver().modifyView M.mul(M.mul(mv,rt),mv)
-  
+
+###    
 exports.MouseToolPan = class MouseToolPan extends MouseTool
   constructor: (application, @x0, @y0) ->
     super application
@@ -96,3 +97,4 @@ exports.MouseToolRotate = class MouseToolRotate extends MouseTool
     @angle0 = newAngle
     @rotateView dAngle
 
+###
