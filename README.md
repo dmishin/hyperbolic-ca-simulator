@@ -3,9 +3,14 @@ Cellular automata on hyperbolic fields
 
 BUGS
 ----
+### Rule editor problems:
 
-### Serious problem: rule B3 S023 does not actually works!
+* If bad rule entered, switch from generic to binary does not work
+* if clicked OK in generic editor, then it closes even if not compiled.
+
+### Fixed. Problem: rule B3 S023 does not actually works!
 seems that only neighbored cells are evaluated!
+
 
 
 TODO List
@@ -17,6 +22,7 @@ Things left to implement
 * [ ] Import data from URL
 * [ ] Select manually, export selection (remove export visible)
 * [ ] Write short help
+* [x] Display generation
 * [ ] Support Day/Night rules
 * [ ] Notifications
 * [ ] Random fill fills fixed number of cells, not radius

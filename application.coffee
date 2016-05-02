@@ -21,6 +21,8 @@ M = require "./matrix3.coffee"
 MIN_WIDTH = 100
 
 canvasSizeUpdateBlocked = false
+randomFillRadius = 5
+randomFillPercent = 0.4
 
 updateCanvasSize = ->
   return if canvasSizeUpdateBlocked
@@ -641,11 +643,11 @@ flipSetTimeout = (t, cb) -> setTimeout cb, t
 serverSupportsUpload = -> ((""+window.location).match /:8000\//) and true
 # ============================================  app code ===============
 #
-animator = new Animator()
 if serverSupportsUpload()
   console.log "Enable upload"
   E('animate-controls').style.display=''
 
+animator = new Animator()
 canvas = E "canvas"
 context = canvas.getContext "2d"
 minVisibleSize = 1/100
@@ -671,19 +673,24 @@ navigator = new Navigator observer
 transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
 dragHandler = null
 
+generation = 0
 cells = new NodeHashMap
 cells.put unity, 1
 
 doReset = ->
   cells = new NodeHashMap
+  generation = 0
   cells.put unity, 1
   updatePopulation()
+  updateGeneration()
   redraw()
 
 doStep = (onFinish)->
   cells = evaluateTotalisticAutomaton cells, getNeighbors, transitionFunc.evaluate.bind(transitionFunc), transitionFunc.plus, transitionFunc.plusInitial
+  generation += 1
   redraw()
   updatePopulation()
+  updateGeneration()
   onFinish?()
 
 player = null
@@ -892,7 +899,8 @@ class MouseTool
 
 updatePopulation = ->
   E('population').innerHTML = ""+cells.count
-    
+updateGeneration = ->
+  E('generation').innerHTML = ""+generation    
 
 class MouseToolCombo extends MouseTool
   constructor: (@x0, @y0) ->
@@ -1019,6 +1027,7 @@ doMemorize = ->
     cells: cells.copy()
     viewCenter: observer.getViewCenter()
     viewOffset: observer.getViewOffsetMatrix()
+    generation: generation
   console.log "Position memoized"
   updateMemoryButtons()
   
@@ -1027,7 +1036,10 @@ doRemember = ->
     console.log "nothing to remember"
   else
     cells = memo.cells.copy()
+    generation = memo.generation
     observer.navigateTo memo.viewCenter, memo.viewOffset
+    updatePopulation()
+    updateGeneration()
 
 doClearMemory = ->
   memo = null        
@@ -1072,8 +1084,6 @@ doImport = ->
   catch e
     alert "Error parsing: #{e}"
     
-randomFillRadius = 5
-randomFillPercent = 0.4
 doRandomFill = ->
   randomFill cells, randomFillPercent, unity, randomFillRadius, appendRewrite, tessellation.group.n, tessellation.group.m, randomStateGenerator(transitionFunc.numStates)
   updatePopulation()
@@ -1251,6 +1261,7 @@ document.addEventListener "keydown", (e)->
 E('rule-entry').value = transitionFunc.toString()
 doSetPanMode true
 updatePopulation()
+updateGeneration()
 updateCanvasSize()
 updateGrid()
 updateMemoryButtons()
