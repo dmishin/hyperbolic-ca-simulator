@@ -35,8 +35,9 @@ Things left to implement
 **Internal code structure**
 * [ ] Reorganize code, to make appendRewrite, eliminateFinalA, group a parts of a single entity.
 * [ ] improve performance of eliminateFinalA, by trying only rewrites that change something. (Is it really different? Check performance.)
-* [ ] Split application.coffee into modules. It is too big.
-* [ ] Create application class.
+* [x] Split application.coffee into modules. It is too big.
+* [ ] Group modules: core, ui. Target: make core modules easily usabe in separate project
+* [v] Create application class. Done partially, the class is merely an interface.
 
 **Major rewrites**
 * [ ] Use web worker for calculations.

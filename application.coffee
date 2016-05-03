@@ -20,24 +20,106 @@ M = require "./matrix3.coffee"
 
 MIN_WIDTH = 100
 
+minVisibleSize = 1/100
 canvasSizeUpdateBlocked = false
 randomFillNum = 2000
 randomFillPercent = 0.4
 
 class Application
   constructor: ->
-
-  getAppendRewrite: -> appendRewrite
+    @tessellation = null
+    @appendRewrite = null
+    @observer = null
+    @navigator = null
+    @animator = null
+    @cells = null
+    @generation = 0
+    @transitionFunc = null
+    @lastBinaryTransitionFunc = null
+    
+    #@ObserverClass = FieldObserverWithRemoreRenderer
+    @ObserverClass = FieldObserver
+    
+    
+  getAppendRewrite: -> @appendRewrite
   setCanvasResize: (enable) -> canvasSizeUpdateBlocked = enable
   getCanvasResize: -> canvasSizeUpdateBlocked
   redraw: -> redraw()
-  getObserver: -> observer
+  getObserver: -> @observer
   drawEverything: -> drawEverything()
   uploadToServer: (name, cb) -> uploadToServer name, cb
-  doStep: -> doStep()
   getCanvas: -> canvas
-  getGroup: -> tessellation.group
-  
+  getGroup: -> @tessellation.group
+  getTransitionFunc: -> @transitionFunc
+
+  initialize: ->
+    @tessellation = new Tessellation 7,3
+    console.log "Running knuth-bendix algorithm...."
+    rewriteRuleset = knuthBendix vdRule @getGroup().n, @getGroup().m
+    console.log "Finished"    
+    @appendRewrite = makeAppendRewrite rewriteRuleset
+    @getNeighbors = mooreNeighborhood @getGroup().n, @getGroup().m, @appendRewrite
+
+    @cells = new NodeHashMap
+    @cells.put unity, 1
+    
+    @observer = new @ObserverClass @tessellation, @appendRewrite, minVisibleSize
+    @observer.onFinish = -> redraw()
+
+    @navigator = new Navigator this
+    @animator = new Animator this
+    @paintStateSelector = new PaintStateSelector this, E("state-selector"), E("state-selector-buttons")
+
+    @transitionFunc = parseTransitionFunction "B 3 S 2 3", application.getGroup().n, application.getGroup().m
+    @lastBinaryTransitionFunc = @transitionFunc
+
+
+  setGridImpl: (n, m)->
+    @tessellation = new Tessellation n, m
+    console.log "Running knuth-bendix algorithm for {#{n}, #{m}}...."
+    rewriteRuleset = knuthBendix vdRule @getGroup().n, @getGroup().m
+    console.log "Finished"
+    @appendRewrite = makeAppendRewrite rewriteRuleset
+    @getNeighbors = mooreNeighborhood @getGroup().n, @getGroup().m, @appendRewrite
+    @transitionFunc = parseTransitionFunction @transitionFunc.toString(), @getGroup().n, @getGroup().m
+    @observer?.shutdown()
+    @observer = new @ObserverClass @tessellation, @appendRewrite, minVisibleSize
+    @observer.onFinish = -> redraw()
+    @navigator.clear()
+    doClearMemory()
+    doStopPlayer()
+
+
+  #Actions
+  doRandomFill: ->
+    randomFillFixedNum @cells, randomFillPercent, unity, randomFillNum, @appendRewrite, @getGroup().n, @getGroup().m, randomStateGenerator(@transitionFunc.numStates)
+    updatePopulation()
+    redraw()
+
+  doStep: (onFinish)->
+    #Set generation for thse rules who depend on it
+    @transitionFunc.setGeneration @generation
+    @cells = evaluateTotalisticAutomaton @cells, @getNeighbors, @transitionFunc.evaluate.bind(@transitionFunc), @transitionFunc.plus, @transitionFunc.plusInitial
+    @generation += 1
+    redraw()
+    updatePopulation()
+    updateGeneration()
+    onFinish?()
+  doReset: ->
+    @cells = new NodeHashMap
+    @generation = 0
+    @cells.put unity, 1
+    updatePopulation()
+    updateGeneration()
+    redraw()
+
+  doSearch: ->
+    found = @navigator.search @cells
+    updateCanvasSize()
+    if found > 0
+      @navigator.navigateToResult 0
+    
+
 updateCanvasSize = ->
   return if canvasSizeUpdateBlocked
   
@@ -94,12 +176,12 @@ doSetFixedSize = (isFixed) ->
     updateCanvasSize()
 
 class PaintStateSelector
-  constructor: (@container, @buttonContainer)->
+  constructor: (@application, @container, @buttonContainer)->
     @state = 1
     @numStates = 2
     
-  update: (transitionFunc)->
-    numStates = transitionFunc.numStates
+  update: ->
+    numStates = @application.getTransitionFunc().numStates
     #only do something if number of states changed
     return if numStates == @numStates
     @numStates = numStates
@@ -117,7 +199,7 @@ class PaintStateSelector
       id2state = {}
       @state2id = {}
       for state in [1...numStates]
-        color = observer.getColorForState state
+        color = @application.observer.getColorForState state
         btnId = "select-state-#{state}"
         @state2id[state] = btnId
         id2state[btnId] = state
@@ -147,55 +229,13 @@ if serverSupportsUpload()
   console.log "Enable upload"
   E('animate-controls').style.display=''
 
-application = new Application
-animator = new Animator application
 canvas = E "canvas"
 context = canvas.getContext "2d"
-minVisibleSize = 1/100
-tessellation = new Tessellation 7,3
-console.log "Running knuth-bendix algorithm...."
-rewriteRuleset = knuthBendix vdRule tessellation.group.n, tessellation.group.m
-console.log "Finished"
-appendRewrite = makeAppendRewrite rewriteRuleset
 
+application = new Application
+application.initialize()
 
-paintStateSelector = new PaintStateSelector E("state-selector"), E("state-selector-buttons")
-
-getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, appendRewrite
-
-#ObserverClass = FieldObserverWithRemoreRenderer
-ObserverClass = FieldObserver
-
-observer = new ObserverClass tessellation, appendRewrite, minVisibleSize
-observer.onFinish = -> redraw()
-
-navigator = new Navigator application
-
-transitionFunc = parseTransitionFunction "B 3 S 2 3", tessellation.group.n, tessellation.group.m
-lastBinaryTransitionFunc = transitionFunc
 dragHandler = null
-
-generation = 0
-cells = new NodeHashMap
-cells.put unity, 1
-
-doReset = ->
-  cells = new NodeHashMap
-  generation = 0
-  cells.put unity, 1
-  updatePopulation()
-  updateGeneration()
-  redraw()
-
-doStep = (onFinish)->
-  #Set generation for thse rules who depend on it
-  transitionFunc.setGeneration generation
-  cells = evaluateTotalisticAutomaton cells, getNeighbors, transitionFunc.evaluate.bind(transitionFunc), transitionFunc.plus, transitionFunc.plusInitial
-  generation += 1
-  redraw()
-  updatePopulation()
-  updateGeneration()
-  onFinish?()
 
 player = null
 playerTimeout = 500
@@ -204,11 +244,11 @@ doStartPlayer = ->
   return if player?
 
   runPlayerStep = ->
-    if cells.count >= autoplayCriticalPopulation
-      alert "Population reached #{cells.count}, stopping auto-play"
+    if application.cells.count >= autoplayCriticalPopulation
+      alert "Population reached #{application.cells.count}, stopping auto-play"
       player = null
     else
-      player = setTimeout( (-> doStep(runPlayerStep)), playerTimeout )
+      player = setTimeout( (-> application.doStep(runPlayerStep)), playerTimeout )
     updatePlayButtons()
 
   runPlayerStep()
@@ -238,7 +278,7 @@ dirty = true
 redraw = -> dirty = true
 
 drawEverything = ->
-  return false unless observer.canDraw()
+  return false unless application.observer.canDraw()
   context.fillStyle = "white"  
   #context.clearRect 0, 0, canvas.width, canvas.height
   context.fillRect 0, 0, canvas.width, canvas.height
@@ -249,7 +289,7 @@ drawEverything = ->
   context.fillStyle = "black"
   context.lineWidth = 1.0/s
   context.strokeStyle = "rgb(128,128,128)"
-  observer.draw cells, context
+  application.observer.draw application.cells, context
   context.restore()
   return true
 
@@ -275,14 +315,14 @@ toggleCellAt = (x,y) ->
   xp = x/s - 1
   yp = y/s - 1
   try
-    cell = observer.cellFromPoint xp, yp
+    cell = application.observer.cellFromPoint xp, yp
   catch e
     return
     
-  if cells.get(cell) is paintStateSelector.state
-    cells.remove cell
+  if application.cells.get(cell) is application.paintStateSelector.state
+    application.cells.remove cell
   else
-    cells.put cell, paintStateSelector.state
+    application.cells.put cell, application.paintStateSelector.state
   redraw()
 
 isPanMode = true
@@ -332,13 +372,13 @@ doCanvasMouseUp = (e) ->
 
 doSetRule =  ->
   try
-    transitionFunc = parseTransitionFunction E('rule-entry').value, tessellation.group.n, tessellation.group.m
-    lastBinaryTransitionFunc = transitionFunc
-    paintStateSelector.update transitionFunc
-    console.log transitionFunc
+    application.transitionFunc = parseTransitionFunction E('rule-entry').value, application.getGroup().n, application.getGroup().m
+    application.lastBinaryTransitionFunc = application.transitionFunc
+    application.paintStateSelector.update application.transitionFunc
+    console.log application.transitionFunc
   catch e
     alert "Failed to parse function: #{e}"
-    transitionFunc = lastBinaryTransitionFunc ? transitionFunc
+    application.transitionFunc = application.lastBinaryTransitionFunc ? application.transitionFunc
     
   E('controls-rule-simple').style.display=""
   E('controls-rule-generic').style.display="none"
@@ -349,13 +389,12 @@ doOpenEditor = ->
 doCloseEditor = ->
   E('generic-tf-editor').style.display = 'none'
 
-
 doSetRuleGeneric = ->
   try
     console.log "Set generic rule"
-    transitionFunc = parseGenericTransitionFunction E('generic-tf-code').value
+    application.transitionFunc = parseGenericTransitionFunction E('generic-tf-code').value
     updateGenericRuleStatus 'Compiled'
-    paintStateSelector.update transitionFunc
+    application.paintStateSelector.update application.transitionFunc
     E('controls-rule-simple').style.display="none"
     E('controls-rule-generic').style.display=""
   catch e
@@ -374,50 +413,36 @@ doSetGrid = ->
     #if 1/n + 1/m <= 1/2
     if 2*(n+m) >= n*m
       throw new Error "Tessellation {#{n}; #{m}} is not hyperbolic and not supported."
-    setGridImpl n, m
-    doReset()
-    animator.reset()
   catch e
     alert ""+e
+    return
+  application.setGridImpl n, m
+  application.doReset()
+  application.animator.reset()
+    
 
 updateGrid = ->
-  E('entry-n').value = "" + tessellation.group.n
-  E('entry-m').value = "" + tessellation.group.m
+  E('entry-n').value = "" + application.getGroup().n
+  E('entry-m').value = "" + application.getGroup().m
   return
-
-setGridImpl = (n, m)->
-  tessellation = new Tessellation n, m
-  console.log "Running knuth-bendix algorithm for {#{n}, #{m}}...."
-  rewriteRuleset = knuthBendix vdRule tessellation.group.n, tessellation.group.m
-  console.log "Finished"
-  appendRewrite = makeAppendRewrite rewriteRuleset
-  getNeighbors = mooreNeighborhood tessellation.group.n, tessellation.group.m, appendRewrite
-  transitionFunc = parseTransitionFunction transitionFunc.toString(), tessellation.group.n, tessellation.group.m
-  observer?.shutdown()
-  observer = new ObserverClass tessellation, appendRewrite, minVisibleSize
-  observer.onFinish = -> redraw()
-  navigator.clear()
-  doClearMemory()
-  doStopPlayer()
-
 updatePopulation = ->
-  E('population').innerHTML = ""+cells.count
+  E('population').innerHTML = ""+application.cells.count
 updateGeneration = ->
-  E('generation').innerHTML = ""+generation    
+  E('generation').innerHTML = ""+application.generation    
 
-exportTrivial = (cells) ->
-  parts = []
-  cells.forItems (cell, value)->
-    parts.push showNode cell
-    parts.push ""+value
-  return parts.join " "
+#exportTrivial = (cells) ->
+#  parts = []
+#  cells.forItems (cell, value)->
+#    parts.push showNode cell
+#    parts.push ""+value
+#  return parts.join " "
   
 doExport = ->
-  #data = JSON.stringify(exportField(cells))
-  data = stringifyFieldData exportField cells
+  #data = JSON.stringify(exportField(application.cells))
+  data = stringifyFieldData exportField application.cells
   #edata = lzw_encode data
 
-  #data1 = exportTrivial cells
+  #data1 = exportTrivial application.cells
   #edata1 = lzw_encode data1
   
   #console.log "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}"
@@ -437,20 +462,13 @@ uploadToServer = (imgname, callback)->
     ajax.send(formData)
   canvas.toBlob cb, "image/png"
 
-
-doSearch = ->
-  found = navigator.search cells
-  updateCanvasSize()
-  if found > 0
-    navigator.navigateToResult 0
-    
 memo = null
 doMemorize = ->
   memo =
-    cells: cells.copy()
-    viewCenter: observer.getViewCenter()
-    viewOffset: observer.getViewOffsetMatrix()
-    generation: generation
+    cells: application.cells.copy()
+    viewCenter: application.observer.getViewCenter()
+    viewOffset: application.observer.getViewOffsetMatrix()
+    generation: application.generation
   console.log "Position memoized"
   updateMemoryButtons()
   
@@ -458,9 +476,9 @@ doRemember = ->
   if memo is null
     console.log "nothing to remember"
   else
-    cells = memo.cells.copy()
-    generation = memo.generation
-    observer.navigateTo memo.viewCenter, memo.viewOffset
+    application.cells = memo.cells.copy()
+    application.generation = memo.generation
+    application.observer.navigateTo memo.viewCenter, memo.viewOffset
     updatePopulation()
     updateGeneration()
 
@@ -472,11 +490,11 @@ updateMemoryButtons = ->
   E('btn-mem-get').disabled = E('btn-mem-clear').disabled = memo is null
 
 encodeVisible = ->
-  iCenter = inverseChain observer.cellFromPoint(0,0), appendRewrite
+  iCenter = inverseChain application.observer.cellFromPoint(0,0), application.appendRewrite
   visibleCells = new NodeHashMap
-  for [cell, state] in observer.visibleCells cells
-    translatedCell = appendChain iCenter, cell, appendRewrite
-    translatedCell = eliminateFinalA translatedCell, appendRewrite, tessellation.group.n
+  for [cell, state] in application.observer.visibleCells application.cells
+    translatedCell = appendChain iCenter, cell, application.appendRewrite
+    translatedCell = eliminateFinalA translatedCell, application.appendRewrite, application.getGroup().n
     visibleCells.put translatedCell, state
   return exportField visibleCells
 
@@ -496,10 +514,11 @@ doShowImport = ->
 doImportCancel = ->
   E('import-dialog').style.display = 'none'
   E('import').value=''
+  
 doImport = ->
   try
     data = parseFieldData E('import').value
-    cells = importField data 
+    application.cells = importField data 
     updatePopulation()
     redraw()
     E('import-dialog').style.display = 'none'
@@ -507,17 +526,12 @@ doImport = ->
   catch e
     alert "Error parsing: #{e}"
     
-doRandomFill = ->
-  randomFillFixedNum cells, randomFillPercent, unity, randomFillNum, appendRewrite, tessellation.group.n, tessellation.group.m, randomStateGenerator(transitionFunc.numStates)
-  updatePopulation()
-  redraw()
-
 doEditAsGeneric = ->
   console.log "Generate code"
-  if transitionFunc instanceof BinaryTransitionFunc
-    code = binaryTransitionFunc2GenericCode(transitionFunc)
-  else if transitionFunc instanceof DayNightTransitionFunc
-    code = dayNightBinaryTransitionFunc2GenericCode(transitionFunc)
+  if application.transitionFunc instanceof BinaryTransitionFunc
+    code = binaryTransitionFunc2GenericCode(application.transitionFunc)
+  else if application.transitionFunc instanceof DayNightTransitionFunc
+    code = dayNightBinaryTransitionFunc2GenericCode(application.transitionFunc)
   else
     alert("Active transition function is not a binary")
     return
@@ -529,14 +543,11 @@ doDisableGeneric = ->
   doSetRule()
 
 doNavigateHome = ->
-  observer.navigateTo unity
+  application.observer.navigateTo unity
 
-doStraightenView = ->
-  observer.setViewOffsetMatrix M.eye()
-  
 # ============ Bind Events =================
-E("btn-reset").addEventListener "click", doReset
-E("btn-step").addEventListener "click", doStep
+E("btn-reset").addEventListener "click", ->application.doReset()
+E("btn-step").addEventListener "click", ->application.doStep()
 mouseMoveReceiver = E("canvas-container")
 mouseMoveReceiver.addEventListener "mousedown", doCanvasMouseDown
 mouseMoveReceiver.addEventListener "mouseup", doCanvasMouseUp
@@ -552,8 +563,8 @@ E("btn-rule-generic-close-editor").addEventListener "click", doCloseEditor
 E("btn-set-grid").addEventListener "click", doSetGrid
 
 E("btn-export").addEventListener "click", doExport
-E('btn-search').addEventListener 'click', doSearch
-E('btn-random').addEventListener 'click', doRandomFill
+E('btn-search').addEventListener 'click', ->application.doSearch()
+E('btn-random').addEventListener 'click', -> application.doRandomFill()
 E('btn-rule-make-generic').addEventListener 'click', doEditAsGeneric
 E('btn-edit-rule').addEventListener 'click', doOpenEditor
 E('btn-disable-generic-rule').addEventListener 'click', doDisableGeneric
@@ -568,23 +579,23 @@ E('btn-mem-clear').addEventListener 'click', doClearMemory
 E('btn-exp-visible').addEventListener 'click', doExportVisible
 E('btn-nav-home').addEventListener 'click', doNavigateHome
 window.addEventListener 'resize', updateCanvasSize
-E('btn-nav-clear').addEventListener 'click', (e) -> navigator.clear()
+E('btn-nav-clear').addEventListener 'click', (e) -> application.navigator.clear()
 E('btn-play-start').addEventListener 'click', doTogglePlayer
 E('btn-play-stop').addEventListener 'click', doTogglePlayer
 
-E('animate-set-start').addEventListener 'click', -> animator.setStart observer
-E('animate-set-end').addEventListener 'click', -> animator.setEnd observer
+E('animate-set-start').addEventListener 'click', -> application.animator.setStart application.observer
+E('animate-set-end').addEventListener 'click', -> application.animator.setEnd application.observer
 
-E('animate-view-start').addEventListener 'click', -> animator.viewStart observer
-E('animate-view-end').addEventListener 'click', -> animator.viewEnd observer
+E('animate-view-start').addEventListener 'click', -> application.animator.viewStart application.observer
+E('animate-view-end').addEventListener 'click', -> application.animator.viewEnd application.observer
 
 E('btn-upload-animation').addEventListener 'click', (e)->
-  animator.animate observer, parseIntChecked(E('animate-frame-per-generation').value), parseIntChecked(E('animate-generations').value), (-> null)
-E('btn-animate-cancel').addEventListener 'click', (e)->animator.cancelWork()
+  application.animator.animate application.observer, parseIntChecked(E('animate-frame-per-generation').value), parseIntChecked(E('animate-generations').value), (-> null)
+E('btn-animate-cancel').addEventListener 'click', (e)->application.animator.cancelWork()
 
-E('view-straighten').addEventListener 'click', (e)-> observer.straightenView()
+E('view-straighten').addEventListener 'click', (e)-> application.observer.straightenView()
 
-E('view-straighten').addEventListener 'click', (e)-> observer.straightenView()
+E('view-straighten').addEventListener 'click', (e)-> application.observer.straightenView()
 E('image-fix-size').addEventListener 'click', (e)-> doSetFixedSize E('image-fix-size').checked
 E('image-size').addEventListener 'change', (e) ->
   E('image-fix-size').checked=true
@@ -593,22 +604,21 @@ E('btn-mode-edit').addEventListener 'click', (e) -> doSetPanMode false
 E('btn-mode-pan').addEventListener 'click', (e) -> doSetPanMode true
   
 shortcuts =
-  'N': doStep
-  'C': doReset
-  'S': doSearch
-  'R': doRandomFill
-  '1': (e) -> paintStateSelector.setState 1
-  '2': (e) -> paintStateSelector.setState 2
-  '3': (e) -> paintStateSelector.setState 3
-  '4': (e) -> paintStateSelector.setState 4
-  '5': (e) -> paintStateSelector.setState 5
+  'N': -> application.doStep()
+  'C': -> application.doReset()
+  'S': -> application.doSearch()
+  'R': ->application.doRandomFill()
+  '1': (e) -> application.paintStateSelector.setState 1
+  '2': (e) -> application.paintStateSelector.setState 2
+  '3': (e) -> application.paintStateSelector.setState 3
+  '4': (e) -> application.paintStateSelector.setState 4
+  '5': (e) -> application.paintStateSelector.setState 5
   'M': doMemorize
   'U': doRemember
   'UA': doClearMemory
   'H': doNavigateHome
-  'HS': doStraightenView
   'G': doTogglePlayer
-  'SA': (e) -> observer.straightenView()
+  'SA': (e) -> application.observer.straightenView()
   '#32': doTogglePlayer
   'P': (e) -> doSetPanMode true
   'E': (e) -> doSetPanMode false
@@ -628,9 +638,9 @@ document.addEventListener "keydown", (e)->
   if (handler = shortcuts[keyCode])?
     e.preventDefault()
     handler(e)
-    
+
 ##Application startup    
-E('rule-entry').value = transitionFunc.toString()
+E('rule-entry').value = application.transitionFunc.toString()
 doSetPanMode true
 updatePopulation()
 updateGeneration()
