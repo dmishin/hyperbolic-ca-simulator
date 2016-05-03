@@ -1,6 +1,6 @@
 
 assert = require "assert"
-{allClusters, exportField, importField, mooreNeighborhood, neighborsSum, parseFieldData, randomStateGenerator, stringifyFieldData, forFarNeighborhood} = require "./field"
+{allClusters, exportField, importField, mooreNeighborhood, neighborsSum, parseFieldData, randomStateGenerator, stringifyFieldData, forFarNeighborhood, randomFillFixedNum} = require "./field"
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {unity, NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
@@ -284,3 +284,18 @@ describe "forFarNeighborhood", ->
 
     assert.equal lastLevel, 6
     assert.ok visitedNodes.length > 10
+
+describe "randomFillFixedNum", ->
+  it "must fill some reasonable number of cells", ->
+    [N, M] = [5, 4]
+    rewriteRuleset = knuthBendix vdRule N, M
+    appendRewrite = makeAppendRewrite rewriteRuleset
+
+    field = new NodeHashMap
+
+    nCells = 10000
+    randomFillFixedNum field, 0.4, unity, 10000, appendRewrite, N, M
+
+    #not guaranteed, but chances of failure are small.
+    assert.ok field.count > 0.4*nCells*0.7
+    assert.ok field.count < 0.4*nCells*1.3

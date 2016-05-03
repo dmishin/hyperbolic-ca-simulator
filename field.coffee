@@ -213,6 +213,23 @@ exports.randomFill = (field, density, center, r, appendRewrite, n, m, randomStat
     if Math.random() < density
       field.put cell, randomState()
   return
+
+#Fill randomly, visiting numCells cells around the given center.
+exports.randomFillFixedNum = (field, density, center, numCells, appendRewrite, n, m, randomState ) ->
+  if density < 0 or density > 1.0
+    throw new Error "Density must be in [0;1]"
+  #by default, fill with ones.    
+  randomState = randomState ? -> 1
+  visited = 0
+  forFarNeighborhood center, appendRewrite, n, m, (cell, _)->
+    #Time to stop iteration?
+    return false if visited >= numCells
+    if Math.random() < density
+      field.put cell, randomState()
+    visited+=1
+    #Continue
+    return true
+  return
       
   
 
