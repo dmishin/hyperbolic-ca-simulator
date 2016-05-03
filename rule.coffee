@@ -99,7 +99,7 @@ exports.parseTransitionFunction = (str, n, m, allowDayNight=true) ->
 
 
 exports.binaryTransitionFunc2GenericCode = (binTf) ->
-  row2condition = (row) -> ("s==#{sum}" for nextValue, sum in row when nextValue).join(" || ")
+  row2condition = (row) -> ("s===#{sum}" for nextValue, sum in row when nextValue).join(" || ")
   
   conditionBorn = row2condition binTf.table[0]
   conditionStay = row2condition binTf.table[1]
@@ -116,23 +116,23 @@ exports.binaryTransitionFunc2GenericCode = (binTf) ->
     //Transition function. Takes current state and sum, returns new state.
     //this.generation stores current generation number
     'next': function(x, s){
-        if (x==1 && (#{conditionStay})) return 1;
-        if (x==0 && (#{conditionBorn})) return 1;
+        if (x===1 && (#{conditionStay})) return 1;
+        if (x===0 && (#{conditionBorn})) return 1;
         return 0;
      }
 }"""]
 
 
 exports.dayNightBinaryTransitionFunc2GenericCode = (binTf) ->
-  row2condition = (row) -> ("s==#{sum}" for nextValue, sum in row when nextValue).join(" || ")
-  row2conditionInv = (row) -> ("s==#{binTf.base.numNeighbors-sum}" for nextValue, sum in row when nextValue).join(" || ")
+  row2condition = (row) -> ("s===#{sum}" for nextValue, sum in row when nextValue).join(" || ")
+  row2conditionInv = (row) -> ("s===#{binTf.base.numNeighbors-sum}" for nextValue, sum in row when nextValue).join(" || ")
   
   conditionBorn = row2condition binTf.base.table[0]
   conditionStay = row2condition binTf.base.table[1]
   conditionBornInv = row2conditionInv binTf.base.table[0]
   conditionStayInv = row2conditionInv binTf.base.table[1]
   
-  code = ["""//Automatically generated code for binary rule #{binTf}
+  code = ["""//Automatically generated code for population-inverting binary rule #{binTf}
 {
     //number of states
     'states': 2,
@@ -145,13 +145,19 @@ exports.dayNightBinaryTransitionFunc2GenericCode = (binTf) ->
     'next': function(x, s){
         var phase = this.generation & 1;
 
+        //The original rule #{binTf} inverts state of an empty field
+        //To calculate it efficiently, we instead invert each odd generation, so that population never goes to infinity.
+        
+        
         if (phase === 0){
-            if (x==1 && (#{conditionStay})) return 0;
-            if (x==0 && (#{conditionBorn})) return 0;
+            //On even generations, invert output
+            if (x===1 && (#{conditionStay})) return 0;
+            if (x===0 && (#{conditionBorn})) return 0;
             return 1
         } else {
-            if (x==0 && (#{conditionStayInv})) return 1;
-            if (x==1 && (#{conditionBornInv})) return 1;
+            //On odd generations, invert input state and nighbors sum
+            if (x===0 && (#{conditionStayInv})) return 1;
+            if (x===1 && (#{conditionBornInv})) return 1;
             return 0;
         }
      }
