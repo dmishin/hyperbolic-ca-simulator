@@ -16,6 +16,7 @@
 {Animator} = require "./animator.coffee"
 {MouseToolCombo} = require "./mousetool.coffee"
 {GenericTransitionFunc, BinaryTransitionFunc,DayNightTransitionFunc,binaryTransitionFunc2GenericCode, dayNightBinaryTransitionFunc2GenericCode, parseGenericTransitionFunction, parseTransitionFunction} = require "./rule.coffee"
+{parseUri} = require "./parseuri.coffee"
 M = require "./matrix3.coffee"
 
 MIN_WIDTH = 100
@@ -24,6 +25,33 @@ minVisibleSize = 1/100
 canvasSizeUpdateBlocked = false
 randomFillNum = 2000
 randomFillPercent = 0.4
+
+class DefaultConfig
+  getGrid: -> [7,3]
+  getCellData: -> ""
+  getFunctionCode: -> "B 3 S 2 3"
+  
+class UriConfig
+  constructor: ->
+    @keys = parseUri(""+window.location).queryKey
+    
+  getGrid: ->  
+    if @keys.grid?
+      try
+        match = @keys.grid.match /{(\d+)[,;](\d+)}/
+        throw new Error("Syntax is bad: #{@keys.grid}") unless match
+        n = parseIntChecked match[1]
+        m = parseIntChecked match[2]
+        return [n,m]
+      catch e
+        alert "Bad grid paramters: #{@keys.grid}"
+    return [7,3]
+  getCellData: ->@keys.cells
+  getFunctionCode: ->
+    if @keys.rule?
+      @keys.rule.replace /_/g, ' '
+    else
+      "B 3 S 2 3"
 
 class Application
   constructor: ->
@@ -52,16 +80,22 @@ class Application
   getGroup: -> @tessellation.group
   getTransitionFunc: -> @transitionFunc
 
-  initialize: ->
-    @tessellation = new Tessellation 7,3
+  initialize: (config = new DefaultConfig)->
+    [n,m] = config.getGrid()
+    @tessellation = new Tessellation n, m
     console.log "Running knuth-bendix algorithm...."
     rewriteRuleset = knuthBendix vdRule @getGroup().n, @getGroup().m
     console.log "Finished"    
     @appendRewrite = makeAppendRewrite rewriteRuleset
     @getNeighbors = mooreNeighborhood @getGroup().n, @getGroup().m, @appendRewrite
 
-    @cells = new NodeHashMap
-    @cells.put unity, 1
+    cellData = config.getCellData()
+    if cellData
+      console.log "import: #{cellData}"
+      @importData cellData
+    else
+      @cells = new NodeHashMap
+      @cells.put unity, 1
     
     @observer = new @ObserverClass @tessellation, @appendRewrite, minVisibleSize
     @observer.onFinish = -> redraw()
@@ -70,7 +104,7 @@ class Application
     @animator = new Animator this
     @paintStateSelector = new PaintStateSelector this, E("state-selector"), E("state-selector-buttons")
 
-    @transitionFunc = parseTransitionFunction "B 3 S 2 3", application.getGroup().n, application.getGroup().m
+    @transitionFunc = parseTransitionFunction config.getFunctionCode(), application.getGroup().n, application.getGroup().m
     @lastBinaryTransitionFunc = @transitionFunc
 
 
@@ -118,7 +152,16 @@ class Application
     updateCanvasSize()
     if found > 0
       @navigator.navigateToResult 0
-    
+      
+  importData: (data)->
+    try
+      console.log "importing #{data}"
+      @cells = importField parseFieldData data
+      console.log "Imported #{@cells.count} cells"
+    catch e
+      alert "Faield to import data: #{e}"
+      @cells = new NodeHashMap
+
 
 updateCanvasSize = ->
   return if canvasSizeUpdateBlocked
@@ -233,7 +276,7 @@ canvas = E "canvas"
 context = canvas.getContext "2d"
 
 application = new Application
-application.initialize()
+application.initialize new UriConfig
 
 dragHandler = null
 
@@ -517,8 +560,7 @@ doImportCancel = ->
   
 doImport = ->
   try
-    data = parseFieldData E('import').value
-    application.cells = importField data 
+    application.importData E('import').value
     updatePopulation()
     redraw()
     E('import-dialog').style.display = 'none'
