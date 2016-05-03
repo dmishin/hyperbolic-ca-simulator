@@ -54,6 +54,7 @@ exports.evaluateTotalisticAutomaton = evaluateTotalisticAutomaton = (cells, getN
 # Return value:
 #  list of chains to append
 exports.farNeighborhood = farNeighborhood = (center, r, appendRewrite, n, m) ->
+  #map of visited cells
   cells = new NodeHashMap
   cells.put center, true
   getNeighbors = mooreNeighborhood n, m, appendRewrite
@@ -68,8 +69,48 @@ exports.farNeighborhood = farNeighborhood = (center, r, appendRewrite, n, m) ->
       for nei in getNeighbors cell
         cells.put nei, true
 
-  getCellList cells  
+  getCellList cells
+  
+#calls a callback fucntion for each cell in the far neighborhood of the original.
+# starts from the original cell, and then calls the callback for more and more far cells, encircling it.
+# stops when callback returns false.
+exports.forFarNeighborhood = forFarNeighborhood = (center, appendRewrite, n, m, callback) ->
+  getNeighbors = mooreNeighborhood n, m, appendRewrite
+  cells = new NodeHashMap
+  cells.put center, true
+  #list of cells of the latest complete layer
+  thisLayer = [center]
+  #list of cells in the previous complete layer
+  prevLayer = []
+  #Radius of the latest complete layer
+  radius = 0
+  
+  return if not callback center, radius
 
+  while true
+    #now for each cell in the latest layer, find neighbors, that are not marked yet.
+    # They would form a new layer.
+    radius += 1
+    newLayer = []
+    for cell in thisLayer
+      for neighCell in getNeighbors cell
+        if not cells.get neighCell
+          #Detected new unvisited cell - register it and call a callback
+          newLayer.push neighCell
+          cells.put neighCell, true
+          return if not callback neighCell, radius
+    #new layer complete at this point.
+    # Now move to the next layer.
+    # memory optimization: remove from the visited map cells of the prevLayer, since they are not neeed anymore.
+    # actually, this is quite minor optimization, since cell counts grow exponentially, but I would like to do it.
+    for cell in prevLayer
+      if not cells.remove cell
+        throw new Error("Assertion failed: cell not present")
+    #rename layers
+    prevLayer = thisLayer
+    thisLayer = newLayer
+    #And loop!
+  #The loop is only finished by 'return'.
 
 exports.extractClusterAt = extractClusterAt = (cells, getNeighbors, chain) ->
   #use cycle instead of recursion in order to avoid possible stack overflow.

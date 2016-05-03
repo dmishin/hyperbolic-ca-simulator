@@ -1,6 +1,6 @@
 
 assert = require "assert"
-{allClusters, exportField, importField, mooreNeighborhood, neighborsSum, parseFieldData, randomStateGenerator, stringifyFieldData} = require "./field"
+{allClusters, exportField, importField, mooreNeighborhood, neighborsSum, parseFieldData, randomStateGenerator, stringifyFieldData, forFarNeighborhood} = require "./field"
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {unity, NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
@@ -240,3 +240,47 @@ describe "importField", ->
     assert.equal f.get(chain1), 'value1'
     assert.equal f.get(chain2), 'value2'
     
+
+describe "forFarNeighborhood", ->
+  
+  [N, M] = [5, 4]
+  rewriteRuleset = knuthBendix vdRule N, M
+  appendRewrite = makeAppendRewrite rewriteRuleset
+
+  #Make normalized node from array
+  norm = (arr) ->
+    chain = appendRewrite unity, arr
+    eliminateFinalA chain, appendRewrite, N
+
+
+  chain1 = norm [['b',1], ['a', 2]]
+
+  assert not chainEquals chain1, unity
+      
+  it "should start enumeration from the original cell", ->
+    
+    forFarNeighborhood unity, appendRewrite, N, M, (node, radius) ->
+      assert.equal radius, 0, "Must start from 0 radius"
+      assert.ok chainEquals node, unity, "Must start from the center"
+      #Stop after the first.
+      return false
+      
+    forFarNeighborhood chain1, appendRewrite, N, M, (node, radius) ->
+      assert.equal radius, 0, "Must start from 0 radius"
+      assert.ok chainEquals node, chain1, "Must start from the center"
+      #Stop after the first.
+      return false
+
+  it "should produce all different cells in strictly increasing order", ->
+    visitedNodes = []
+    lastLevel = 0
+    forFarNeighborhood chain1, appendRewrite, N, M, (node, level) ->
+      assert.ok (level is lastLevel) or (level is lastLevel+1)
+      for visited in visitedNodes
+        assert.ok not chainEquals visited, node
+      visitedNodes.push node
+      lastLevel = level      
+      return level < 6
+
+    assert.equal lastLevel, 6
+    assert.ok visitedNodes.length > 10
