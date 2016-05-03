@@ -4,7 +4,7 @@
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
-{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, importField, randomFill, exportField, randomStateGenerator} = require "./field.coffee"
+{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, importField, randomFillFixedNum, exportField, randomStateGenerator} = require "./field.coffee"
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {lzw_encode} = require "./lzw.coffee"
 {Navigator} = require "./navigator.coffee"
@@ -21,7 +21,7 @@ M = require "./matrix3.coffee"
 MIN_WIDTH = 100
 
 canvasSizeUpdateBlocked = false
-randomFillRadius = 5
+randomFillNum = 2000
 randomFillPercent = 0.4
 
 class Application
@@ -508,7 +508,7 @@ doImport = ->
     alert "Error parsing: #{e}"
     
 doRandomFill = ->
-  randomFill cells, randomFillPercent, unity, randomFillRadius, appendRewrite, tessellation.group.n, tessellation.group.m, randomStateGenerator(transitionFunc.numStates)
+  randomFillFixedNum cells, randomFillPercent, unity, randomFillNum, appendRewrite, tessellation.group.n, tessellation.group.m, randomStateGenerator(transitionFunc.numStates)
   updatePopulation()
   redraw()
 

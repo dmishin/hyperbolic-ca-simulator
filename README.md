@@ -25,7 +25,7 @@ Things left to implement
 * [x] Display generation
 * [x] Support Day/Night rules
 * [ ] Notifications
-* [ ] Random fill fills fixed number of cells, not radius
+* [x] Random fill fills fixed number of cells, not radius
 * [ ] Adavnced settings: fill percent, size; autostop population;
 * [x] Pan / Edit button
 * [ ] Home pointer
