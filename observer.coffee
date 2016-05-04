@@ -6,14 +6,14 @@ M = require "./matrix3.coffee"
 
 
 exports.FieldObserver = class FieldObserver
-  constructor: (@tessellation, @appendRewrite, @minCellSize=1.0/400.0)->
-    @center = unity
+  constructor: (@tessellation, @appendRewrite, @minCellSize=1.0/400.0, @center = unity, @tfm = M.eye())->
+    
     @cells = visibleNeighborhood @tessellation, @appendRewrite, @minCellSize
     @cellOffsets = (node2array(c) for c in @cells)
     @cellTransforms = (c.repr(@tessellation.group) for c in @cells)
     @drawEmpty = true
     @jumpLimit = 1.5
-    @tfm = M.eye()
+    
     
     @viewUpdates = 0
     #precision falls from 1e-16 to 1e-9 in 1000 steps.
