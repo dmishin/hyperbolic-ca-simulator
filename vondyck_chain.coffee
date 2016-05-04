@@ -70,10 +70,21 @@ exports.chainEquals = chainEquals = (a, b) ->
 
 showNode = exports.showNode = (node) ->
   if node is unity
-    'e'
-  else
-    showNode(node.t) + node.letter + (if node.p is 1 then '' else "^#{node.p}")
-
+    return 'e'
+  parts = []
+  while node isnt unity
+    letter = node.letter
+    power = node.p
+    if power < 0
+      letter = letter.toUpperCase()
+      power = - power
+    #Adding in reverse order!
+    if power isnt 1
+      parts.push "^#{power}"
+    parts.push letter
+    node = node.t
+  return parts.reverse().join ''
+  
 
 exports.truncateA = truncateA = (chain)->
   while (chain isnt unity) and (chain.letter is "a")
