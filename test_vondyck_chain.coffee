@@ -1,5 +1,5 @@
 assert = require "assert"
-{unity, reverseShortlexLess, nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, NodeHashMap, reverseShortlexLess, inverseChain, appendChain, appendInverseChain} = require "./vondyck_chain.coffee"
+{unity, reverseShortlexLess, nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, parseNode, NodeHashMap, reverseShortlexLess, inverseChain, appendChain, appendInverseChain} = require "./vondyck_chain.coffee"
 
 M = require "./matrix3.coffee"
 
@@ -81,7 +81,16 @@ describe "showNode", ->
     assert.equal 'a^3', showNode newNode 'a', 3, unity
     assert.equal 'Aba^3', showNode newNode 'a', 3, newNode 'b',1, newNode 'a', -1, unity
     
-
+describe "parseNode", ->
+  it "should convert node to text", ->
+    assert.ok chainEquals parseNode('e'), unity
+    assert.ok chainEquals parseNode('a'), newNode 'a', 1, unity
+    assert.ok chainEquals parseNode('A'), newNode 'a', -1, unity
+    assert.ok chainEquals parseNode('b'), newNode 'b', 1, unity
+    assert.ok chainEquals parseNode('B'), newNode 'b', -1, unity
+    assert.ok chainEquals parseNode('a^3'), newNode 'a', 3, unity
+    assert.ok chainEquals parseNode('Aba^3'), newNode 'a', 3, newNode 'b',1, newNode 'a', -1, unity
+    
 describe "NodeHashMap", ->
   it "should support putting and removing empty chain", ->
     m = new NodeHashMap

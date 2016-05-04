@@ -84,7 +84,29 @@ showNode = exports.showNode = (node) ->
     parts.push letter
     node = node.t
   return parts.reverse().join ''
+
+#reverse of showNode
+exports.parseNode = (s) ->
+  return unity if s is '' or s is 'e'
+  prepend = (tail) -> tail
   
+  updPrepender = (prepender, letter, power) -> (tail) ->
+    newNode letter, power, prepender tail
+  
+  while s
+    match = s.match /([aAbB])(?:\^(\d+))?/
+    throw new Error("Bad syntax: #{s}") unless match
+    s = s.substr match[0].length
+    letter = match[1]
+    power = parseInt (match[2] ? '1'), 10
+    letterLow = letter.toLowerCase()
+    if letter isnt letterLow
+      power = -power
+    prepend = updPrepender prepend, letterLow, power
+  prepend unity
+    
+    
+    
 
 exports.truncateA = truncateA = (chain)->
   while (chain isnt unity) and (chain.letter is "a")
