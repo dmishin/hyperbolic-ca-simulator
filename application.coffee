@@ -7,6 +7,8 @@
 {stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, importField, randomFillFixedNum, exportField, randomStateGenerator} = require "./field.coffee"
 {GenerateFileList} = require "./indexeddb.coffee"
 
+{GenerateFileList} = require "./indexeddb.coffee"
+
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {lzw_encode} = require "./lzw.coffee"
 {Navigator} = require "./navigator.coffee"
