@@ -71,7 +71,15 @@ describe "nodeHash", ->
           assert.notEqual nodeHash(c1), nodeHash(c2), "H #{showNode c1} != H #{showNode c2}"
 
   
-
+describe "showNode", ->
+  it "should convert node to text", ->
+    assert.equal 'e', showNode unity
+    assert.equal 'a', showNode newNode 'a', 1, unity
+    assert.equal 'A', showNode newNode 'a', -1, unity
+    assert.equal 'b', showNode newNode 'b', 1, unity
+    assert.equal 'B', showNode newNode 'b', -1, unity
+    assert.equal 'a^3', showNode newNode 'a', 3, unity
+    assert.equal 'Aba^3', showNode newNode 'a', 3, newNode 'b',1, newNode 'a', -1, unity
     
 
 describe "NodeHashMap", ->
