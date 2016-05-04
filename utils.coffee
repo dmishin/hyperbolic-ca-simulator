@@ -13,3 +13,8 @@ exports.parseIntChecked = (s)->
   throw new Error("Bad number: #{s}") if Number.isNaN v
   return v
   
+exports.parseFloatChecked = (s)->
+  v = parseFloat s
+  throw new Error("Bad number: #{s}") if Number.isNaN v
+  return v
+  

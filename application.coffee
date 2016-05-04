@@ -1,6 +1,6 @@
 "use strict"
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
-{unity, inverseChain, appendChain, appendInverseChain, NodeHashMap, showNode} = require "./vondyck_chain.coffee"
+{unity, inverseChain, appendChain, appendInverseChain, NodeHashMap, showNode, parseNode} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
@@ -12,7 +12,7 @@
 {E, getAjax, ButtonGroup, windowWidth, windowHeight, documentWidth, removeClass, addClass} = require "./htmlutil.coffee"
 {FieldObserver} = require "./observer.coffee"
 #{FieldObserverWithRemoreRenderer} = require "./observer_remote.coffee"
-{parseIntChecked} = require "./utils.coffee"
+{parseIntChecked, parseFloatChecked} = require "./utils.coffee"
 {Animator} = require "./animator.coffee"
 {MouseToolCombo} = require "./mousetool.coffee"
 {GenericTransitionFunc, BinaryTransitionFunc,DayNightTransitionFunc,binaryTransitionFunc2GenericCode, dayNightBinaryTransitionFunc2GenericCode, parseGenericTransitionFunction, parseTransitionFunction} = require "./rule.coffee"
@@ -29,7 +29,10 @@ randomFillPercent = 0.4
 class DefaultConfig
   getGrid: -> [7,3]
   getCellData: -> ""
+  getGeneration: -> 0
   getFunctionCode: -> "B 3 S 2 3"
+  getViewBase: -> unity
+  getViewOffset: -> M.eye()
   
 class UriConfig
   constructor: ->
@@ -47,12 +50,29 @@ class UriConfig
         alert "Bad grid paramters: #{@keys.grid}"
     return [7,3]
   getCellData: ->@keys.cells
+  getGeneration: ->
+    if @keys.generation?
+      try
+        return parseIntChecked @keys.generation
+      catch e
+        alert "Bad generationn umber: #{@keys.generation}"
+    return 0
+        
   getFunctionCode: ->
     if @keys.rule?
       @keys.rule.replace /_/g, ' '
     else
       "B 3 S 2 3"
-
+      
+  getViewBase: ->
+    return unity unless @keys.viewbase?
+    parseNode @keys.viewbase
+    
+  getViewOffset: ->
+    return M.eye() unless @keys.viewoffset?
+    [rot, dx, dy] = (parseFloatChecked part for part in @keys.viewoffset.split ':')
+    M.mul M.translationMatrix(dx, dy), M.rotationMatrix(rot)
+    
 class Application
   constructor: ->
     @tessellation = null
@@ -97,7 +117,7 @@ class Application
       @cells = new NodeHashMap
       @cells.put unity, 1
     
-    @observer = new @ObserverClass @tessellation, @appendRewrite, minVisibleSize
+    @observer = new @ObserverClass @tessellation, @appendRewrite, minVisibleSize, config.getViewBase(), config.getViewOffset()
     @observer.onFinish = -> redraw()
 
     @navigator = new Navigator this
