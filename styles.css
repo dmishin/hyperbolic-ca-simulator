@@ -1,3 +1,9 @@
+/* Typographics */
+body {
+    font-family: Verdana,sans-serif;
+}
+
+/* UI */
 .popup-container {
     position: absolute;
     top:0;

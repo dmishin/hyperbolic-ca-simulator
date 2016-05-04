@@ -5,6 +5,8 @@
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
 {stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, importField, randomFillFixedNum, exportField, randomStateGenerator} = require "./field.coffee"
+{GenerateFileList} = require "./indexeddb.coffee"
+
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {lzw_encode} = require "./lzw.coffee"
 {Navigator} = require "./navigator.coffee"
@@ -691,4 +693,5 @@ updateGrid()
 updateMemoryButtons()
 updatePlayButtons()
 redrawLoop()
-#redraw()
+E('file-dialog').style.display=""
+gen = new GenerateFileList()

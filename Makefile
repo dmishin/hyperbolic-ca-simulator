@@ -1,4 +1,4 @@
-.PHONY = test test_app start
+.PHONY = test test_app start startwin
 
 test_app:
 	browserify -t coffeeify application.coffee > test_app_bundle.js
@@ -10,3 +10,7 @@ test:
 start:
 	python http_server_with_upload.py &
 	xdg-open http://localhost:8000/test_app.html
+
+startwin:
+	python simple_http_server_with_upload &
+	start http://localhost:8000/test_app.html
