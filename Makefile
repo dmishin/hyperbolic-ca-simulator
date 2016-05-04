@@ -12,5 +12,5 @@ start:
 	xdg-open http://localhost:8000/test_app.html
 
 startwin:
-	python simple_http_server_with_upload &
+	/c/Python33/python.exe http_server_with_upload.py &
 	start http://localhost:8000/test_app.html
