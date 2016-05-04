@@ -118,6 +118,7 @@ class Application
       @cells.put unity, 1
     
     @observer = new @ObserverClass @tessellation, @appendRewrite, minVisibleSize, config.getViewBase(), config.getViewOffset()
+    console.log "#View base is at #{showNode config.getViewBase()}"
     @observer.onFinish = -> redraw()
 
     @navigator = new Navigator this
