@@ -6,11 +6,20 @@ M = require "./matrix3.coffee"
 
 
 exports.FieldObserver = class FieldObserver
-  constructor: (@tessellation, @appendRewrite, @minCellSize=1.0/400.0, @center = unity, @tfm = M.eye())->
+  constructor: (@tessellation, @appendRewrite, @minCellSize=1.0/400.0, center = unity, @tfm = M.eye())->
     
-    @cells = visibleNeighborhood @tessellation, @appendRewrite, @minCellSize
-    @cellOffsets = (node2array(c) for c in @cells)
-    @cellTransforms = (c.repr(@tessellation.group) for c in @cells)
+    @cells = null
+    @center = null
+    cells = visibleNeighborhood @tessellation, @appendRewrite, @minCellSize
+    @cellOffsets = (node2array(c) for c in cells)
+    
+    if center isnt unity
+      @rebuildAt center
+    else
+      @cells = cells
+      @center = center
+    
+    @cellTransforms = (c.repr(@tessellation.group) for c in cells)
     @drawEmpty = true
     @jumpLimit = 1.5
     
