@@ -5,7 +5,7 @@
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
 {stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, importField, randomFillFixedNum, exportField, randomStateGenerator} = require "./field.coffee"
-{GenerateFileList} = require "./indexeddb.coffee"
+{OpenDialog} = require "./indexeddb.coffee"
 
 {GenerateFileList} = require "./indexeddb.coffee"
 
@@ -130,6 +130,7 @@ class Application
 
     @transitionFunc = parseTransitionFunction config.getFunctionCode(), application.getGroup().n, application.getGroup().m
     @lastBinaryTransitionFunc = @transitionFunc
+    @openDialog = new OpenDialog this
 
 
   setGridImpl: (n, m)->
@@ -715,5 +716,5 @@ updateGrid()
 updateMemoryButtons()
 updatePlayButtons()
 redrawLoop()
-E('file-dialog').style.display=""
-gen = new GenerateFileList()
+
+application.openDialog.show()
