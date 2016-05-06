@@ -1,4 +1,4 @@
-{lzw_encode, lzw_decode} = require "../lzw.coffee"
+{lzw_encode, lzw_decode} = require "../src/lzw.coffee"
 assert = require "assert"
 describe "lzw_encode", ->
   strings = ["", "a", "bbbbbbbbbabababbabab", "hello hello hello hello this is me"]

@@ -1,7 +1,7 @@
 assert = require "assert"
-{RewriteRuleset} = require "../knuth_bendix.coffee"
-{string2chain, chain2string, makeAppendRewriteRef, makeAppendRewrite, extendLastPowerRewriteTable} = require "../vondyck_rewriter.coffee"
-{unity, chainEquals, newNode, showNode} = require "../vondyck_chain.coffee"
+{RewriteRuleset} = require "../src/knuth_bendix.coffee"
+{string2chain, chain2string, makeAppendRewriteRef, makeAppendRewrite, extendLastPowerRewriteTable} = require "../src/vondyck_rewriter.coffee"
+{unity, chainEquals, newNode, showNode} = require "../src/vondyck_chain.coffee"
 
 describe "string2chain", ->
   it "must convert empty string", ->
