@@ -1,5 +1,5 @@
-{shortLex, overlap, splitBy, RewriteRuleset} = require "./knuth_bendix"
-#M = require "./matrix3"
+{shortLex, overlap, splitBy, RewriteRuleset} = require "../knuth_bendix"
+#M = require "../matrix3"
 assert = require "assert"
 
 describe "TestComparatros", ->

@@ -1,13 +1,13 @@
 assert = require "assert"
-{unity, reverseShortlexLess, nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, parseNode, NodeHashMap, reverseShortlexLess, inverseChain, appendChain, appendInverseChain} = require "./vondyck_chain.coffee"
+{unity, reverseShortlexLess, nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, parseNode, NodeHashMap, reverseShortlexLess, inverseChain, appendChain, appendInverseChain} = require "../vondyck_chain.coffee"
 
-M = require "./matrix3.coffee"
+M = require "../matrix3.coffee"
 
-{CenteredVonDyck} = require "./triangle_group_representation.coffee"
+{CenteredVonDyck} = require "../triangle_group_representation.coffee"
 
 #for testing algebra
-{makeAppendRewrite, vdRule} = require "./vondyck_rewriter.coffee"
-{RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
+{makeAppendRewrite, vdRule} = require "../vondyck_rewriter.coffee"
+{RewriteRuleset, knuthBendix} = require "../knuth_bendix.coffee"
 
 describe "chainEquals", ->
   it "should return true for empty chains", ->

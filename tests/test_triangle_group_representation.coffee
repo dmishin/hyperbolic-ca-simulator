@@ -1,5 +1,5 @@
-{TriangleGroup, CenteredVonDyck} = require "./triangle_group_representation"
-M = require "./matrix3"
+{TriangleGroup, CenteredVonDyck} = require "../triangle_group_representation"
+M = require "../matrix3"
 assert = require "assert"
 
 

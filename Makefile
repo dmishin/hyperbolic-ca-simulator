@@ -5,7 +5,7 @@ test_app:
 	browserify -t coffeeify render_worker.coffee > render_worker.js
 
 test:
-	mocha test*.coffee --compilers coffee:coffee-script/register
+	mocha tests/test*.coffee --compilers coffee:coffee-script/register
 
 start:
 	python http_server_with_upload.py &
