@@ -139,6 +139,8 @@ exports.GenerateFileList = class GenerateFileList
     console.log "Create files and database store"
     @fileStore = db.createObjectStore "files", {autoIncrement: true}
     @catalogStore = db.createObjectStore "catalog", {autoIncrement: true}
+
+    @catalogIndex = @catalogStore.createIndex "catalogByGrid", ['gridN', 'gridM', 'funcId', 'name', 'time'], {unique: false}
     
     @populated = false
 
@@ -168,7 +170,7 @@ exports.GenerateFileList = class GenerateFileList
     filesEnumerated = 0
     
     onRecord = (res, record)=>
-      console.log "Found file: #{res.key}" if res?
+      #console.log "Found file: #{res.key}" if res?
       grid = "{#{record.gridN};#{record.gridM}}"
       if grid isnt lastGrid
         #loading next group
@@ -227,10 +229,18 @@ exports.GenerateFileList = class GenerateFileList
     console.log "Loaddata"
     transaction = @db.transaction ["catalog"], "readonly"
     filesStore = transaction.objectStore "catalog"
-    cursor = filesStore.openCursor()
+    cursor = filesStore.index("catalogByGrid").openCursor()
     @loadFromCursor cursor, (rec)->true
 
   loadDataFor: (gridN, gridM, funcId) ->
+    transaction = @db.transaction ["catalog"], "readonly"
+    catalog = transaction.objectStore "catalog"
+    catalogIndex = catalog.index "catalogByGrid"
+    cursor = catalogIndex.openCursor()
+    @loadFromCursor cursor, (rec)->
+      (rec.gridN is gridN) and (rec.gridM is gridM) and ((funcId is null) or (rec.funcId is funcId))    
+    
+  loadDataFor1: (gridN, gridM, funcId) ->
     transaction = @db.transaction ["catalog"], "readonly"
     filesStore = transaction.objectStore "catalog"
     #create range
@@ -267,17 +277,19 @@ exports.GenerateFileList = class GenerateFileList
       rqStoreData.onerror = (e)=>
         console.log "Error storing data #{e.target.error}"
       rqStoreData.onsuccess = (e)=>
-        console.log "Stored data OK, key is #{e.target.result}"
+        #console.log "Stored data OK, key is #{e.target.result}"
         #console.dir e.target
         key = e.target.result
         #console.log "Store catalog record"
         catalogRecord =
-          gridN: (Math.random()*4)|0+4
-          gridM: (Math.random()*4)|0+4
+          gridN: (Math.random()*5)|0+3
+          gridM: (Math.random()*5)|0+3
           name: "File #{i+1}"
           funcId: "B 3 S 2 3"
           funcType: "binary"
           base: 'e'
+          size: fieldData.length
+          time: Date.now()
           offset: M.eye()
           field: key
 
