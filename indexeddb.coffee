@@ -18,7 +18,7 @@
 
 M = require "./matrix3.coffee"
 
-VERSION = Date.now()
+VERSION = 1
 
 #Using info from https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB
 # 
@@ -29,9 +29,28 @@ window.IDBKeyRange = window.IDBKeyRange ? window.webkitIDBKeyRange ? window.msID
 
 exports.hasDbSupport = -> window.indexedDB?
 
+upgradeNeeded = (e)->
+  console.log "Upgrade !"
+  
+  db = e.target.result
+  if db.objectStoreNames.contains "files"
+    console.log "Dropping files..."
+    db.deleteObjectStore "files"
+  if db.objectStoreNames.contains "catalog"
+    console.log "Dropping catalog"
+    db.deleteObjectStore "catalog"
+
+  console.log "Create files and database store"
+  db.createObjectStore "files", {autoIncrement: true}
+  catalogStore = db.createObjectStore "catalog", {autoIncrement: true}
+
+  catalogStore.createIndex "catalogByGrid", ['gridN', 'gridM', 'funcId', 'name', 'time'], {unique: false}
+
+
+
 exports.OpenDialog = class OpenDialog
   constructor: (@application) ->
-    @container = E('file-dialog')
+    @container = E('file-dialog-open')
     @btnCancel = E('btn-files-cancel')
     @filelistElement = E('file-dialog-files')
 
@@ -47,7 +66,6 @@ exports.OpenDialog = class OpenDialog
     @btnCancel.addEventListener 'click', (e)=>@close()
   
   show: ->
-    E('file-dialog-title').innerHTML = "Load from local database"
     @_updateUI()
     @container.style.display = ''
 
@@ -100,50 +118,104 @@ exports.OpenDialog = class OpenDialog
     @_updateUI()
     @_generateFileList()
 
+exports.SaveDialog = class SaveDialog
+  constructor: (@application) ->
+    @container = E('file-dialog-save')
+    @btnCancel = E('btn-files-save-cancel')
+    @btnSave = E('file-dialog-save-btn')
+    @fldName = E('file-dialog-save-as')
+    @filelistElement = E('file-dialog-save-files')
+
+    @allGridsEnabled = false
+    @allRuelsEnabled = false
+
+    #Bind events
+    @btnCancel.addEventListener 'click', (e)=>@close()
+    
+    console.log "btnSave: #{@btnSave}",
+    @btnSave.innerHTML = "Save!!!"
+    @btnSave.addEventListener 'click', (e)=>
+      console.log "on-save"
+      @save()
+    
+  show: ->
+    @_updateUI()
+    @container.style.display = ''
+    @_generateFileList()
+  _updateUI: ->
+    
+  _generateFileList: ->
+    @filelistElement.innerHTML = '<img src="media/hrz-spinner.gif"/>'
+    grid = [@application.getGroup().n, @application.getGroup().m]
+    rule = ""+@application.getTransitionFunc()
+      
+    fileListGen = new GenerateFileList grid, rule, @filelistElement,
+      (fileRecord, fileData)=>@_loadFile(fileRecord, fileData),
+      =>@_fileListReady()
+      
+  _fileListReady: ->
+    console.log "list ready"
+    
+  close: ->
+    @container.style.display = 'none'
+    
+  save: ->
+    console.log "Saving!"
+    
+    fname = @fldName.value
+    unless fname
+      alert "File name can not be empty"
+      return
+    [fieldData, catalogRecord] = @application.getSaveData(fname)
+
+
+    request = window.indexedDB.open "SavedFields", VERSION
+    request.onupgradeneeded = upgradeNeeded
+    
+    request.onerror = (e) =>
+      console.log "DB error: #{e.target.errorCode}"
+      
+    request.onsuccess = (e)=>
+      db = e.target.result
+                
+      transaction = db.transaction(["files", "catalog"],"readwrite");
+      rqStoreData = transaction.objectStore("files").add fieldData
+      rqStoreData.onerror = (e)=>
+        console.log "Error storing data #{e.target.error}"
+      rqStoreData.onsuccess = (e)=>
+        key = e.target.result
+        catalogRecord.field= key
+        rqStoreCatalog = transaction.objectStore("catalog").add catalogRecord
+        rqStoreCatalog.onerror = (e)=>
+          console.log "Error storing catalog record #{e.target.error}"
+        rqStoreCatalog.onsuccess = (e)=>
+          @fileSaved()
+  fileSaved: ->
+    console.log "File saved OK"
+    @close()
+
   
 exports.GenerateFileList = class GenerateFileList
   constructor: (grid, rule, @container, @fileCallback, @readyCallback) ->
     self.db = null
 
     @status = "working"
-    @populated = true
     
     request = window.indexedDB.open "SavedFields", VERSION
-    request.onupgradeneeded = (e) => @upgradeNeeded e
+    request.onupgradeneeded = upgradeNeeded
     request.onerror = (e) =>
       console.log "DB error: #{e.target.errorCode}"
       @status="error"      
     request.onsuccess = (e)=>
       @db = e.target.result
       console.log "Success"
-      @addSampleFiles =>
-        
-        if grid is null
-          console.log "Loading whole list"
-          @loadData()
-        else
-          console.log "Loading data: {#{grid[0]};#{grid[1]}}, rule='#{rule}'"
-          @loadDataFor grid[0], grid[1], rule
+      if grid is null
+        console.log "Loading whole list"
+        @loadData()
+      else
+        console.log "Loading data: {#{grid[0]};#{grid[1]}}, rule='#{rule}'"
+        @loadDataFor grid[0], grid[1], rule
     
-  upgradeNeeded: (e)->
-    console.log "Upgrade !"
-    
-    db = e.target.result
-    if db.objectStoreNames.contains "files"
-      console.log "Dropping files..."
-      db.deleteObjectStore "files"
-    if db.objectStoreNames.contains "catalog"
-      console.log "Dropping catalog"
-      db.deleteObjectStore "catalog"
-
-    console.log "Create files and database store"
-    @fileStore = db.createObjectStore "files", {autoIncrement: true}
-    @catalogStore = db.createObjectStore "catalog", {autoIncrement: true}
-
-    @catalogIndex = @catalogStore.createIndex "catalogByGrid", ['gridN', 'gridM', 'funcId', 'name', 'time'], {unique: false}
-    
-    @populated = false
-
   loadFromCursor: (cursor, predicate) ->
     dom = new DomBuilder()
 
@@ -263,53 +335,52 @@ exports.GenerateFileList = class GenerateFileList
       (rec.gridN is gridN) and (rec.gridM is gridM) and ((funcId is null) or (rec.funcId is funcId))
     
 
-  addSampleFiles:  (onFinish) ->
-    # Add few random riles.
-    # Transaction commits, when the last onsuccess does not schedules any more requests.
-    #
-    transaction = @db.transaction(["files", "catalog"],"readwrite");
-    filesStore = transaction.objectStore "files"
-    catalogStore = transaction.objectStore "catalog"
-    i = 0
-    doAdd = =>
-      fieldData = "|1"
-      rqStoreData = filesStore.add fieldData
-      rqStoreData.onerror = (e)=>
-        console.log "Error storing data #{e.target.error}"
-      rqStoreData.onsuccess = (e)=>
-        #console.log "Stored data OK, key is #{e.target.result}"
-        #console.dir e.target
-        key = e.target.result
-        #console.log "Store catalog record"
-        catalogRecord =
-          gridN: (Math.random()*5)|0+3
-          gridM: (Math.random()*5)|0+3
-          name: "File #{i+1}"
-          funcId: "B 3 S 2 3"
-          funcType: "binary"
-          base: 'e'
-          size: fieldData.length
-          time: Date.now()
-          offset: M.eye()
-          field: key
+  # addSampleFiles:  (onFinish) ->
+  #   # Add few random riles.
+  #   # Transaction commits, when the last onsuccess does not schedules any more requests.
+  #   #
+  #   transaction = @db.transaction(["files", "catalog"],"readwrite");
+  #   filesStore = transaction.objectStore "files"
+  #   catalogStore = transaction.objectStore "catalog"
+  #   i = 0
+  #   doAdd = =>
+  #     fieldData = "|1"
+  #     rqStoreData = filesStore.add fieldData
+  #     rqStoreData.onerror = (e)=>
+  #       console.log "Error storing data #{e.target.error}"
+  #     rqStoreData.onsuccess = (e)=>
+  #       #console.log "Stored data OK, key is #{e.target.result}"
+  #       #console.dir e.target
+  #       key = e.target.result
+  #       #console.log "Store catalog record"
+  #       catalogRecord =
+  #         gridN: ((Math.random()*5)|0)+3
+  #         gridM: ((Math.random()*5)|0)+3
+  #         name: "File #{i+1}"
+  #         funcId: "B 3 S 2 3"
+  #         funcType: "binary"
+  #         base: 'e'
+  #         size: fieldData.length
+  #         time: Date.now()
+  #         offset: M.eye()
+  #         field: key
 
-        rqStoreCatalog = catalogStore.add catalogRecord
-        rqStoreCatalog.onerror = (e)=>
-          console.log "Error storing catalog record #{e.target.error}"
-        rqStoreCatalog.onsuccess = (e)=>
-          #console.log "catalog record stored OK"
+  #       rqStoreCatalog = catalogStore.add catalogRecord
+  #       rqStoreCatalog.onerror = (e)=>
+  #         console.log "Error storing catalog record #{e.target.error}"
+  #       rqStoreCatalog.onsuccess = (e)=>
+  #         #console.log "catalog record stored OK"
           
-          if i < 300
-            #console.log "Adding next file"
-            i += 1
-            doAdd()
-          else
-            console.log "End generatign #{i} files"
-            @populated = true
-            onFinish()
-    if not @populated
-      console.log "Generating sample data"
-      doAdd()
-    else
-      onFinish()
+  #         if i < 300
+  #           #console.log "Adding next file"
+  #           i += 1
+  #           doAdd()
+  #         else
+  #           console.log "End generatign #{i} files"
+  #           onFinish()
+  #   #if not @populated
+  #   #  console.log "Generating sample data"
+  #   #  doAdd()
+  #   #else
+  #   #  onFinish()
     

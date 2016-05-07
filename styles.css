@@ -80,7 +80,9 @@ span.button-group:first-child {
     margin: 1em;
     background-color: white;
 }
-
+#file-dialog-files{
+    overflow: auto;
+}
 
 /* Tweak controls */
 .numdisplay {

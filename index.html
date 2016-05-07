@@ -174,11 +174,11 @@
 	</div>
       </div>
     </div>
-    <!-- Dialog to save.load data to indexed DB -->
-    <div id="file-dialog" style="display:none" class="popup-container">
+    <!-- Dialog to load data to indexed DB -->
+    <div id="file-dialog-open" style="display:none" class="popup-container">
       <div>
-	<h1 id="file-dialog-title">Save to Indexed DB</h1>
-	<div class="toolbar">
+	<h1>Load from lodal DB</h1>
+	<div id="filter-buttons-entry" class="toolbar">
 	  <button id="toggle-all-grids">All grids</button>
 	  <button id="toggle-all-rules">All rules</button>
 	</div>
@@ -186,6 +186,22 @@
 	</div>
 	<div class="toolbar">
 	  <button id="btn-files-cancel">Cancel</button>
+	</div>
+      </div>
+    </div>
+    
+    <!-- Dialog to save data to indexed DB -->
+    <div id="file-dialog-save" style="display:none" class="popup-container">
+      <div>
+	<h1>Save to local DB</h1>
+	<div>
+	  Save as: <input id="file-dialog-save-as" value=""><button id="file-dialog-save-btn">Save</button>
+	</div>
+
+	<div id="file-dialog-save-files">
+	</div>
+	<div class="toolbar">
+	  <button id="btn-files-save-cancel">Cancel</button>
 	</div>
       </div>
     </div>

@@ -13,6 +13,7 @@ exports.GenericTransitionFunc = class GenericTransitionFunc extends BaseFunc
   toString: -> "GenericFunction( #{@numStates} states )"
   isStable: -> @evaluate(0,0) is 0
   setGeneration: (g) -> @generation = g
+  getType: -> "custom"  
 
 #DayNight functions are those, who transform empty field to filled and back.
 # They can be effectively simulated as a pair of 2 rules, applying one rule for even generations and another for odd.
@@ -27,7 +28,8 @@ exports.DayNightTransitionFunc = class DayNightTransitionFunc extends BaseFunc
     
   toString: -> @base.toString()
   numStates: 2
-
+  getType: -> "binary"
+  
   setGeneration: (g)->
     @phase = g & 1
 
@@ -51,8 +53,8 @@ exports.BinaryTransitionFunc = class BinaryTransitionFunc extends BaseFunc
   
   plus: (x,y) -> x+y
   plusInitial: 0
-  
   numStates: 2
+  getType: -> "binary"  
   
   evaluate: (state, sum) ->
     throw new Error "Bad state: #{state}" unless state in [0,1]

@@ -5,7 +5,7 @@
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
 {stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, importField, randomFillFixedNum, exportField, randomStateGenerator} = require "./field.coffee"
-{OpenDialog} = require "./indexeddb.coffee"
+{OpenDialog, SaveDialog} = require "./indexeddb.coffee"
 
 {GenerateFileList} = require "./indexeddb.coffee"
 
@@ -131,6 +131,7 @@ class Application
     @transitionFunc = parseTransitionFunction config.getFunctionCode(), application.getGroup().n, application.getGroup().m
     @lastBinaryTransitionFunc = @transitionFunc
     @openDialog = new OpenDialog this
+    @saveDialog = new SaveDialog this
 
 
   setGridImpl: (n, m)->
@@ -186,7 +187,24 @@ class Application
     catch e
       alert "Faield to import data: #{e}"
       @cells = new NodeHashMap
-
+      
+  getSaveData: (fname)->
+    #[data, catalogRecord]
+    fieldData = stringifyFieldData exportField application.cells
+    funcId = ""+@getTransitionFunc()
+    funcType = @getTransitionFunc().getType()
+    catalogRecord =
+      gridN: @getGroup().n
+      gridM: @getGroup().m
+      name: fname
+      funcId: funcId
+      funcType: funcType
+      base: showNode @getObserver().center
+      offset: @getObserver().offset
+      size: fieldData.length
+      time: Date.now()
+      field: null
+    return [fieldData, catalogRecord]
 
 updateCanvasSize = ->
   return if canvasSizeUpdateBlocked
@@ -689,6 +707,8 @@ shortcuts =
   '#32': doTogglePlayer
   'P': (e) -> doSetPanMode true
   'E': (e) -> doSetPanMode false
+  'SC': (e) -> application.saveDialog.show()
+  'OC': (e) -> application.openDialog.show()
   
 document.addEventListener "keydown", (e)->
   focused = document.activeElement
@@ -717,4 +737,4 @@ updateMemoryButtons()
 updatePlayButtons()
 redrawLoop()
 
-application.openDialog.show()
+#application.saveDialog.show()
