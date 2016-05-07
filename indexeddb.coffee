@@ -62,12 +62,13 @@ exports.OpenDialog = class OpenDialog
       ""+@application.getTransitionFunc()
       
     fileListGen = new GenerateFileList grid, rule, @filelistElement,
-      (fileObj)=>@_loadFile(fileObj),
+      (fileRecord, fileData)=>@_loadFile(fileRecord, fileData),
       =>@_fileListReady()
 
-  _loadFile: (fileObj)->
+  _loadFile: (fileRecord, fileData)->
     console.log "Loading file:"
-    console.dir fileObj
+    console.dir fileRecord
+    console.log fileData
     @close()
     
   _fileListReady: ->
@@ -133,14 +134,15 @@ exports.GenerateFileList = class GenerateFileList
       db.deleteObjectStore "files"
     if db.objectStoreNames.contains "catalog"
       console.log "Dropping catalog"
-      db.deleteObjectStore "files"
-      
-    @fileStore = db.createObjectStore "files"
-    @catalogStore = db.createObjectStore "catalog"
+      db.deleteObjectStore "catalog"
+
+    console.log "Create files and database store"
+    @fileStore = db.createObjectStore "files", {autoIncrement: true}
+    @catalogStore = db.createObjectStore "catalog", {autoIncrement: true}
     
     @populated = false
 
-  loadFromCursor: (cursor) ->
+  loadFromCursor: (cursor, predicate) ->
     dom = new DomBuilder()
 
     startGridGroup = (gridName) ->
@@ -163,84 +165,92 @@ exports.GenerateFileList = class GenerateFileList
 
     lastGrid = null
     lastFunc = null
+    filesEnumerated = 0
     
+    onRecord = (res, record)=>
+      console.log "Found file: #{res.key}" if res?
+      grid = "{#{record.gridN};#{record.gridM}}"
+      if grid isnt lastGrid
+        #loading next group
+        #close the previous group
+        closeFuncGroup() if lastFunc isnt null
+        closeGridGroup() if lastGrid isnt null
+        startGridGroup grid
+        lastGrid = grid
+        lastFunc = null
+
+      if record.funcId isnt lastFunc
+        closeFuncGroup() if lastFunc isnt null
+        startFuncGroup record.funcType, record.funcId
+        lastFunc = record.funcId
+
+      dom.tag('tr')
+         .tag('td').rtag('alink','a').a('href',"#load#{record.name}").text(res.value.name).end().end()
+         .tag('td').text(""+res.value.field).end()
+         .end()
+      #dom.tag('div').CLASS("file-list-file").text(res.value.name).end()
+      dom.vars.alink.addEventListener "click", ((key)=> (e) =>
+        e.preventDefault()
+        @clickedFile key
+        )(record)
+            
     cursor.onsuccess = (e)=>
       res = e.target.result
-      console.log "Load file: #{res.key}" if res?
       if res
+        filesEnumerated += 1
         record = res.value
-        
-        grid = "{#{record.gridN};#{record.gridM}}"
-        if grid isnt lastGrid
-          #loading next group
-          #close the previous group
-          closeFuncGroup() if lastFunc isnt null
-          closeGridGroup() if lastGrid isnt null
-          startGridGroup grid
-          lastGrid = grid
-          lastFunc = null
-
-        if record.funcId isnt lastFunc
-          closeFuncGroup() if lastFunc isnt null
-          startFuncGroup record.funcType, record.funcId
-          lastFunc = record.funcId
-
-        dom.tag('tr')
-           .tag('td').rtag('alink','a').a('href',"#load#{record.name}").text(res.value.name).end().end()
-           .tag('td').text(""+res.value.field.length).end()
-           .end()
-        #dom.tag('div').CLASS("file-list-file").text(res.value.name).end()
-        dom.vars.alink.addEventListener "click", ((key)=> (e) =>
-          e.preventDefault()
-          @clickedFile key
-          )(res.key)
-          
+        if predicate record
+          onRecord res, record
         res.continue()
       else
         closeFuncGroup() if lastFunc isnt null
         closeGridGroup() if lastGrid isnt null
         @container.innerHTML = ""
         @container.appendChild dom.finalize()
+        console.log "Enumerated #{filesEnumerated} files"
         @readyCallback()
 
         
-  clickedFile: (key) ->
-    console.log "Load key #{key}"
+  clickedFile: (catalogRecord) ->
+    console.log "Load key #{JSON.stringify(catalogRecord)}"
     transaction = @db.transaction ["files"], "readonly"
     filesStore = transaction.objectStore "files"
-    cursor = filesStore.openCursor key
-    cursor.onerror = (e) ->
-      console.log "Failed to load file #{key}"
+    request = filesStore.get catalogRecord.field
+    request.onerror = (e) ->
+      console.log "Failed to load file #{catalogRecord.field}"
       
-    cursor.onsuccess = (e) =>
+    request.onsuccess = (e) =>
       res = e.target.result
-      @fileCallback res.value
+      @fileCallback catalogRecord, res
     
   loadData:  ->
     console.log "Loaddata"
-    transaction = @db.transaction ["files"], "readonly"
-    filesStore = transaction.objectStore "files"
+    transaction = @db.transaction ["catalog"], "readonly"
+    filesStore = transaction.objectStore "catalog"
     cursor = filesStore.openCursor()
-    @loadFromCursor cursor
+    @loadFromCursor cursor, (rec)->true
 
   loadDataFor: (gridN, gridM, funcId) ->
-    transaction = @db.transaction ["files"], "readonly"
-    filesStore = transaction.objectStore "files"
+    transaction = @db.transaction ["catalog"], "readonly"
+    filesStore = transaction.objectStore "catalog"
     #create range
 
     # key is N, M, func, name
-    if funcId?
-      start = @key(gridN, gridM, funcId, "")
-      end= @key(gridN, gridM, funcId+" ", "")
-    else
-      start = @key(gridN, gridM, "","")
-      end = @key(gridN, gridM+1, "","")
+    #if funcId?
+    #  start = @key(gridN, gridM, funcId, "")
+    #  end= @key(gridN, gridM, funcId+" ", "")
+    #else
+    #  start = @key(gridN, gridM, "","")
+    #  end = @key(gridN, gridM+1, "","")
       
-    console.log "Range: from #{start} to #{end}"
-    range = IDBKeyRange.bound start, end, false, true
+    #console.log "Range: from #{start} to #{end}"
+    #range = IDBKeyRange.bound start, end, false, true
     
-    cursor = filesStore.openCursor range
-    @loadFromCursor cursor
+    #cursor = filesStore.openCursor range
+
+    cursor = filesStore.openCursor()
+    @loadFromCursor cursor, (rec)->
+      (rec.gridN is gridN) and (rec.gridM is gridM) and ((funcId is null) or (rec.funcId is funcId))
     
 
   addSampleFiles:  (onFinish) ->
@@ -253,13 +263,14 @@ exports.GenerateFileList = class GenerateFileList
     i = 0
     doAdd = =>
       fieldData = "|1"
-      rqStoreData = filesStore.put fieldData
+      rqStoreData = filesStore.add fieldData
       rqStoreData.onerror = (e)=>
         console.log "Error storing data #{e.target.error}"
       rqStoreData.onsuccess = (e)=>
-        console.log "Stored data OK, key is #{e.target.key}"
-        key = e.target.key
-        console.log "Store catalog record"
+        console.log "Stored data OK, key is #{e.target.result}"
+        #console.dir e.target
+        key = e.target.result
+        #console.log "Store catalog record"
         catalogRecord =
           gridN: (Math.random()*4)|0+4
           gridM: (Math.random()*4)|0+4
@@ -270,13 +281,13 @@ exports.GenerateFileList = class GenerateFileList
           offset: M.eye()
           field: key
 
-        rqStoreCatalog = filesStore.put catalogRecord
+        rqStoreCatalog = catalogStore.add catalogRecord
         rqStoreCatalog.onerror = (e)=>
-          console.log "Error storing data #{e.target.error}"
+          console.log "Error storing catalog record #{e.target.error}"
         rqStoreCatalog.onsuccess = (e)=>
-          console.log "catalog record stored OK"
+          #console.log "catalog record stored OK"
           
-          if i < 3000
+          if i < 300
             #console.log "Adding next file"
             i += 1
             doAdd()

@@ -2,7 +2,7 @@
 
 test_app:
 	browserify -t coffeeify application.coffee > test_app_bundle.js
-	browserify -t coffeeify render_worker.coffee > render_worker.js
+#	browserify -t coffeeify render_worker.coffee > render_worker.js
 
 test:
 	mocha test*.coffee --compilers coffee:coffee-script/register
