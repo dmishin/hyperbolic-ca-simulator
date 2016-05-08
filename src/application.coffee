@@ -192,8 +192,6 @@ class Application
     assert = (x) ->
       throw new Error("Assertion failure") unless x?
       x
-    console.dir record
-    console.log cellData
     @setGridImpl assert(record.gridN), assert(record.gridM)
     @animator.reset()
     @cells = importField parseFieldData assert(cellData)
