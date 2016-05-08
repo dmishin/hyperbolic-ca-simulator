@@ -235,10 +235,30 @@ describe "importField", ->
 
     f1 = importField exportField f
 
-    assert.equal f.count, 3
-    assert.equal f.get(unity), 'value0'
-    assert.equal f.get(chain1), 'value1'
-    assert.equal f.get(chain2), 'value2'
+    assert.equal f1.count, 3
+    assert.equal f1.get(unity), 'value0'
+    assert.equal f1.get(chain1), 'value1'
+    assert.equal f1.get(chain2), 'value2'
+    
+  it "must support preprocessing imported data", ->
+    f = new NodeHashMap
+    #ab^3a^2
+    chain1 = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, unity
+    #a^-1b^3a^2
+    chain2 = newNode 'a', -1, newNode 'b', 3, newNode 'a',1, unity
+    f.put unity, "value0"
+    f.put chain1, "value1"
+    f.put chain2, "value2"
+
+    #Preprocessor simply appends b^2 to the chain
+    preprocessor = (chain) -> newNode 'b', 2, chain
+
+    f1 = importField exportField(f), null, preprocessor
+    
+    assert.equal f1.count, 3
+    assert.equal 'value0', f1.get(newNode 'b', 2, unity), 
+    assert.equal 'value1', f1.get(newNode 'b', 2, newNode 'a', 2, newNode 'b', 3, newNode 'a',1, unity) 
+    assert.equal 'value2', f1.get(newNode 'b', 2, newNode 'a', -1, newNode 'b', 3, newNode 'a',1, unity)
     
 
 describe "forFarNeighborhood", ->

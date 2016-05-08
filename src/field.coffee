@@ -194,8 +194,9 @@ exports.importFieldTo = importFieldTo = (fieldData, callback) ->
     return
   putNode unity, fieldData
     
-exports.importField = (fieldData, cells = new NodeHashMap)->
+exports.importField = (fieldData, cells = new NodeHashMap, preprocess)->
   importFieldTo fieldData, (chain, value) ->
+    if preprocess? then chain = preprocess(chain) 
     cells.put chain, value
   return cells
 
