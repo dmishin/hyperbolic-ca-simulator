@@ -56,15 +56,48 @@ exports.OpenDialog = class OpenDialog
 
     @btnAllGrids = E('toggle-all-grids')
     @btnAllRules = E('toggle-all-rules')
+    @btnDelete = E('btn-files-delete')
 
     @allGridsEnabled = false
     @allRuelsEnabled = false
+    @fileList = null
 
     #Bind events
     @btnAllRules.addEventListener 'click', (e)=>@_toggleAllRules()
     @btnAllGrids.addEventListener 'click', (e)=>@_toggleAllGrids()
     @btnCancel.addEventListener 'click', (e)=>@close()
-  
+    @btnDelete.addEventListener 'click', (e)=>@_deleteSelected()
+    
+  _deleteSelected: ->
+    ids = @fileList.selectedIds()
+    if not ids
+      alert "No files selected"
+      return
+    if not confirm "Are you sure to delete #{ids.length} files?"
+      return
+    @_deleteIds ids
+    
+  _deleteIds: (ids) ->
+    indexedDB.open("SavedFields", VERSION).onsuccess = (e)=>
+      db = e.target.result
+      request = db.transaction(["catalog", "files"], "readwrite")
+      catalog = request.objectStore "catalog"
+      files = request.objectStore "files"
+       
+      idx = 0
+      doDelete = =>
+        [catalogKey, record] = ids[idx]
+        rq=catalog.delete(catalogKey).onsuccess = (e)=>
+          files.delete(record.field).onsuccess = (e)=>
+            idx += 1
+            if idx >= ids.length
+              console.log "Deleted selected fiels"
+            else
+              doDelete()
+      request.oncomplete = (e)=>
+        @_generateFileList()
+      doDelete()
+    
   show: ->
     @_updateUI()
     @container.style.display = ''
@@ -79,14 +112,12 @@ exports.OpenDialog = class OpenDialog
     else
       ""+@application.getTransitionFunc()
       
-    fileListGen = new GenerateFileList grid, rule, @filelistElement,
+    @fileList = new GenerateFileList grid, rule, @filelistElement,
       (fileRecord, fileData)=>@_loadFile(fileRecord, fileData),
       =>@_fileListReady()
 
   _loadFile: (fileRecord, fileData)->
-    console.log "Loading file:"
-    console.dir fileRecord
-    console.log fileData
+    @application.loadData fileRecord, fileData
     @close()
     
   _fileListReady: ->
@@ -132,16 +163,15 @@ exports.SaveDialog = class SaveDialog
     #Bind events
     @btnCancel.addEventListener 'click', (e)=>@close()
     
-    console.log "btnSave: #{@btnSave}",
-    @btnSave.innerHTML = "Save!!!"
-    @btnSave.addEventListener 'click', (e)=>
-      console.log "on-save"
-      @save()
+    @btnSave.addEventListener 'click', (e)=>@save()
     
   show: ->
     @_updateUI()
     @container.style.display = ''
     @_generateFileList()
+    @fldName.focus()
+    @fldName.select()
+    
   _updateUI: ->
     
   _generateFileList: ->
@@ -195,11 +225,12 @@ exports.SaveDialog = class SaveDialog
     @close()
 
   
-exports.GenerateFileList = class GenerateFileList
+class GenerateFileList
   constructor: (grid, rule, @container, @fileCallback, @readyCallback) ->
     self.db = null
 
     @status = "working"
+    @recordId2Controls = {}
     
     request = window.indexedDB.open "SavedFields", VERSION
     request.onupgradeneeded = upgradeNeeded
@@ -215,6 +246,16 @@ exports.GenerateFileList = class GenerateFileList
       else
         console.log "Loading data: {#{grid[0]};#{grid[1]}}, rule='#{rule}'"
         @loadDataFor grid[0], grid[1], rule
+
+  selectAll: ->
+    for _, controls of @recordId2Controls
+      controls.check.checked = true
+      
+  selectNone: ->
+    for _, controls of @recordId2Controls
+      controls.check.checked = true
+
+  selectedIds: -> ([id|0, controls.record] for id, controls of @recordId2Controls when controls.check.checked)
     
   loadFromCursor: (cursor, predicate) ->
     dom = new DomBuilder()
@@ -230,7 +271,7 @@ exports.GenerateFileList = class GenerateFileList
       dom.tag("div").CLASS("files-func-group")
          .tag("h2").text("Rule: #{funcName}").end()
          .tag("table").tag("thead").tag("tr")
-         .tag("th").text("Name").end().tag("th").text("Size").end()
+         .tag("th").text('#').end().tag("th").text("Name").end().tag("th").text("Time").end()
          .end().end()
          .tag("tbody")
         
@@ -242,7 +283,6 @@ exports.GenerateFileList = class GenerateFileList
     filesEnumerated = 0
     
     onRecord = (res, record)=>
-      #console.log "Found file: #{res.key}" if res?
       grid = "{#{record.gridN};#{record.gridM}}"
       if grid isnt lastGrid
         #loading next group
@@ -259,14 +299,19 @@ exports.GenerateFileList = class GenerateFileList
         lastFunc = record.funcId
 
       dom.tag('tr')
+         .tag('td').rtag('filesel', 'input').a('type','checkbox').end().end()
          .tag('td').rtag('alink','a').a('href',"#load#{record.name}").text(res.value.name).end().end()
-         .tag('td').text(""+res.value.field).end()
+         .tag('td').text((new Date(res.value.time)).toLocaleString()).end()
          .end()
       #dom.tag('div').CLASS("file-list-file").text(res.value.name).end()
       dom.vars.alink.addEventListener "click", ((key)=> (e) =>
         e.preventDefault()
         @clickedFile key
         )(record)
+        
+      @recordId2Controls[res.primaryKey] =
+        check: dom.vars.filesel
+        record: record
             
     cursor.onsuccess = (e)=>
       res = e.target.result
@@ -309,28 +354,6 @@ exports.GenerateFileList = class GenerateFileList
     catalog = transaction.objectStore "catalog"
     catalogIndex = catalog.index "catalogByGrid"
     cursor = catalogIndex.openCursor()
-    @loadFromCursor cursor, (rec)->
-      (rec.gridN is gridN) and (rec.gridM is gridM) and ((funcId is null) or (rec.funcId is funcId))    
-    
-  loadDataFor1: (gridN, gridM, funcId) ->
-    transaction = @db.transaction ["catalog"], "readonly"
-    filesStore = transaction.objectStore "catalog"
-    #create range
-
-    # key is N, M, func, name
-    #if funcId?
-    #  start = @key(gridN, gridM, funcId, "")
-    #  end= @key(gridN, gridM, funcId+" ", "")
-    #else
-    #  start = @key(gridN, gridM, "","")
-    #  end = @key(gridN, gridM+1, "","")
-      
-    #console.log "Range: from #{start} to #{end}"
-    #range = IDBKeyRange.bound start, end, false, true
-    
-    #cursor = filesStore.openCursor range
-
-    cursor = filesStore.openCursor()
     @loadFromCursor cursor, (rec)->
       (rec.gridN is gridN) and (rec.gridM is gridM) and ((funcId is null) or (rec.funcId is funcId))
     

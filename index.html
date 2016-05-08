@@ -28,11 +28,11 @@
 	  <span id="controls-rule-simple">
 	    Rule<br/><input id="rule-entry"></input>
 	    <button id="btn-set-rule" title="Apply this rule">Set</button>
-	    <button id="btn-rule-make-generic" title="Make custom rule, defined by JS code">Generic...</button>
+	    <button id="btn-rule-make-generic" title="Make custom rule, defined by JS code">Generic&hellip;</button>
 	  </span>
 	  <span id="controls-rule-generic"  style="display:none">
 	    Generic rule<br/>
-	    <button id="btn-edit-rule" title="Edit JS code of the rule">Edit...</button>
+	    <button id="btn-edit-rule" title="Edit JS code of the rule">Edit&hellip;</button>
 	    <button id="btn-disable-generic-rule" title="Return to the binary rule mode">Disable</button>
 	  </span>
 	</div>
@@ -62,6 +62,10 @@
 	</div>
 	<div class="control-group">
 	  <input type="checkbox" id="image-fix-size" title="Fix field size in pixels">Fix size:</input><input id="image-size" type="number" class="medium" title="Fix field size in pixels"></input>
+	</div>
+	<div class="control-group">
+	  <button id="btn-db-save" title="(Ctrl+S) Save state to the local database">Save&hellip;</button>
+	  <button id="btn-db-load" title="(Ctrl+O) Load state from the local database">Open&hellip;</button>
 	</div>
 	<div class="control-group" id="animate-controls" style="display:none">
 	  Upload animation<br/>
@@ -178,9 +182,12 @@
     <div id="file-dialog-open" style="display:none" class="popup-container">
       <div>
 	<h1>Load from lodal DB</h1>
-	<div id="filter-buttons-entry" class="toolbar">
+	<div class="toolbar">
 	  <button id="toggle-all-grids">All grids</button>
 	  <button id="toggle-all-rules">All rules</button>
+	</div>
+	<div class="toolbar">
+	  <button id="btn-files-delete" title="Delete selected">Delete</button>
 	</div>
 	<div id="file-dialog-files">
 	</div>

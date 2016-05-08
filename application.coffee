@@ -187,7 +187,33 @@ class Application
     catch e
       alert "Faield to import data: #{e}"
       @cells = new NodeHashMap
-      
+
+  loadData: (record, cellData) ->
+    assert = (x) ->
+      throw new Error("Assertion failure") unless x?
+      x
+    console.dir record
+    console.log cellData
+    @setGridImpl assert(record.gridN), assert(record.gridM)
+    @animator.reset()
+    @cells = importField parseFieldData assert(cellData)
+    @generation = assert record.generation
+
+    @observer.navigateTo parseNode(assert(record.base)), assert(record.offset)
+
+    if record.funcType is "binary"
+      @transitionFunc = parseTransitionFunction record.funcId, record.gridN, record.gridM
+      E('rule-entry').value = ""+@transitionFunc
+    else if record.funcType is "cusom"
+      @transitionFunc = parseGenericTransitionFunction record.funcId
+    else
+      throw new Error "unknown TF type #{record.funcType}"
+
+    updatePopulation()
+    updateGeneration()
+    updateGenericRuleStatus()
+    redraw()
+    
   getSaveData: (fname)->
     #[data, catalogRecord]
     fieldData = stringifyFieldData exportField application.cells
@@ -199,11 +225,12 @@ class Application
       name: fname
       funcId: funcId
       funcType: funcType
-      base: showNode @getObserver().center
-      offset: @getObserver().offset
+      base: showNode @getObserver().getViewCenter()
+      offset: @getObserver().getViewOffsetMatrix()
       size: fieldData.length
       time: Date.now()
       field: null
+      generation: @generation
     return [fieldData, catalogRecord]
 
 updateCanvasSize = ->
@@ -687,7 +714,10 @@ E('image-size').addEventListener 'change', (e) ->
   doSetFixedSize true
 E('btn-mode-edit').addEventListener 'click', (e) -> doSetPanMode false
 E('btn-mode-pan').addEventListener 'click', (e) -> doSetPanMode true
-  
+E('btn-db-save').addEventListener 'click', (e) -> application.saveDialog.show()
+E('btn-db-load').addEventListener 'click', (e) -> application.openDialog.show()
+
+    
 shortcuts =
   'N': -> application.doStep()
   'C': -> application.doReset()
