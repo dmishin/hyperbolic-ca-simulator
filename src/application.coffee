@@ -1,6 +1,6 @@
 "use strict"
 {Tessellation} = require "./hyperbolic_tessellation.coffee"
-{unity, inverseChain, appendChain, appendInverseChain, NodeHashMap, showNode, parseNode} = require "./vondyck_chain.coffee"
+{unity, inverseChain, appendChain, appendInverseChain, NodeHashMap, showNode, parseNode, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
@@ -190,7 +190,13 @@ class Application
       if n isnt @getGroup().n or m isnt @getGroup().m
         console.log "Need to change grid"
         @setGridImpl n, m
-      @cells = importField parseFieldData match[3]
+
+      #normzlize chain coordinates, so that importing of user-generated data could be possible
+      normalizeChain = (chain) =>
+        rewritten = @appendRewrite unity, node2array(chain)
+        eliminateFinalA rewritten, @appendRewrite, @getGroup().n
+        
+      @cells = importField parseFieldData(match[3]), null, normalizeChain
       console.log "Imported #{@cells.count} cells"
     catch e
       alert "Faield to import data: #{e}"
