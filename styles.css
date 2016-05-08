@@ -18,13 +18,22 @@ body {
     margin-right: auto;
     margin-top: 4em;
     background-color: white;
-    padding: 1em;
+    padding: 0 1em 1em 1em;
+    border-radius: 0.5em;
 }
 .toolbar {
     margin-left: auto;
     margin-right: auto;
 }
+.popup-container h1 {
+    margin: 0 0 0.3em 0;
+    text-align: center;
+    color: #888;
+}
 
+.dialog-content{
+    margin: 1em 2em 2em 1em;
+}
 /*Main layout*/
 #main{
     display: table;
@@ -84,6 +93,45 @@ span.button-group:first-child {
     overflow: auto;
 }
 
+table.files-table{
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table.files-table th {
+    text-align: left;
+}
+tr.files-file-row {
+    border: solid 1px  silver;
+}
+
+tr.files-file-row:hover {
+    background-color: silver;
+}
+
+tr.files-grid-row, tr.files-func-row{
+    border: none;
+}
+    
+tr.files-grid-row{
+    color: #03a;
+    background-color: #ddd;
+}
+tr.files-grid-row td{
+    padding: 0.1em 0 0.1em 1em;
+}
+
+tr.files-func-row{
+    color: #040;
+    background-color: #eee;
+}
+tr.files-func-row td{
+    padding: 0.1em 0 0.1em 3em;
+}
+
+
 /* Tweak controls */
 .numdisplay {
     min-width: 3em;
@@ -122,11 +170,28 @@ button{
     border-radius: 0.2em;
     -webkit-border-radius: 0.2em;
     -moz-border-radius: 0.2em;
-    font-family: Verdana;
+    /*font-family: Verdana;*/
     width: auto;
     height: auto;
     font-size: 1em;
     padding: 0.5em;
+    -text-shadow: 0 1px 0 #FFFFFF;
+    background-color: #E0E0E0;
+
+}
+
+button.button-small{
+    margin: 0;
+    padding:0;
+
+    display: inline-block;
+    border: none;
+    color: #000000;
+    border-radius: 0;
+    width: auto;
+    height: auto;
+    font-size: 1em;
+    padding: 0;
     -text-shadow: 0 1px 0 #FFFFFF;
     background-color: #E0E0E0;
 
@@ -174,6 +239,9 @@ input.short {
 }
 input.medium {
     width:4.5em;
+}
+input.wide {
+    width: 100%;
 }
 
 #navigator-wrap {

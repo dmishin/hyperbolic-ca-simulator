@@ -56,7 +56,6 @@ exports.OpenDialog = class OpenDialog
 
     @btnAllGrids = E('toggle-all-grids')
     @btnAllRules = E('toggle-all-rules')
-    @btnDelete = E('btn-files-delete')
 
     @allGridsEnabled = false
     @allRuelsEnabled = false
@@ -66,37 +65,7 @@ exports.OpenDialog = class OpenDialog
     @btnAllRules.addEventListener 'click', (e)=>@_toggleAllRules()
     @btnAllGrids.addEventListener 'click', (e)=>@_toggleAllGrids()
     @btnCancel.addEventListener 'click', (e)=>@close()
-    @btnDelete.addEventListener 'click', (e)=>@_deleteSelected()
     
-  _deleteSelected: ->
-    ids = @fileList.selectedIds()
-    if not ids
-      alert "No files selected"
-      return
-    if not confirm "Are you sure to delete #{ids.length} files?"
-      return
-    @_deleteIds ids
-    
-  _deleteIds: (ids) ->
-    indexedDB.open("SavedFields", VERSION).onsuccess = (e)=>
-      db = e.target.result
-      request = db.transaction(["catalog", "files"], "readwrite")
-      catalog = request.objectStore "catalog"
-      files = request.objectStore "files"
-       
-      idx = 0
-      doDelete = =>
-        [catalogKey, record] = ids[idx]
-        rq=catalog.delete(catalogKey).onsuccess = (e)=>
-          files.delete(record.field).onsuccess = (e)=>
-            idx += 1
-            if idx >= ids.length
-              console.log "Deleted selected fiels"
-            else
-              doDelete()
-      request.oncomplete = (e)=>
-        @_generateFileList()
-      doDelete()
     
   show: ->
     @_updateUI()
@@ -164,7 +133,7 @@ exports.SaveDialog = class SaveDialog
     @btnCancel.addEventListener 'click', (e)=>@close()
     
     @btnSave.addEventListener 'click', (e)=>@save()
-    
+    @fldName.addEventListener 'change', (e)=>@save()
   show: ->
     @_updateUI()
     @container.style.display = ''
@@ -180,7 +149,7 @@ exports.SaveDialog = class SaveDialog
     rule = ""+@application.getTransitionFunc()
       
     fileListGen = new GenerateFileList grid, rule, @filelistElement,
-      (fileRecord, fileData)=>@_loadFile(fileRecord, fileData),
+      null,
       =>@_fileListReady()
       
   _fileListReady: ->
@@ -226,12 +195,14 @@ exports.SaveDialog = class SaveDialog
 
   
 class GenerateFileList
-  constructor: (grid, rule, @container, @fileCallback, @readyCallback) ->
+  constructor: (@grid, @rule, @container, @fileCallback, @readyCallback) ->
     self.db = null
 
     @status = "working"
     @recordId2Controls = {}
+    @_generateFileList()
     
+  _generateFileList: ->
     request = window.indexedDB.open "SavedFields", VERSION
     request.onupgradeneeded = upgradeNeeded
     request.onerror = (e) =>
@@ -240,43 +211,88 @@ class GenerateFileList
     request.onsuccess = (e)=>
       @db = e.target.result
       console.log "Success"
-      if grid is null
+      if @grid is null
         console.log "Loading whole list"
         @loadData()
       else
-        console.log "Loading data: {#{grid[0]};#{grid[1]}}, rule='#{rule}'"
-        @loadDataFor grid[0], grid[1], rule
+        console.log "Loading data: {#{@grid[0]};#{@grid[1]}}, rule='#{@rule}'"
+        @loadDataFor @grid[0], @grid[1], @rule
 
-  selectAll: ->
+  selectAll: (selected) ->
     for _, controls of @recordId2Controls
-      controls.check.checked = true
+      controls.check.checked = selected
       
-  selectNone: ->
-    for _, controls of @recordId2Controls
-      controls.check.checked = true
 
   selectedIds: -> ([id|0, controls.record] for id, controls of @recordId2Controls when controls.check.checked)
+
+  deleteSelected: ->
+    ids = @selectedIds()
+    if not ids
+      alert "No files selected"
+      return
+    if not confirm "Are you sure to delete #{ids.length} files?"
+      return
+    @_deleteIds ids
+    
+  _deleteIds: (ids) ->
+    indexedDB.open("SavedFields", VERSION).onsuccess = (e)=>
+      db = e.target.result
+      request = db.transaction(["catalog", "files"], "readwrite")
+      catalog = request.objectStore "catalog"
+      files = request.objectStore "files"
+       
+      idx = 0
+      doDelete = =>
+        [catalogKey, record] = ids[idx]
+        rq=catalog.delete(catalogKey).onsuccess = (e)=>
+          files.delete(record.field).onsuccess = (e)=>
+            idx += 1
+            if idx >= ids.length
+              console.log "Deleted selected fiels"
+            else
+              doDelete()
+      request.oncomplete = (e)=>
+        @_generateFileList()
+      doDelete()
     
   loadFromCursor: (cursor, predicate) ->
     dom = new DomBuilder()
 
+    dom.tag('div').CLASS('toolbar')
+         .tag('span').CLASS('button-group')
+         .text('Select:').rtag('btnSelectAll', 'button').CLASS('button-small').text('All').end()
+                         .rtag('btnSelectNone', 'button').CLASS('button-small').text('None').end()
+       .end()
+       .tag('span').CLASS('button-group')
+         .rtag('btnDeleteAll', 'button').CLASS('dangerous button-small').a('title','Delete selected files').text('Delete').end()
+       .end()
+       .end()
+
+
+
+    dom.vars.btnDeleteAll.addEventListener 'click', (e)=>@deleteSelected()
+    dom.vars.btnSelectNone.addEventListener 'click', (e)=>@selectAll(false)
+    dom.vars.btnSelectAll.addEventListener 'click', (e)=>@selectAll(true)
+    
+    dom  .tag("table").CLASS("files-table").tag("thead").tag("tr")
+         .tag("th").end().tag("th").text("Name").end().tag("th").text("Time").end()
+         .end().end()
+         .tag("tbody")
+
     startGridGroup = (gridName) ->
-      dom.tag("div").CLASS("files-grid-group")
-         .tag("h1").text("Grid: #{gridName}").end()
+      dom.tag("tr").CLASS("files-grid-row")
+         .tag("td").a('colspan','3').text("Grid: #{gridName}").end()
+         .end()
+        
     closeGridGroup = ->
-      dom.end()
       
     startFuncGroup = (funcType, funcId) ->
       funcName = "#{funcType}: #{funcId}"
-      dom.tag("div").CLASS("files-func-group")
-         .tag("h2").text("Rule: #{funcName}").end()
-         .tag("table").tag("thead").tag("tr")
-         .tag("th").text('#').end().tag("th").text("Name").end().tag("th").text("Time").end()
-         .end().end()
-         .tag("tbody")
+      dom.tag("tr").CLASS("files-func-row")
+         .tag("td").a('colspan','3').text("Rule: #{funcName}").end()
+         .end()
         
     closeFuncGroup = ->
-      dom.end().end().end() #tbody table div
 
     lastGrid = null
     lastFunc = null
@@ -298,16 +314,23 @@ class GenerateFileList
         startFuncGroup record.funcType, record.funcId
         lastFunc = record.funcId
 
-      dom.tag('tr')
+      dom.tag('tr').CLASS('files-file-row')
          .tag('td').rtag('filesel', 'input').a('type','checkbox').end().end()
-         .tag('td').rtag('alink','a').a('href',"#load#{record.name}").text(res.value.name).end().end()
-         .tag('td').text((new Date(res.value.time)).toLocaleString()).end()
+        
+      if @fileCallback?
+         dom.tag('td').rtag('alink','a').a('href',"#load#{record.name}").text(res.value.name).end().end()
+      else
+         dom.tag('td').text(res.value.name).end()
+      
+      dom.tag('td').text((new Date(res.value.time)).toLocaleString()).end()
          .end()
+        
       #dom.tag('div').CLASS("file-list-file").text(res.value.name).end()
-      dom.vars.alink.addEventListener "click", ((key)=> (e) =>
-        e.preventDefault()
-        @clickedFile key
-        )(record)
+      if dom.vars.alink?
+        dom.vars.alink.addEventListener "click", ((key)=> (e) =>
+          e.preventDefault()
+          @clickedFile key
+          )(record)
         
       @recordId2Controls[res.primaryKey] =
         check: dom.vars.filesel

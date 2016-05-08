@@ -765,4 +765,4 @@ updateMemoryButtons()
 updatePlayButtons()
 redrawLoop()
 
-#application.saveDialog.show()
+application.saveDialog.show()
