@@ -1,9 +1,9 @@
 
 assert = require "assert"
-{allClusters, exportField, importField, mooreNeighborhood, neighborsSum, parseFieldData, randomStateGenerator, stringifyFieldData, forFarNeighborhood, randomFillFixedNum} = require "./field"
-{makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
-{unity, NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "./vondyck_chain.coffee"
-{RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
+{allClusters, exportField, importField, mooreNeighborhood, neighborsSum, parseFieldData, randomStateGenerator, stringifyFieldData, forFarNeighborhood, randomFillFixedNum} = require "../src/field"
+{makeAppendRewrite, vdRule, eliminateFinalA} = require "../src/vondyck_rewriter.coffee"
+{unity, NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "../src/vondyck_chain.coffee"
+{RewriteRuleset, knuthBendix} = require "../src/knuth_bendix.coffee"
 
 describe "allClusters", ->
 

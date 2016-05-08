@@ -1,7 +1,7 @@
 assert = require "assert"
 
-{Tessellation} = require "./hyperbolic_tessellation.coffee"
-{unity, nodeMatrixRepr, newNode} = require "./vondyck_chain.coffee"
+{Tessellation} = require "../src/hyperbolic_tessellation.coffee"
+{unity, nodeMatrixRepr, newNode} = require "../src/vondyck_chain.coffee"
 
 describe "Tessellation.visiblePolygonSize", ->
 

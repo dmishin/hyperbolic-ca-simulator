@@ -1,6 +1,6 @@
 assert = require "assert"
 
-{formatString, pad} = require "./utils.coffee"
+{formatString, pad} = require "../src/utils.coffee"
 
 describe "formatString", ->
   it "must format string with several args", ->
