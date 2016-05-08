@@ -128,20 +128,12 @@ exports.FieldObserver = class FieldObserver
     Math.acosh @tfm[8]
     
   #build new view around the cell which is currently at the center
-  rebaseView1: ->
-    centerCoord = M.mulv (M.inv @tfm), [0.0, 0.0, 1.0]
-    pathToCenterCell = @xyt2path centerCoord
-    #console.log "Jump by #{showNode pathToCenterCell}"
-    m = pathToCenterCell.repr @tessellation.group
-
-    #modifyView won't work, since it multiplies in different order.
-    @tfm = M.mul @tfm, m
-    @checkViewMatrix()
-
-    #move observation point
-    @translateBy node2array pathToCenterCell
   rebaseView: ->
-    centerCoord = M.mulv (M.inv @tfm), [0.0, 0.0, 1.0]
+    centerCoord = M.mulv M.hyperbolicInv(@tfm), [0.0, 0.0, 1.0]
+    centerCoord[0] *= 1.9
+    centerCoord[1] *= 1.9
+    centerCoord[2] = Math.sqrt(1.0+centerCoord[0]**2 + centerCoord[1]**2)
+    
     pathToCenterCell = @xyt2path centerCoord
     if pathToCenterCell is unity
       return
