@@ -182,7 +182,15 @@ class Application
   importData: (data)->
     try
       console.log "importing #{data}"
-      @cells = importField parseFieldData data
+      match = data.match /^(\d+)\$(\d+)\$(.*)$/
+      throw new Error("Data format unrecognized") unless match?
+      n = parseIntChecked match[1]
+      m = parseIntChecked match[2]
+
+      if n isnt @getGroup().n or m isnt @getGroup().m
+        console.log "Need to change grid"
+        @setGridImpl n, m
+      @cells = importField parseFieldData match[3]
       console.log "Imported #{@cells.count} cells"
     catch e
       alert "Faield to import data: #{e}"
@@ -549,15 +557,10 @@ updateGeneration = ->
 #  return parts.join " "
   
 doExport = ->
-  #data = JSON.stringify(exportField(application.cells))
   data = stringifyFieldData exportField application.cells
-  #edata = lzw_encode data
-
-  #data1 = exportTrivial application.cells
-  #edata1 = lzw_encode data1
-  
-  #console.log "Data len before compression: #{data.length}, after compression: #{edata.length}, ratio: #{edata.length/data.length}"
-  showExporDialog data
+  n = application.getGroup().n
+  m = application.getGroup().m
+  showExportDialog "#{n}$#{m}$#{data}"
 
 doExportClose = ->
   E('export-dialog').style.display = 'none'
@@ -609,14 +612,17 @@ encodeVisible = ->
     visibleCells.put translatedCell, state
   return exportField visibleCells
 
-showExporDialog = (sdata) ->
+showExportDialog = (sdata) ->
   E('export').value = sdata
   E('export-dialog').style.display = ''
   E('export').focus()
   E('export').select()
   
 doExportVisible = ->
-  showExporDialog stringifyFieldData encodeVisible()
+  n = application.getGroup().n
+  m = application.getGroup().m
+  data = stringifyFieldData encodeVisible()
+  showExportDialog "#{n}$#{m}$#{data}"
   
 doShowImport = ->
   E('import-dialog').style.display = ''
@@ -765,4 +771,4 @@ updateMemoryButtons()
 updatePlayButtons()
 redrawLoop()
 
-application.saveDialog.show()
+#application.saveDialog.show()
