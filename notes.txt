@@ -33,3 +33,17 @@ big glider
 rule B 3 S 2 6
 oscillator
 3$8$(b2|1)(A(b2|1)(B2|1))(a(B|1))(B2|1)(B|1)
+
+
+
+
+##Encoding video
+
+#Result fine, but not great, lines are a bit shaky
+ffmpeg -f image2 -i glider-73-%04d.png -c:v libvpx -crf 12 -b:v 500K glider.webm
+
+crf 12 size 258 kb
+crf 6 same size 256 k
+
+bv 900 much better quality.
+size - 400k
