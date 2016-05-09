@@ -227,11 +227,14 @@ class GenerateFileList
 
   deleteSelected: ->
     ids = @selectedIds()
-    if not ids
-      alert "No files selected"
+    if ids.length is 0
       return
-    if not confirm "Are you sure to delete #{ids.length} files?"
-      return
+    else if ids.length is 1
+      if not confirm "Are you sure to delete \"#{ids[0][1].name}\"?"
+        return
+    else 
+      if not confirm "Are you sure to delete #{ids.length} files?"
+        return
     @_deleteIds ids
     
   _deleteIds: (ids) ->
