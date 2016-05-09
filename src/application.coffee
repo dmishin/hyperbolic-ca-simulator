@@ -710,6 +710,7 @@ E('animate-set-end').addEventListener 'click', -> application.animator.setEnd ap
 
 E('animate-view-start').addEventListener 'click', -> application.animator.viewStart application.observer
 E('animate-view-end').addEventListener 'click', -> application.animator.viewEnd application.observer
+E('animate-derotate').addEventListener 'click', -> application.animator.derotate()
 
 E('btn-upload-animation').addEventListener 'click', (e)->
   application.animator.animate application.observer, parseIntChecked(E('animate-frame-per-generation').value), parseIntChecked(E('animate-generations').value), (-> null)

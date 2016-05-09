@@ -4,6 +4,7 @@
 M = require "./matrix3.coffee"
 {parseIntChecked} = require "./utils.coffee"
 {formatString, pad} = require "./utils.coffee"
+{decomposeToTranslations} = require "./decompose_to_translations.coffee"
 
 interpolateHyperbolic = (T) ->
   [Trot, Tdx, Tdy] = M.hyperbolicDecompose T
@@ -70,7 +71,19 @@ exports.Animator = class Animator
   viewEnd: (observer) ->
     @assertNotBusy()
     observer.navigateTo @endChain, @endOffset
-        
+    
+  derotate: ->
+    console.log "offset matrix:"
+    console.dir @offsetMatrix()
+    [t1, t2] = decomposeToTranslations @offsetMatrix()
+    if t1 is null
+      alert "Derotation not possible"
+      return
+    #@endOffset * Mdelta * @startOffset^-1 = t1^-1 * t2 * t1
+    @endOffset = M.mul t1, @endOffset
+    @startOffset = M.mul t1, @startOffset
+    alert "Derotated OK!"
+    
   _setCanvasSize: ->
     size = parseIntChecked E('animate-size').value
     if size <=0 or size >= 65536
@@ -106,11 +119,9 @@ exports.Animator = class Animator
     clearTimeout @uploadWorker if @uploadWorker
     @uploadWorker = null
     @_endWork()
-    
-  animate: (observer, stepsPerGen, generations, callback)->
-    return unless @startChain? and @endChain?
-    @assertNotBusy()
-    appendRewrite = @application.getAppendRewrite()
+
+  #matrix between first and last points
+  offsetMatrix: ->
     #global (surreally big) view matrix is:
     # 
     # Moffset * M(chain)
@@ -124,6 +135,7 @@ exports.Animator = class Animator
     # T = MoffsetEnd * (M(chainEnd) * M(chainStart)^-1) * MoffsetStart^-1
     #
     # T = MoffsetEnd * M(chainEnd + invChain(chainStart) * MoffsetStart^-1
+    appendRewrite = @application.getAppendRewrite()
 
     #Not very sure but lets try
     #Mdelta = appendInverseChain(@endChain, @startChain,appendRewrite).repr(tessellation.group)
@@ -138,7 +150,14 @@ exports.Animator = class Animator
     
     
     T = M.mul(M.mul(@endOffset, Mdelta), M.hyperbolicInv(@startOffset))
+    return T
+    
+  animate: (observer, stepsPerGen, generations, callback)->
+    return unless @startChain? and @endChain?
+    @assertNotBusy()
 
+    T = @offsetMatrix()
+    
     #Make interpolator for this matrix
     Tinterp = interpolateHyperbolic M.hyperbolicInv T
 
