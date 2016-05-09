@@ -52,6 +52,7 @@ exports.Animator = class Animator
     E('btn-upload-animation').disabled = (@startChain is null) or (@endChain is null)
     E('btn-animate-cancel').style.display = if @busy then '' else 'none'
     E('btn-upload-animation').style.display = unless @busy then '' else 'none'
+    E('btn-animate-derotate').disabled = not (@startChain? and @endChain?)
     
     
   setStart: (observer) ->
@@ -88,7 +89,7 @@ exports.Animator = class Animator
     r = Math.sqrt(dx**2+dy**2)
     
     if r > 1e-6
-      s = -dy/r
+      s = dy/r
       c = dx/r
       R = [c,   s,   0.0,
            -s,  c,   0.0,
@@ -97,7 +98,7 @@ exports.Animator = class Animator
       @endOffset = M.mul R, @endOffset
       @startOffset = M.mul R, @startOffset
             
-    alert "Derotated OK!"
+    alert "Start and end point adjusted."
     
   _setCanvasSize: ->
     size = parseIntChecked E('animate-size').value
