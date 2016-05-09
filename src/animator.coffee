@@ -82,6 +82,21 @@ exports.Animator = class Animator
     #@endOffset * Mdelta * @startOffset^-1 = t1^-1 * t2 * t1
     @endOffset = M.mul t1, @endOffset
     @startOffset = M.mul t1, @startOffset
+
+    #and now apply similarity rotation to both of the start and end points so that t2 is strictly vertical
+    [dx,dy,_] = M.mulv t2, [0,0,1]
+    r = Math.sqrt(dx**2+dy**2)
+    
+    if r > 1e-6
+      s = -dy/r
+      c = dx/r
+      R = [c,   s,   0.0,
+           -s,  c,   0.0,
+           0.0, 0.0, 1.0]
+      R = M.mul R, M.rotationMatrix(-Math.PI/2)
+      @endOffset = M.mul R, @endOffset
+      @startOffset = M.mul R, @startOffset
+            
     alert "Derotated OK!"
     
   _setCanvasSize: ->
