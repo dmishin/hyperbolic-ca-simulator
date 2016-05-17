@@ -100,7 +100,7 @@ class Application
   getCanvasResize: -> canvasSizeUpdateBlocked
   redraw: -> redraw()
   getObserver: -> @observer
-  drawEverything: -> drawEverything(context)
+  drawEverything: -> drawEverything canvas.width, canvas.height, context
   uploadToServer: (name, cb) -> uploadToServer name, cb
   getCanvas: -> canvas
   getGroup: -> @tessellation.group
@@ -248,8 +248,9 @@ class Application
     return [fieldData, catalogRecord]
     
   doExportSvg: ->
-    svgContext = new C2S(canvas.width, canvas.height)
-    drawEverything svgContext
+    sz = 1024
+    svgContext = new C2S sz, sz#(canvas.width, canvas.height)
+    drawEverything sz, sz, svgContext
     showExportDialog svgContext.getSerializedSvg()
     
 
@@ -410,13 +411,13 @@ updatePlayButtons = ->
 dirty = true
 redraw = -> dirty = true
 
-drawEverything = (context) ->
+drawEverything = (w, h, context) ->
   return false unless application.observer.canDraw()
   context.fillStyle = "white"  
   #context.clearRect 0, 0, canvas.width, canvas.height
-  context.fillRect 0, 0, canvas.width, canvas.height
+  context.fillRect 0, 0, w, h
   context.save()
-  s = Math.min( canvas.width, canvas.height ) / 2 #
+  s = Math.min( w, h ) / 2 #
   context.scale s, s
   context.translate 1, 1
   context.fillStyle = "black"
@@ -434,7 +435,7 @@ dtMax = 1000.0/fpsDefault #
 redrawLoop = ->
   if dirty
     if not fpsLimiting or ((t=Date.now()) - lastTime > dtMax)
-      if drawEverything(context)
+      if drawEverything canvas.width, canvas.height, context
         tDraw = Date.now() - t
         #adaptively update FPS
         dtMax = dtMax*0.9 + tDraw*2*0.1
