@@ -23,6 +23,8 @@
 {parseUri} = require "./parseuri.coffee"
 M = require "./matrix3.coffee"
 
+C2S = require "./ext/canvas2svg.js"
+
 MIN_WIDTH = 100
 
 minVisibleSize = 1/100
@@ -98,7 +100,7 @@ class Application
   getCanvasResize: -> canvasSizeUpdateBlocked
   redraw: -> redraw()
   getObserver: -> @observer
-  drawEverything: -> drawEverything()
+  drawEverything: -> drawEverything(context)
   uploadToServer: (name, cb) -> uploadToServer name, cb
   getCanvas: -> canvas
   getGroup: -> @tessellation.group
@@ -244,6 +246,12 @@ class Application
       field: null
       generation: @generation
     return [fieldData, catalogRecord]
+    
+  doExportSvg: ->
+    svgContext = new C2S(canvas.width, canvas.height)
+    drawEverything svgContext
+    showExportDialog svgContext.getSerializedSvg()
+    
 
 updateCanvasSize = ->
   return if canvasSizeUpdateBlocked
@@ -402,7 +410,7 @@ updatePlayButtons = ->
 dirty = true
 redraw = -> dirty = true
 
-drawEverything = ->
+drawEverything = (context) ->
   return false unless application.observer.canDraw()
   context.fillStyle = "white"  
   #context.clearRect 0, 0, canvas.width, canvas.height
@@ -426,7 +434,7 @@ dtMax = 1000.0/fpsDefault #
 redrawLoop = ->
   if dirty
     if not fpsLimiting or ((t=Date.now()) - lastTime > dtMax)
-      if drawEverything()
+      if drawEverything(context)
         tDraw = Date.now() - t
         #adaptively update FPS
         dtMax = dtMax*0.9 + tDraw*2*0.1
@@ -727,6 +735,7 @@ E('btn-mode-edit').addEventListener 'click', (e) -> doSetPanMode false
 E('btn-mode-pan').addEventListener 'click', (e) -> doSetPanMode true
 E('btn-db-save').addEventListener 'click', (e) -> application.saveDialog.show()
 E('btn-db-load').addEventListener 'click', (e) -> application.openDialog.show()
+E('btn-export-svg').addEventListener 'click', (e) -> application.doExportSvg()
 
     
 shortcuts =
