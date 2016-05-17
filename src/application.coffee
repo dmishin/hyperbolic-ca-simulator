@@ -134,6 +134,7 @@ class Application
     @lastBinaryTransitionFunc = @transitionFunc
     @openDialog = new OpenDialog this
     @saveDialog = new SaveDialog this
+    @svgDialog = new SvgDialog this
 
 
   setGridImpl: (n, m)->
@@ -248,10 +249,26 @@ class Application
     return [fieldData, catalogRecord]
     
   doExportSvg: ->
-    sz = 1024
-    svgContext = new C2S sz, sz#(canvas.width, canvas.height)
+    sz = 512
+    svgContext = new C2S sz, sz
     drawEverything sz, sz, svgContext
-    showExportDialog svgContext.getSerializedSvg()
+    #showExportDialog svgContext.getSerializedSvg()
+    # Show the generated SVG image
+    @svgDialog.show svgContext.getSerializedSvg()
+
+class SvgDialog
+  constructor: (@application) ->
+    @dialog = E('svg-export-dialog')
+    @imgContainer = E('svg-image-container')
+    
+  close: ->
+    @imgContainer.innerHTML = ""
+    @dialog.style.display="none"
+    
+  show: (svg) ->
+    dataUri = "data:image/svg+xml;utf8," + encodeURI(svg)
+    @imgContainer.innerHTML = "<img style=\"width:100%\" src=\"#{dataUri}\" alt=\"SVG\"/>"
+    @dialog.style.display=""
     
 
 updateCanvasSize = ->
@@ -737,7 +754,7 @@ E('btn-mode-pan').addEventListener 'click', (e) -> doSetPanMode true
 E('btn-db-save').addEventListener 'click', (e) -> application.saveDialog.show()
 E('btn-db-load').addEventListener 'click', (e) -> application.openDialog.show()
 E('btn-export-svg').addEventListener 'click', (e) -> application.doExportSvg()
-
+E('btn-svg-export-dialog-close').addEventListener 'click', (e) -> application.svgDialog.close()
     
 shortcuts =
   'N': -> application.doStep()
