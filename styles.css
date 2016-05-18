@@ -1,4 +1,6 @@
 /* Typographics */
+html{
+}
 body {
     font-family: Verdana,sans-serif;
 }
@@ -9,17 +11,27 @@ body {
     top:0;
     left:0;
     width:100%;
-    height:100%;
-    background-color: rgba(0,0,0,0.5);
 }
-.popup-container > div {
+div.popup-shadow {
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    position: fixed; 
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1;
+}
+
+div.popup {
+    position: relative; /*to make zindex work*/
+    height: 100%;
     width: 70%;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 4em;
+    margin: 2em auto 0 auto;
+    overflow: auto;
     background-color: white;
     padding: 0 1em 1em 1em;
     border-radius: 0.5em;
+    z-index: 2;
 }
 .toolbar {
     margin-left: auto;
@@ -35,6 +47,7 @@ body {
     margin: 1em 2em 2em 1em;
 }
 /*Main layout*/
+
 #main{
     display: table;
     text-align: center;
@@ -104,7 +117,7 @@ table.files-table th {
     text-align: left;
 }
 tr.files-file-row {
-    border: solid 1px  silver;
+    border: solid 1px  silver;a
 }
 
 tr.files-file-row:hover {
@@ -129,6 +142,15 @@ tr.files-func-row{
 }
 tr.files-func-row td{
     padding: 0.1em 0 0.1em 3em;
+}
+
+/*Dialog: SVG export*/
+#svg-image-container {
+    text-align:center;
+    overflow: auto;
+}
+#svg-image-container img{
+    border: solid 1px  silver;
 }
 
 
