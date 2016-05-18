@@ -266,8 +266,12 @@ class SvgDialog
     @dialog.style.display="none"
     
   show: (svg) ->
-    dataUri = "data:image/svg+xml;utf8," + encodeURI(svg)
-    @imgContainer.innerHTML = "<img style=\"width:100%\" src=\"#{dataUri}\" alt=\"SVG\"/>"
+    dataUri = "data:image/svg+xml;utf8," + encodeURIComponent(svg)
+    dom = new DomBuilder()
+    dom.tag('img').a('src', dataUri).a('alt', 'SVG image').a('title', 'Use right click to save SVG image').end()    
+    @imgContainer.innerHTML = ""
+    @imgContainer.appendChild dom.finalize()
+    #@imgContainer.innerHTML = svg
     @dialog.style.display=""
     
 
