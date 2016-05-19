@@ -1,6 +1,48 @@
 Cellular automata on hyperbolic fields
 ======================================
 
+
+
+TODO List
+---------
+Things left to implement
+
+### GUI
+* [x] Save and load state to Indexed database
+* [x] Import data from URL
+* [ ] Select manually, export selection (remove export visible)
+* [ ] Write short help
+* [x] Display generation
+* [x] Support Day/Night rules
+* [ ] Notifications
+* [x] Random fill fills fixed number of cells, not radius
+* [ ] Adavnced settings: fill percent, size; autostop population;
+* [x] Pan / Edit button
+* [ ] Home pointer
+* [x] Manually setting imase size
+* [x] Export to SVG
+* [x] Upload frames of smooth animations
+
+### Internal code structure
+* [ ] Reorganize code, to make appendRewrite, eliminateFinalA, group a parts of a single entity.
+* [ ] improve performance of eliminateFinalA, by trying only rewrites that change something. (Is it really different? Check performance.)
+* [x] Split application.coffee into modules. It is too big.
+* [ ] Re-group modules: core, ui. Target: make core modules easily usable in a separate project
+* [v] Create application class. Done partially.
+
+### Major rewrites
+* [ ] Use web worker for calculations.
+
+Building
+========
+
+    $ make
+
+Requirements
+============
+
+
+
 BUGS
 ----
 ### Rule editor problems:
@@ -13,31 +55,3 @@ seems that only neighbored cells are evaluated!
 
 
 
-TODO List
----------
-Things left to implement
-
-**GUI**
-* [ ] Save and load state to Local Storage (or indexed database? Seems like the latter is better!)
-* [ ] Import data from URL
-* [ ] Select manually, export selection (remove export visible)
-* [ ] Write short help
-* [x] Display generation
-* [x] Support Day/Night rules
-* [ ] Notifications
-* [x] Random fill fills fixed number of cells, not radius
-* [ ] Adavnced settings: fill percent, size; autostop population;
-* [x] Pan / Edit button
-* [ ] Home pointer
-* [x] Manually setting imase size
-* [x] Upload frames of smooth animations
-
-**Internal code structure**
-* [ ] Reorganize code, to make appendRewrite, eliminateFinalA, group a parts of a single entity.
-* [ ] improve performance of eliminateFinalA, by trying only rewrites that change something. (Is it really different? Check performance.)
-* [x] Split application.coffee into modules. It is too big.
-* [ ] Group modules: core, ui. Target: make core modules easily usabe in separate project
-* [v] Create application class. Done partially, the class is merely an interface.
-
-**Major rewrites**
-* [ ] Use web worker for calculations.
