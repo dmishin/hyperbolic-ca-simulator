@@ -144,7 +144,8 @@ class Application
     @ruleEntry.onparsed = (rule) => @doSetRule()
     
     @updateRuleEditor()
-      
+    @updateGridUI()
+    
   updateRuleEditor: ->
     switch @transitionFunc.getType()
       when "binary"
@@ -188,7 +189,13 @@ class Application
     @navigator.clear()
     doClearMemory()
     doStopPlayer()
-
+    @updateGridUI()
+    
+  updateGridUI: ->
+    E('entry-n').value = "" + application.getGroup().n
+    E('entry-m').value = "" + application.getGroup().m
+    E('grid-num-neighbors').innerHTML = (@getGroup().m-2)*@getGroup().n
+    
   #Actions
   doRandomFill: ->
     randomFillFixedNum @cells, randomFillPercent, unity, randomFillNum, @appendRewrite, @getGroup().n, @getGroup().m, randomStateGenerator(@transitionFunc.numStates)
@@ -606,10 +613,6 @@ doSetGrid = ->
   application.animator.reset()
     
 
-updateGrid = ->
-  E('entry-n').value = "" + application.getGroup().n
-  E('entry-m').value = "" + application.getGroup().m
-  return
 updatePopulation = ->
   E('population').innerHTML = ""+application.cells.count
 updateGeneration = ->
@@ -828,7 +831,6 @@ doSetPanMode true
 updatePopulation()
 updateGeneration()
 updateCanvasSize()
-updateGrid()
 updateMemoryButtons()
 updatePlayButtons()
 redrawLoop()

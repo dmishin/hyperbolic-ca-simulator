@@ -7,6 +7,7 @@ class BaseFunc
   setGeneration: (g)->
   getType: -> throw new Error "Function type undefined"
   toGeneric: -> throw new Error "Function type undefined"
+  evaluate: -> throw new Error "Function type undefined"
   changeGrid: (n,m)-> this
   
 # Generic TF is given by its code.
@@ -31,7 +32,7 @@ exports.GenericTransitionFunc = class GenericTransitionFunc extends BaseFunc
     @numStates = tfObject.states
     @plus = (tfObject.sum ? ((x,y)->x+y))
     @plusInitial = (tfObject.sumInitial ? 0)
-    @next = tfObject.next
+    @evaluate = tfObject.next
 
     throw new Error "Number of states must be 2 or more" if @numStates <= 1
   toGeneric: -> this      
