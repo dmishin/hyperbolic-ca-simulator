@@ -5,15 +5,34 @@ class BaseFunc
   plus: (x,y) -> x+y
   plusInitial: 0
   setGeneration: (g)->
-    
+  getType: -> throw new Error "Function type undefined"
+      
+# Generic TF is given by its code.
+# Code is a JS object with 3 fields:
+# states: N #integer
+# sum: (r, x) -> r'  #default is (x,y) -> x+y
+# sumInitial: value r0 #default is 0
+# next: (sum, value) -> value
 exports.GenericTransitionFunc = class GenericTransitionFunc extends BaseFunc
-  constructor: ( @numStates, @plus, @plusInitial, @evaluate ) ->
-    if @numStates <= 0 then throw new Error "Number if states incorrect"
+  constructor: ( @code ) ->
     @generation = 0
-  toString: -> "GenericFunction( #{@numStates} states )"
+    @_parse()
+  toString: -> @code
   isStable: -> @evaluate(0,0) is 0
   setGeneration: (g) -> @generation = g
-  getType: -> "custom"  
+  getType: -> "custom"
+  _parse: ->
+    tfObject = eval '('+@code+')'
+    throw new Error("Numer of states not specified") unless tfObject.states?
+    throw new Error("Transition function not specified") unless tfObject.next?
+    
+    @numStates = tfObject.states
+    @plus = (tfObject.sum ? ((x,y)->x+y))
+    @plusInitial = (tfObject.sumInitial ? 0)
+    @next = tfObject.next
+
+    throw new Error "Number of states must be 2 or more" if @numStates <= 1
+        
 
 #DayNight functions are those, who transform empty field to filled and back.
 # They can be effectively simulated as a pair of 2 rules, applying one rule for even generations and another for odd.
@@ -66,23 +85,9 @@ exports.BinaryTransitionFunc = class BinaryTransitionFunc extends BaseFunc
     
   _nonzeroIndices: (arr)-> (i for x, i in arr when x isnt 0)
 
-#Generic TF is given by its code.
-# Code is a JS object with 3 fields:
-# states: N #integer
-# sum: (r, x) -> r'  #default is (x,y) -> x+y
-# sumInitial: value r0 #default is 0
-# next: (sum, value) -> value
-exports.parseGenericTransitionFunction = (str) ->
-  tfObject = eval('('+str+')')
-  throw new Error("Numer of states not specified") unless tfObject.states?
-  throw new Error("Transition function not specified") unless tfObject.next?
-  
-  #@numStates, @plus, @plusInitial, @evaluate )
-  return new GenericTransitionFunc tfObject.states, (tfObject.sum ? ((x,y)->x+y)), (tfObject.sumInitial ? 0), tfObject.next
-
 # BxxxSxxx
 exports.parseTransitionFunction = (str, n, m, allowDayNight=true) ->
-  match = str.match /B([\d\s]+)S([\d\s]+)/
+  match = str.match /^\s*B([\d\s]+)S([\d\s]+)$/
   throw new Error("Bad function string: #{str}") unless match?
     
   strings2array = (s)->

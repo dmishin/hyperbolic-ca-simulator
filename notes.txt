@@ -47,3 +47,87 @@ crf 6 same size 256 k
 
 bv 900 much better quality.
 size - 400k
+
+
+
+### Droppning DB in firefox
+indexedDB.deleteDatabase('SavedFields').onsuccess=(function(e){console.log("Delete OK");})
+
+
+
+### fminsearch optimal parameters search
+Found best parameters:
+{ reached: true,
+  x: [ 2.1607253086419744, 0.5344135802469137, 0.21604938271604934 ],
+  f: 131.8574,
+  steps: 19,
+  evaluations: 31 }
+
+### after algorithm update
+{ reached: true,
+  x: [ 1.8967535436671243, 0.5075917352537719, 0.5819280121170549 ],
+  f: 305.88,
+  steps: 21,
+  evaluations: 28 }
+
+{ reached: true,
+  x: [ 1.8227494855967077, 0.5406973379629628, 0.5832312564300409 ],
+  f: 305.0143,
+  steps: 21,
+  evaluations: 31 }	
+
+
+{ reached: true,
+  x: [ 2.0775121228806572, 0.5012562320493826, 0.5680960251028805 ],
+  f: 322.9677,
+  steps: 19,
+  evaluations: 28 }
+
+
+{ reached: true,
+  x: [ 1.9662103813788327, 0.5229066549139674, 0.582174635024036 ],
+  f: 310.8792,
+  steps: 18,
+  evaluations: 27 }
+
+#with shrink working on xh, not xr
+# Results are much better, success ratio equals to 1 almost always.
+
+Found best parameters:
+
+
+# no swap
+#seems even slightly better?
+{ reached: true,
+  x: [ 2.106298093785322, 0.43061503577329086, 0.4304678123345441 ],
+  f: 152.5352,
+  steps: 21,
+  evaluations: 48 }
+
+
+no swap, simpler function
+{ reached: true,
+  x: [ 2.1333213855274655, 0.309652483460801, 0.564626752758327 ],
+  f: 76.8806,
+  steps: 20,
+  evaluations: 49 }
+{ reached: true,
+  x: [ 2.051473781940811, 0.30889151199872644, 0.5790011071522101 ],
+  f: 76.8845,
+  steps: 18,
+  evaluations: 44 }  
+
+
+# swap and recalc center
+even worser. test also not passing.
+
+{ reached: true,
+  x: [ 2.0666666666666664, 0.4, 0.5666666666666667 ],
+  f: 78.9804,
+  steps: 20,
+  evaluations: 30 }
+{ reached: true,
+  x: [ 2.1298820674557466, 0.4107337018199039, 0.44920417845409 ],
+  f: 79.1192,
+  steps: 18,
+  evaluations: 24 }

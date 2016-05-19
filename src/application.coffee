@@ -19,7 +19,7 @@
 {parseIntChecked, parseFloatChecked} = require "./utils.coffee"
 {Animator} = require "./animator.coffee"
 {MouseToolCombo} = require "./mousetool.coffee"
-{GenericTransitionFunc, BinaryTransitionFunc,DayNightTransitionFunc,binaryTransitionFunc2GenericCode, dayNightBinaryTransitionFunc2GenericCode, parseGenericTransitionFunction, parseTransitionFunction} = require "./rule.coffee"
+{GenericTransitionFunc, BinaryTransitionFunc,DayNightTransitionFunc,binaryTransitionFunc2GenericCode, dayNightBinaryTransitionFunc2GenericCode, parseTransitionFunction} = require "./rule.coffee"
 {parseUri} = require "./parseuri.coffee"
 M = require "./matrix3.coffee"
 
@@ -139,11 +139,26 @@ class Application
     @ruleEntry = new ValidatingInput E('rule-entry'),
       ((ruleStr)=>parseTransitionFunction ruleStr, @getGroup().n, @getGroup().m),
       ((rule)->""+rule),
-      @transitionFunc
+      @transitionFunc 
       
     @ruleEntry.onparsed = (rule) => @doSetRule()
+    
+    @updateRuleEditor()
       
-
+  updateRuleEditor: ->
+    switch @transitionFunc.getType()
+      when "binary"
+        E('controls-rule-simple').style.display=""
+        E('controls-rule-generic').style.display="none"
+        
+      when "custom"
+        E('controls-rule-simple').style.display="none"
+        E('controls-rule-generic').style.display=""
+        
+      else
+        console.dir @transitionFunc
+        throw new Error "Bad transition func"
+        
   doSetRule: ->
     if @ruleEntry.message?
       alert "Failed to parse function: #{@ruleEntry.message}"
@@ -237,17 +252,19 @@ class Application
 
     @observer.navigateTo parseNode(assert(record.base)), assert(record.offset)
 
-    if record.funcType is "binary"
-      @transitionFunc = parseTransitionFunction record.funcId, record.gridN, record.gridM
-      @ruleEntry.setValue @transitionFunc
-    else if record.funcType is "cusom"
-      @transitionFunc = parseGenericTransitionFunction record.funcId
-    else
-      throw new Error "unknown TF type #{record.funcType}"
-
+    console.log "LOading func type= #{record.funcType}"
+    switch record.funcType
+      when "binary"
+        @transitionFunc = parseTransitionFunction record.funcId, record.gridN, record.gridM
+        @ruleEntry.setValue @transitionFunc
+      when "custom"
+        @transitionFunc = new GenericTransitionFunc record.funcId
+      else
+        throw new Error "unknown TF type #{record.funcType}"
+    
     updatePopulation()
     updateGeneration()
-    updateGenericRuleStatus()
+    @updateRuleEditor()
     redraw()
     
   getSaveData: (fname)->
@@ -547,6 +564,7 @@ doCanvasMouseUp = (e) ->
     dragHandler = null
 
 doOpenEditor = ->
+  E('generic-tf-code').value = application.transitionFunc.code  
   E('generic-tf-editor').style.display = ''
 
 doCloseEditor = ->
@@ -555,14 +573,17 @@ doCloseEditor = ->
 doSetRuleGeneric = ->
   try
     console.log "Set generic rule"
-    application.transitionFunc = parseGenericTransitionFunction E('generic-tf-code').value
+    application.transitionFunc = new GenericTransitionFunc E('generic-tf-code').value
     updateGenericRuleStatus 'Compiled'
     application.paintStateSelector.update application.transitionFunc
+    application.updateRuleEditor()
     E('controls-rule-simple').style.display="none"
     E('controls-rule-generic').style.display=""
+    true
   catch e
     alert "Failed to parse function: #{e}"
     updateGenericRuleStatus 'Error'
+    false
 
 doSetGrid = ->
   try

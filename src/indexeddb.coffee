@@ -263,7 +263,7 @@ class GenerateFileList
 
     dom.tag('div').CLASS('toolbar')
          .tag('span').CLASS('button-group')
-         .text('Select:').rtag('btnSelectAll', 'button').CLASS('button-small').text('All').end()
+         .text('Select:').rtag('btnSelectAll', 'button').CLASS('button-small').text('All').end().text("/")
                          .rtag('btnSelectNone', 'button').CLASS('button-small').text('None').end()
        .end()
        .tag('span').CLASS('button-group')
@@ -290,7 +290,20 @@ class GenerateFileList
     closeGridGroup = ->
       
     startFuncGroup = (funcType, funcId) ->
-      funcName = "#{funcType}: #{funcId}"
+      if funcType is "binary"
+        funcName = funcId
+      else if funcType is "custom"
+        MAX_LEN = 20
+        idxNewLine = funcId.indexOf '\n'
+        if idxNewLine is -1
+          cutPos = MAX_LEN
+        else
+          cutPos = Math.min idxNewLine, MAX_LEN
+          
+        funcName = "custom: #{funcId.substr 0, cutPos}..."
+      else
+        funcName = funcType
+        
       dom.tag("tr").CLASS("files-func-row")
          .tag("td").a('colspan','3').text("Rule: #{funcName}").end()
          .end()
