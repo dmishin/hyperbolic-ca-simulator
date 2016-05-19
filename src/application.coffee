@@ -47,7 +47,7 @@ class UriConfig
   getGrid: ->  
     if @keys.grid?
       try
-        match = @keys.grid.match /{(\d+)[,;](\d+)}/
+        match = @keys.grid.match /(\d+)[,;](\d+)/
         throw new Error("Syntax is bad: #{@keys.grid}") unless match
         n = parseIntChecked match[1]
         m = parseIntChecked match[2]
@@ -182,11 +182,14 @@ class Application
     @appendRewrite = makeAppendRewrite rewriteRuleset
     @getNeighbors = mooreNeighborhood @getGroup().n, @getGroup().m, @appendRewrite
     #transition function should be changed too.
-    @transitionFunc = @transitionFunc.changeGrid @getGroup().n, @getGroup().m
+
+    if @transitionFunc?
+      @transitionFunc = @transitionFunc.changeGrid @getGroup().n, @getGroup().m
+    
     @observer?.shutdown()
     @observer = new @ObserverClass @tessellation, @appendRewrite, minVisibleSize
     @observer.onFinish = -> redraw()
-    @navigator.clear()
+    @navigator?.clear()
     doClearMemory()
     doStopPlayer()
     @updateGridUI()
@@ -277,7 +280,7 @@ class Application
     
   getSaveData: (fname)->
     #[data, catalogRecord]
-    fieldData = stringifyFieldData exportField application.cells
+    fieldData = stringifyFieldData exportField @cells
     funcId = ""+@getTransitionFunc()
     funcType = @getTransitionFunc().getType()
     catalogRecord =
@@ -298,10 +301,29 @@ class Application
     sz = 512
     svgContext = new C2S sz, sz
     drawEverything sz, sz, svgContext
-    #showExportDialog svgContext.getSerializedSvg()
     # Show the generated SVG image
     @svgDialog.show svgContext.getSerializedSvg()
 
+  doExportUrl: ->
+    #Export field state as URL
+    keys = []
+    keys.push "grid=#{@getGroup().n},#{@getGroup().m}"
+    if @cells.count != 0
+      keys.push "cells=#{@getGroup().n}$#{@getGroup().m}$#{stringifyFieldData exportField @cells}"
+    keys.push "generation=#{@generation}"
+    if @transitionFunc.getType() is "binary"
+      ruleStr = ""+@transitionFunc
+      ruleStr = ruleStr.replace /\s/g, '_'
+      keys.push "rule=#{ruleStr}"
+    keys.push "viewbase=#{showNode @getObserver().getViewCenter()}"
+    [rot, dx, dy] = M.hyperbolicDecompose @getObserver().getViewOffsetMatrix()
+    
+    keys.push "viewoffset=#{rot}:#{dx}:#{dy}"
+
+    basePath = location.href.replace(location.search, '')
+    uri = basePath + "?" + keys.join("&")
+    showExportDialog uri
+    
 class SvgDialog
   constructor: (@application) ->
     @dialog = E('svg-export-dialog')
@@ -433,8 +455,6 @@ if serverSupportsUpload()
 canvas = E "canvas"
 context = canvas.getContext "2d"
 
-application = new Application
-application.initialize new UriConfig
 
 dragHandler = null
 
@@ -787,7 +807,8 @@ E('btn-db-save').addEventListener 'click', (e) -> application.saveDialog.show()
 E('btn-db-load').addEventListener 'click', (e) -> application.openDialog.show()
 E('btn-export-svg').addEventListener 'click', (e) -> application.doExportSvg()
 E('btn-svg-export-dialog-close').addEventListener 'click', (e) -> application.svgDialog.close()
-    
+E('btn-export-uri').addEventListener 'click', (e) -> application.doExportUrl()
+
 shortcuts =
   'N': -> application.doStep()
   'C': -> application.doReset()
@@ -827,6 +848,9 @@ document.addEventListener "keydown", (e)->
     handler(e)
 
 ##Application startup    
+application = new Application
+application.initialize new UriConfig
+
 doSetPanMode true
 updatePopulation()
 updateGeneration()
