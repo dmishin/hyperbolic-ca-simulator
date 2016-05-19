@@ -19,7 +19,7 @@
 {parseIntChecked, parseFloatChecked} = require "./utils.coffee"
 {Animator} = require "./animator.coffee"
 {MouseToolCombo} = require "./mousetool.coffee"
-{GenericTransitionFunc, BinaryTransitionFunc,DayNightTransitionFunc,binaryTransitionFunc2GenericCode, dayNightBinaryTransitionFunc2GenericCode, parseTransitionFunction} = require "./rule.coffee"
+{GenericTransitionFunc, BinaryTransitionFunc,DayNightTransitionFunc, parseTransitionFunction} = require "./rule.coffee"
 {parseUri} = require "./parseuri.coffee"
 M = require "./matrix3.coffee"
 
@@ -180,14 +180,14 @@ class Application
     console.log "Finished"
     @appendRewrite = makeAppendRewrite rewriteRuleset
     @getNeighbors = mooreNeighborhood @getGroup().n, @getGroup().m, @appendRewrite
-    @transitionFunc = parseTransitionFunction @transitionFunc.toString(), @getGroup().n, @getGroup().m
+    #transition function should be changed too.
+    @transitionFunc = @transitionFunc.changeGrid @getGroup().n, @getGroup().m
     @observer?.shutdown()
     @observer = new @ObserverClass @tessellation, @appendRewrite, minVisibleSize
     @observer.onFinish = -> redraw()
     @navigator.clear()
     doClearMemory()
     doStopPlayer()
-
 
   #Actions
   doRandomFill: ->
@@ -259,6 +259,7 @@ class Application
         @ruleEntry.setValue @transitionFunc
       when "custom"
         @transitionFunc = new GenericTransitionFunc record.funcId
+        @paintStateSelector.update @transitionFunc
       else
         throw new Error "unknown TF type #{record.funcType}"
     
@@ -709,16 +710,12 @@ doImport = ->
     
 doEditAsGeneric = ->
   console.log "Generate code"
-  if application.transitionFunc instanceof BinaryTransitionFunc
-    code = binaryTransitionFunc2GenericCode(application.transitionFunc)
-  else if application.transitionFunc instanceof DayNightTransitionFunc
-    code = dayNightBinaryTransitionFunc2GenericCode(application.transitionFunc)
-  else
-    alert("Active transition function is not a binary")
-    return
-  E('generic-tf-code').value = code
-  updateGenericRuleStatus "modified"
-  doSetRuleGeneric()
+  application.transitionFunc = application.transitionFunc.toGeneric()
+  console.log "Set generic rule"
+  updateGenericRuleStatus 'Compiled'
+  application.paintStateSelector.update application.transitionFunc
+  application.updateRuleEditor()
+  doOpenEditor()
 
 doDisableGeneric = ->
   application.doSetRule()

@@ -6,7 +6,9 @@ class BaseFunc
   plusInitial: 0
   setGeneration: (g)->
   getType: -> throw new Error "Function type undefined"
-      
+  toGeneric: -> throw new Error "Function type undefined"
+  changeGrid: (n,m)-> this
+  
 # Generic TF is given by its code.
 # Code is a JS object with 3 fields:
 # states: N #integer
@@ -32,7 +34,7 @@ exports.GenericTransitionFunc = class GenericTransitionFunc extends BaseFunc
     @next = tfObject.next
 
     throw new Error "Number of states must be 2 or more" if @numStates <= 1
-        
+  toGeneric: -> this      
 
 #DayNight functions are those, who transform empty field to filled and back.
 # They can be effectively simulated as a pair of 2 rules, applying one rule for even generations and another for odd.
@@ -60,6 +62,8 @@ exports.DayNightTransitionFunc = class DayNightTransitionFunc extends BaseFunc
       1 - @base.evaluate(x,s)
     else
       @base.evaluate(1-x, @base.numNeighbors-s)
+  toGeneric: -> new GenericTransitionFunc dayNightBinaryTransitionFunc2GenericCode this
+  changeGrid: (n,m)-> new DayNightTransitionFunc @base.changeGrid n, m
 
 exports.BinaryTransitionFunc = class BinaryTransitionFunc extends BaseFunc
   constructor: ( @n, @m, bornAt, stayAt ) ->
@@ -84,9 +88,14 @@ exports.BinaryTransitionFunc = class BinaryTransitionFunc extends BaseFunc
     "B " + @_nonzeroIndices(@table[0]).join(" ") + " S " + @_nonzeroIndices(@table[1]).join(" ")
     
   _nonzeroIndices: (arr)-> (i for x, i in arr when x isnt 0)
-
+  toGeneric: -> return new GenericTransitionFunc binaryTransitionFunc2GenericCode this
+  changeGrid: (n,m)->
+    #OK, that's dirty but easy
+    parseTransitionFunction @toString(), n, m, false
+  
+  
 # BxxxSxxx
-exports.parseTransitionFunction = (str, n, m, allowDayNight=true) ->
+exports.parseTransitionFunction = parseTransitionFunction = (str, n, m, allowDayNight=true) ->
   match = str.match /^\s*B([\d\s]+)S([\d\s]+)$/
   throw new Error("Bad function string: #{str}") unless match?
     
@@ -105,7 +114,7 @@ exports.parseTransitionFunction = (str, n, m, allowDayNight=true) ->
     func
 
 
-exports.binaryTransitionFunc2GenericCode = (binTf) ->
+exports.binaryTransitionFunc2GenericCode = binaryTransitionFunc2GenericCode = (binTf) ->
   row2condition = (row) -> ("s===#{sum}" for nextValue, sum in row when nextValue).join(" || ")
   
   conditionBorn = row2condition binTf.table[0]
@@ -130,7 +139,7 @@ exports.binaryTransitionFunc2GenericCode = (binTf) ->
 }"""]
 
 
-exports.dayNightBinaryTransitionFunc2GenericCode = (binTf) ->
+exports.dayNightBinaryTransitionFunc2GenericCode = dayNightBinaryTransitionFunc2GenericCode = (binTf) ->
   row2condition = (row) -> ("s===#{sum}" for nextValue, sum in row when nextValue).join(" || ")
   row2conditionInv = (row) -> ("s===#{binTf.base.numNeighbors-sum}" for nextValue, sum in row when nextValue).join(" || ")
   
