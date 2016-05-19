@@ -104,3 +104,79 @@ exports.getAjax = ->
   else if window.ActiveXObject?
     return new ActiveXObject("Microsoft.XMLHTTP")
   
+exports.ValidatingInput = class ValidatingInput
+  constructor: (@element, @parseValue, @stringifyValue, value, @stateStyleClasses={ok: "input-ok", error: "input-bad", modified: "input-editing"})->
+    @message=null
+    if value?
+      @setValue value
+    else
+      @_modified()
+    @onparsed = null
+
+    @element.addEventListener "reset", (e)=>
+      console.log "reset"
+      @_reset()
+
+    @element.addEventListener "keydown", (e)=>
+      if e.keyCode==27
+        console.log "Esc"
+        e.preventDefault()
+        @_reset()
+            
+    @element.addEventListener "change", (e)=>
+      console.log "changed"
+      @_modified()
+      
+    @element.addEventListener "blur", (e)=>
+      console.log "blur"
+      @_exit()
+      
+    @element.addEventListener "input", (e)=>
+      console.log "input"
+      @_editing()
+
+  setValue: (val)->
+    @value = val
+    newText = @stringifyValue val
+    @element.value = newText
+    @_setClass @stateStyleClasses.ok
+
+  _reset: ->
+    @setValue @value
+    
+  _exit: ->
+    if @message?
+      @_reset()
+      
+  _editing: ->
+    @_setMessage null
+    @_setClass @stateStyleClasses.modified
+
+  _setMessage: (msg)->
+    if msg?
+      console.log msg
+    @message = msg
+    
+  _setClass: (cls) ->
+    removeClass @element, @stateStyleClasses.ok
+    removeClass @element, @stateStyleClasses.error
+    removeClass @element, @stateStyleClasses.modified
+
+    addClass @element, cls
+  
+  _modified: ->
+    try
+      newVal = @parseValue @element.value
+      if newVal?
+        @value = newVal
+      else
+        throw new Error "parse function returned no value"
+      
+      @_setMessage null
+      @_setClass @stateStyleClasses.ok
+      @onparsed? @value
+    catch e
+      @_setMessage "Failed to parse value: #{e}"
+      @_setClass @stateStyleClasses.error
+      
+  

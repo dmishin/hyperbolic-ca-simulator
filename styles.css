@@ -293,3 +293,14 @@ input.wide {
 textarea.code-entry {
     height: 20em;
 }
+
+/*Validating inputs*/
+input.input-ok {
+    color: black;
+}
+input.input-editing {
+    color: blue;
+}
+input.input-bad {
+    color: red;
+}

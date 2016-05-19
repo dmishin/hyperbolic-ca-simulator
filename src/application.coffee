@@ -13,7 +13,7 @@
 {lzw_encode} = require "./lzw.coffee"
 {Navigator} = require "./navigator.coffee"
 {DomBuilder} = require "./dom_builder.coffee"
-{E, getAjax, ButtonGroup, windowWidth, windowHeight, documentWidth, removeClass, addClass} = require "./htmlutil.coffee"
+{E, getAjax, ButtonGroup, windowWidth, windowHeight, documentWidth, removeClass, addClass, ValidatingInput} = require "./htmlutil.coffee"
 {FieldObserver} = require "./observer.coffee"
 #{FieldObserverWithRemoreRenderer} = require "./observer_remote.coffee"
 {parseIntChecked, parseFloatChecked} = require "./utils.coffee"
@@ -136,6 +136,27 @@ class Application
     @saveDialog = new SaveDialog this
     @svgDialog = new SvgDialog this
 
+    @ruleEntry = new ValidatingInput E('rule-entry'),
+      ((ruleStr)=>parseTransitionFunction ruleStr, @getGroup().n, @getGroup().m),
+      ((rule)->""+rule),
+      @transitionFunc
+      
+    @ruleEntry.onparsed = (rule) => @doSetRule()
+      
+
+  doSetRule: ->
+    if @ruleEntry.message?
+      alert "Failed to parse function: #{@ruleEntry.message}"
+      @transitionFunc = @lastBinaryTransitionFunc ? @transitionFunc
+    else      
+      @transitionFunc = @ruleEntry.value
+      @lastBinaryTransitionFunc = @transitionFunc
+    @paintStateSelector.update @transitionFunc
+      
+    console.log @transitionFunc
+    
+    E('controls-rule-simple').style.display=""
+    E('controls-rule-generic').style.display="none"
 
   setGridImpl: (n, m)->
     @tessellation = new Tessellation n, m
@@ -218,7 +239,7 @@ class Application
 
     if record.funcType is "binary"
       @transitionFunc = parseTransitionFunction record.funcId, record.gridN, record.gridM
-      E('rule-entry').value = ""+@transitionFunc
+      @ruleEntry.setValue @transitionFunc
     else if record.funcType is "cusom"
       @transitionFunc = parseGenericTransitionFunction record.funcId
     else
@@ -525,19 +546,6 @@ doCanvasMouseUp = (e) ->
     dragHandler?.mouseUp e
     dragHandler = null
 
-doSetRule =  ->
-  try
-    application.transitionFunc = parseTransitionFunction E('rule-entry').value, application.getGroup().n, application.getGroup().m
-    application.lastBinaryTransitionFunc = application.transitionFunc
-    application.paintStateSelector.update application.transitionFunc
-    console.log application.transitionFunc
-  catch e
-    alert "Failed to parse function: #{e}"
-    application.transitionFunc = application.lastBinaryTransitionFunc ? application.transitionFunc
-    
-  E('controls-rule-simple').style.display=""
-  E('controls-rule-generic').style.display="none"
-
 doOpenEditor = ->
   E('generic-tf-editor').style.display = ''
 
@@ -692,7 +700,7 @@ doEditAsGeneric = ->
   doSetRuleGeneric()
 
 doDisableGeneric = ->
-  doSetRule()
+  application.doSetRule()
 
 doNavigateHome = ->
   application.observer.navigateTo unity
@@ -706,8 +714,7 @@ mouseMoveReceiver.addEventListener "mouseup", doCanvasMouseUp
 mouseMoveReceiver.addEventListener "mousemove", doCanvasMouseMove
 mouseMoveReceiver.addEventListener "mousedrag", doCanvasMouseMove
 
-E("btn-set-rule").addEventListener "click", doSetRule
-E("rule-entry").addEventListener "change", doSetRule
+E("btn-set-rule").addEventListener "click", (e)->application.doSetRule()
 E("btn-set-rule-generic").addEventListener "click", (e)->
   doSetRuleGeneric()
   doCloseEditor()
@@ -799,7 +806,6 @@ document.addEventListener "keydown", (e)->
     handler(e)
 
 ##Application startup    
-E('rule-entry').value = application.transitionFunc.toString()
 doSetPanMode true
 updatePopulation()
 updateGeneration()
