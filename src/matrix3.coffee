@@ -136,3 +136,4 @@ exports.hyperbolicDecompose = (m)->
   sin = (R[1]-R[3])*0.5
 
   [Math.atan2(sin, cos), dx, dy]
+

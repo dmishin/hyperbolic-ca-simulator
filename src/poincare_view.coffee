@@ -82,3 +82,42 @@ exports.visibleNeighborhood = (tessellation, appendRewrite, minCellSize) ->
       visibleCells.push cell
   return visibleCells
 
+exports.hyperbolic2poincare = ([x,y,t], dist) ->
+  #poincare coordinates
+  # t**2 - x**2 - y**2 = 1
+  #
+  # if scaled, 
+  #  s = sqrt(t**2 - x**2 - y**2)
+  #
+  # xx = x/s, yy=y/s, tt=t/s, tt+1 = (t+s)/s
+  #
+  # xxx = xx/(tt+1) = x/s/(t+s)*s = x/(t+s)
+  # yyy = y/(t+s)
+  r2 = x**2+y**2
+  s2 = t**2-r2
+  if s2 <=0
+    its = 1.0/Math.sqrt(r2)
+  else
+    its = 1.0/(t+Math.sqrt(s2))
+
+  if dist
+    # Length of a vector, might be denormalized
+    # s2 = t**2 - x**2 - y**2
+    # s = sqrt(s2)
+    # 
+    # xx = x/s
+    # yy = y/s
+    # tt = t/s
+    #
+    # d = acosh tt = acosh t/sqrt(t**2 - x**2 - y**2)
+    #  = log( t/sqrt(t**2 - x**2 - y**2) + sqrt(t**2/(t**2 - x**2 - y**2) - 1) ) =
+    #  = log( (t + sqrt(x**2 + y**2)) / sqrt(t**2 - x**2 - y**2) ) =
+    # 
+    #  = log(t + sqrt(x**2 + y**2)) - 0.5*log(t**2 - x**2 - y**2)
+    d = if s2 <= 0
+      Infinity
+    else
+      Math.acosh(t/Math.sqrt(s2))
+    [x*its, y*its, d]
+  else
+    [x*its, y*its]

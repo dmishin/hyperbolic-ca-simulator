@@ -1,6 +1,6 @@
 "use strict";
 {unity, showNode, node2array} = require "./vondyck_chain.coffee"
-{makeXYT2path, poincare2hyperblic, visibleNeighborhood} = require "./poincare_view.coffee"
+{makeXYT2path, poincare2hyperblic, hyperbolic2poincare, visibleNeighborhood} = require "./poincare_view.coffee"
 {eliminateFinalA} = require "./vondyck_rewriter.coffee"
 M = require "./matrix3.coffee"
 
@@ -12,6 +12,8 @@ exports.FieldObserver = class FieldObserver
     @center = null
     cells = visibleNeighborhood @tessellation, @appendRewrite, @minCellSize
     @cellOffsets = (node2array(c) for c in cells)
+    @isDrawingHomePtr = true
+    @colorHomePtr = 'rgba(255,100,100,0.7)'
     
     if center isnt unity
       @rebuildAt center
@@ -31,6 +33,30 @@ exports.FieldObserver = class FieldObserver
     @pattern = ["red", "black", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
 
     @onFinish = null
+
+  getHomePtrPos: ->
+    xyt = [0.0,0.0,1.0]
+    #@mtx = M.mul @t.repr(generatorMatrices), generatorMatrices.generatorPower(@letter, @p)
+    # xyt = genPow(head.letter, -head.p) * ... * xyt0
+    #
+    # reference formula.
+    #     #xyt = M.mulv M.hyperbolicInv(@center.repr(@tessellation.group)), xyt
+    # it works, but matrix values can become too large.
+    # 
+    stack = node2array(@center)
+    #apply inverse transformations in reverse order
+    for [letter, p] in stack by -1
+      xyt = M.mulv @tessellation.group.generatorPower(letter, -p), xyt
+      #Denormalize coordinates to avoid extremely large values.
+      invT = 1.0/xyt[2]
+      xyt[0] *= invT
+      xyt[1] *= invT
+      xyt[2] = 1.0
+    #Finally add view transform
+    xyt = M.mulv @tfm, xyt
+    #(denormalizetion not required, view transform is not large)
+    # And map to poincare circle
+    hyperbolic2poincare xyt #get distance too
     
   getColorForState: (state) ->
     @pattern[ (state % @pattern.length + @pattern.length) % @pattern.length ]
@@ -90,10 +116,47 @@ exports.FieldObserver = class FieldObserver
       else
         context.fillStyle = @getColorForState state
         context.fill()
-        
+    if @isDrawingHomePtr
+      @drawHomePointer context
     #true because immediate-mode observer always finishes drawing.
     return true
+
+  drawHomePointer: (context, size)->
+    size = 0.06
+    [x,y,d] = @getHomePtrPos()
+    angle = Math.PI - Math.atan2 x, y
     
+    context.save()
+    context.translate x,y
+    context.scale size, size
+    context.rotate angle
+    
+    context.fillStyle = @colorHomePtr
+    context.beginPath()
+    
+    context.moveTo 0,0
+    
+    context.bezierCurveTo 0.4,-0.8,  1,-1,  1,-2
+    context.bezierCurveTo  1,-2.6,  0.6,-3,   0,-3
+    context.bezierCurveTo  -0.6,-3,  -1,-2.6, -1,-2
+    context.bezierCurveTo -1,-1,  -0.4, -0.8,  0,0
+
+    context.closePath()
+    context.fill()
+    
+    # context.translate 0, -1
+
+    # context.rotate -angle    
+    # context.translate 0, -1
+    # context.font = "12px sans"
+    
+    # context.fillStyle = 'rgba(255,100,100,1.0)'
+    # context.textAlign = "center"
+    # context.scale 0.09, 0.09
+    # context.fillText("#{Math.round(d*10)/10}", 0, 0);
+    
+    context.restore()
+        
   visibleCells: (cells) ->
     for cell in @cells when (value=cells.get(cell)) isnt null
       [cell, value]

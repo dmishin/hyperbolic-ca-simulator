@@ -16,24 +16,20 @@ exports.MouseTool = class MouseTool
 
 
 exports.MouseToolCombo = class MouseToolCombo extends MouseTool
-  constructor: (application, @x0, @y0) ->
+  constructor: (application, x0, y0) ->
     super application
-    canvas = @application.getCanvas()
-
-    @xc = canvas.width * 0.5
-    @yc = canvas.width * 0.5
-    @angle0 = @angle @x0, @y0 
-  angle: (x,y) -> Math.atan2( x-@xc, y-@yc)
+    [@x0, @y0] =  @application.canvas2relative x0, y0
+    @angle0 = Math.atan2 @x0, @y0 
   mouseMoved: (e)->
     canvas = @application.getCanvas()    
-    [x, y] = getCanvasCursorPosition e, canvas
+    [x, y] = @application.canvas2relative getCanvasCursorPosition(e, canvas)...
     dx = x - @x0
     dy = y - @y0
 
     @x0 = x
     @y0 = y
-    k = 2.0 / canvas.height
-    newAngle = @angle x, y
+
+    newAngle = Math.atan2 x, y
     dAngle = newAngle - @angle0
     #Wrap angle increment into -PI ... PI diapason.
     if dAngle > Math.PI
@@ -43,14 +39,12 @@ exports.MouseToolCombo = class MouseToolCombo extends MouseTool
     @angle0 = newAngle 
 
     #determine mixing ratio
-    r = Math.min(@xc, @yc)
-
-    r2 = ((x-@xc)**2 + (y-@yc)**2) / (r**2)
+    r2 = x**2 + y**2
     #pure rotation at the edge,
     #pure pan at the center
-    q = Math.min(1.0, r2)
+    q = Math.min(1.0, r2**1.5)
 
-    mv = M.translationMatrix(dx*k*(1-q) , dy*k*(1-q))
+    mv = M.translationMatrix(dx*(1-q) , dy*(1-q))
     rt = M.rotationMatrix dAngle*q
     @application.getObserver().modifyView M.mul(M.mul(mv,rt),mv)
 
