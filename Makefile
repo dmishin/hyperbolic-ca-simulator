@@ -1,4 +1,4 @@
-.PHONY = test test_app start startwin
+.PHONY = test test_app start startwin publish
 
 application:
 	browserify -t coffeeify src/application.coffee > application.js
@@ -18,3 +18,8 @@ startwin:
 clean:
 	rm application.js render_worker.js
 
+
+publish: test application
+	git checkout master
+	sh publish.sh
+	sh ../homepage-sources/publish.sh

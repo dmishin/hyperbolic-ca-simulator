@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Hyperbolic Cellular Automata Simulator</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="help.css">
+  </head>
+  <body>
+    <script async type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <nav>
+    </nav>
+    
+    <article>
+      <h1><a href="index.html">Hyperbolic Cellular Automata Simulator</a></h1>
+      <figure>
+	<video controls loop>
+	  <source src="media/glider-73.webm" type="video/webm"/>
+	  Your browser does not support HTML5 video.
+	</video>
+	<figcaption>Period 10 spaceship on the {3;9} tiling, binary rule [B 3 S 2 7]. See it in
+	  <a href="https://dmishin.github.io/hyperbolic-ca-simulator/index.html?grid=3,9&cells=3$9$(b|1(A(B2|1)))(b2|1(A(B2|1)))(b3|1(A(B2|1)))(A(b2|1)(B2|1))(b4|1)(a(B3|1(a(B|1)))(B2|1(a(B|1)))(B|1))&generation=0&rule=B_3_S_2_7&viewbase=e&viewoffset=-2.199393953596273:1.326642835757678:1.3780216281419586">
+	    the simulator</a>.
+	</figcaption>
+      </figure>
+      
+      <p>
+	This software is a simulator of <a href="https://en.wikipedia.org/wiki/Cellular_automaton">cellular automata</a>, acting on an <a href="https://en.wikipedia.org/wiki/Uniform_tilings_in_hyperbolic_plane">regular tiling</a> (grids) of the <a href="https://en.wikipedia.org/wiki/Hyperbolic_geometry">hyperbolic plane</a>.
+      </p>
+      <p>
+	It supports <b>arbitrary large</b> configurations of cells, limited only by available memory. 
+      </p>
+      <p>
+	The simulator is written in JavaScript (CoffeeScript actually) and works directly in the browser. It is an open software, sources are available on <a href="https://github.com/dmishin/hyperbolic-ca-simulator">Github</a>. 
+      </p>
+      
+      <h2>Features</h2>
+      <p>
+	Key features are:
+	<ul>
+	  <li><b>Support of arbitrary large configurations.</b><br/>
+	    The field is unlimited in all directions. However, large number of cells slows down computations and requires large amount of memory. In practice, configurations of 50'000 cells are near to the upper limit.
+	  </li>
+	  <li>
+	    <b><a href="#tilings">Support of arbitrary regular hyperbolic tilings.</a></b><br/>
+	    Hyperbolic plane can be tiled by a regular N-gons, with M N-gons around every vertex, if and only if<br/>
+	    
+	    $$ \frac1N+\frac1M &lt; \frac12 $$
+	    Simply put, any tiling that is impossible on plane or on sphere, is possible on hyperbolic plane.
+	  </li>
+	  <li>
+	    <b>Search</b><br/>
+	    Observable area of the hyperbolic plane is limited. Search feature allows to find all cell groups in the field.
+	  </li>
+	    
+	</ul>
+      </p>
+      <p>The simulator also supports:
+	<ul>
+	  <li><a href="customrule">Custom rules</a>, with arbitrary number of states and rule code written in JavaScript.</li>
+	  <li><a href="#impexp">Export and import</a> of cell configurations as text.</li>
+	  <li>Export SVG images</li>
+	  <li><a href="#savedb">Saving and loading</a> experiments in the <a href="https://en.wikipedia.org/wiki/Indexed_Database_API">Indexed Database</a> on the local machine.</li>
+	  <li>Loading data from URL arguments, and exporting experiment state as URLs</li>
+	  <li><a href="#animation">Automatic generation of animation frames</a> (available only if run locally).</li>
+	</ul>
+      </p>
+      <h2><a name="tilings">Tilings and neighbors</a></h2>
+      <p>Only Moore neighborhood scheme is supported. In the {N;M} tiling (M regular N-gons are touching every vertex), total number of neighbors of a cell is \(N(M-2)\).
+	<figure>
+	  <img src="media/neighbors.png">
+	  <figcaption>Cell neighbors in the {7;3}, {5;5}, {3;7} tilings.</figcaption>
+	</figure>
+      </p>
+      
+      <h2>Rules</h2>
+      <p>For <b>2-state automata</b> rules are specified in the slightly modified "BS" notation (used by Golly). The format is: <br/>
+	$$B\ n_1\ n_2\ ...\ S\ m_1\ m_2\ ...$$<br/>
+	where \(n_{1,2,...}\) are number of neighbors, required for cell to "born" (change from state 0 to state 1), and \(m_{1,2,...}\) are numbers of neighbors, required to "survive" (stay in state 1). Numbers must be <b>separated by spaces</b> because in hyperbolic tilings number of neighbors often exceeds 10.
+      </p>
+      <p>To set rule, edit the "Rule" field on a side pane, then press enter or click button <span class="button-text">Set</span>.
+      </p>
+      <h3><a name="customrule">Custom rules</a></h3>
+      <p>Custom rules are written in JavaScript. They support arbitrary number of states, and custom formulas for calculation of neighbors sum (default is summation).
+      </p>
+      <p>To change to the custom rule mode, click button <span class="button-text">Generic...</span> near the rule entry. Current rule would be converted to the custom rules code.
+      </p>
+      <h4>Custom rules format</h4>
+      <p>
+	Custom rules must be a valid JS code, evaluated in expression context to an object with the following required fields:
+	<ul>
+	  <li><b>'states' :: Integer</b><br/>
+	    Number of states, must be 2 or more.</li>
+	  <li><b>'next' :: Function(State, SumStates) &rarr; State</b><br/>
+	    Takes current state and sum of neighbors, and returns new state.</li>
+	</ul>
+	
+	By default, sum of neighbors is calculated by summation of state values. This can be overridden by the following optional fields:
+	<ul>
+	  <li><b>'plus' :: Function(SumStates, State) &rarr; SumStates</b><br/>
+	    Summation function that takes incomplete sum of states and add new state to it. Default is
+<pre>function(s,x){ return s+x; }
+</pre>
+	  </li>
+	  <li><b>'plusInitial' :: SumStates</b><br/>
+	    Initial sum of states for sum calculation. Default is 0.
+	  </li>
+	</ul>
+      </p>
+      <h2>Editing and navigation</h2>
+      <p>
+	By default (when <span class="button-text">Pan</span> button above view is active), left mouse button is used to pan view, middle button or left + shift are used to toggle state of a cell. This behavior is inverted by activating <span class="button-text">Edit</span> button on the top of the view.
+      </p>
+      <p>When panning view, dragging near view center translates view, and dragging near view edge rotates it.
+      </p>
+      <p>Button <span class="button-text">Straighten view</span> puts central cell exactly to the center of the view and rotates view to make the cell aligned vertically or horizontally. (Useful for making images and animations).
+      </p>
+      <h3>Memory</h3>
+      <p>There is no undo (yet?). Instead, simple "memory" functionality with <span class="button-text">MS</span> (set), <span class="button-text">MR</span> (restore), <span class="button-text">MC</span> (clear) buttons is implemented. It works exactly like in calculators.
+      </p>
+
+      <h2><a name="impexp">Import and export</a></h2>
+      <p>It is possible to export view state into a textual format. Either whole world or only visible area can be exported. Sample export result:
+<pre>7$3$(A2(B|1))(A3(B|1))(b(A3(B|1)(b|1)))(a3(B|1))(B|1(a(B|1)))(a2(B|1))(A(B(a(B|1))))(a(B|1))
+</pre>
+	Here, 7 and 3 are tiling parameters, the rest is the description of cell states.
+      </p>
+      <p>Cell position is described by a <a href="https://en.wikipedia.org/wiki/Triangle_group#von_Dyck_groups">Von Dyck group</a> \(D(N,M,2)\) with generators a, b. Generator "a" represents rotation around the N-gon center, generator "b" represents rotation around vertex. Coordinate of a cell is a chain of powers of "a" and "b".
+      </p>
+      <p>In the export format, letters "a" and "b" designate generators, "A" and "B" are their inverse elements. Optional number after the letter is generator power. Number after vertical bar | is state of the cell. Braces are required; they allow to group multiple chains with common initial elements.
+      </p>
+
+      <h2><a name="savedb">Save and load in Indexed Database</a></h2>
+      <p>It is possible to store whole world state in the <a href="https://en.wikipedia.org/wiki/Indexed_Database_API">Indexed Database</a> on the local machine. Saves are organized by grid and by rule; names are not required to be unique. They are stored locally and not uploaded anywhere.
+      </p>
+      <p>By default, only saves matching current tiling and rule are shown. Use buttons to show all tilings and all rules.</p>
+
+      <h2><a name="animation">Making animations</a></h2>
+      <p>Uploading animations is only supported, when the page is run locally. To do it:
+	<ol>
+	  <li>Download sources
+	    <pre>$get clone https://github.com/dmishin/hyperbolic-ca-simulator.git</pre>
+	  </li>
+	  <li>Either build them:
+	    <pre>$make</pre>
+	    Or download the compiled version from the demo site:
+<pre>$wget http://dmishin.github.io/hyperbolic-ca-simulator/index.html
+$wget http://dmishin.github.io/hyperbolic-ca-simulator/application.js</pre>
+	  </li>
+	  <li>Use python 3 to start local server
+	    <pre>$python http_server_with_upload.py</pre>
+	  </li>
+	  <li>Open the local site: http://localhost:8000/index.html</li>
+	</ol>
+      </p>
+      <p>
+	Animator GUI allows to set start and end points of animation. Use memory buttons (<span class="button-text">MS</span>) to save state before adjusting positions.
+      </p>
+      <p><span class="button-text">Derotate</span> button tries to adjusts start and end position by equal amount so that they would be connected by a pure translation (without rotation). In euclidean geometry, it is meaningless but in hyperbolic geometry it is useful. It allows to make seamless animations of gliders (top animation is done using it).
+      </p>
+      <h3>Steps to make seamless animation of a spaceship</h3>
+      <p>
+	<ol>
+	  <li>Locate a spaceship (use Search and find far configurations)</li>
+	  <li>Adjust view to display it better, then use "Straighten view". (hotkey: Alt+S)</li >
+	  <li>Remember world state using MS (hotkey: M).</li>
+	  <li>Set animation start</li>
+	  <li>Simulate for several steps until spaceship returns into the original configuration (hotkey: N).</li>
+	  <li>Adjust view and use "Straighten view" to put spaceship exactly in the same position as in step #2.</li>
+	  <li>Set animation end</li>
+	  <li>Click <span class="button-text">Derotate</span> to make path between start and end straight. (Should be possible for a real glider). You can ensure that positions are changed by clicking <span class="button-text">View</span> button.</li>
+	  
+	  <li>Set other animation parameters (size, frames, generations, name), restore works state (MR, hotkey U), and run animation.
+	</ol>
+	Frames of animation are uploaded to the "uploads" folder.
+      </p>
+      <h2>Sources and license</h2>
+      <p>Sources are available on <a href="https://github.com/dmishin/hyperbolic-ca-simulator">Github</a> under the permissive <a href="<span class="button-text">">MIT license</a>.</p>
+      <p>The code uses following third party libraries:
+	<ul>
+	  <li><a href="https://github.com/gliffy/canvas2svg">Canvas 2 Svg</a> by Kerry Liu (MIT license)</li>
+	</ul>
+      </p>
+      <h2>Contacts</h2>
+      <p>
+	Don't hesitate to contact me on <a href="https://plus.google.com/u/0/116542359168957860292">G+</a> or <a href="https://www.reddit.com/u/dmishin">Reddit</a>.
+      </p>
+    </article>
+  </body>
+</html>

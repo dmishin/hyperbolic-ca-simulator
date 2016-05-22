@@ -1,57 +1,56 @@
 Cellular automata on hyperbolic fields
 ======================================
 
+Simulator of cellular automata on regular hyperbolic plane tilings, working in browser.
+
+[See it online](http://dmishin.github.io/hyperbolic-ca-simulator/index.html)
+
+For usage details, see [help page](http://dmishin.github.io/hyperbolic-ca-simulator/help.html)
 
 
-TODO List
----------
-Things left to implement
+Key features are:
 
-### GUI
-* [x] Save and load state to Indexed database
-* [x] Import data from URL
-* [ ] Select manually, export selection (remove export visible)
-* [ ] Write short help
-* [x] Display generation
-* [x] Support Day/Night rules
-* [ ] Notifications
-* [x] Random fill fills fixed number of cells, not radius
-* [ ] Adavnced settings: fill percent, size; autostop population;
-* [x] Pan / Edit button
-* [ ] Home pointer
-* [x] Manually setting imase size
-* [x] Export to SVG
-* [x] Upload frames of smooth animations
+* Support of arbitrary regular tilings.
+* Unlimited world size
 
-### Internal code structure
-* [ ] Reorganize code, to make appendRewrite, eliminateFinalA, group a parts of a single entity.
-* [ ] improve performance of eliminateFinalA, by trying only rewrites that change something. (Is it really different? Check performance.)
-* [x] Split application.coffee into modules. It is too big.
-* [ ] Re-group modules: core, ui. Target: make core modules easily usable in a separate project
-* [v] Create application class. Done partially.
-
-### Major rewrites
-* [ ] Use web worker for calculations.
+<video controls loop>
+	<source src="./media/glider-73.webm" type="video/webm"/>
+	Your browser does not support HTML5 video.
+</video>
 
 Building
 ========
+Build requirements are: Node.JS, NPM, GNU Make.
+Install NPM modules: coffee-script, browserify, coffeeify.
 
-    $ make
+Testing
+=======
+
+Running tests additionally requires the following NPM modules: mocha
+
+```bash
+$ make test
+```
 
 Requirements
 ============
+Works in any contemporary browser: Firefox, Chromium. Probably, works in the latest IE.
 
+Upload animation feature works only if the page is open from the local server. To do it, Python 3 is additionally required. Change to the project direcory, build it (alternatively, download [index.html](http://dmishin.github.io/hyperbolic-ca-simulator/index.html) and [application.js](http://dmishin.github.io/hyperbolic-ca-simulator/application.js) from the demo site), then run:
 
+```bash
+$ python http_server_with_upload.py
+```
 
-BUGS
-----
-### Rule editor problems:
+After this, open http://localhost:8000/index.html and upload feature should work.
 
-* *fixed* If bad rule entered, switch from generic to binary does not work
-* if clicked OK in generic editor, then it closes even if not compiled.
+Known bugs
+==========
 
-### Fixed. Problem: rule B3 S023 does not actually works!
-seems that only neighbored cells are evaluated!
+### Change to generic rule, then change grid, then change back to binary
+Workaround: set rule manually again.
 
+Licence
+=======
 
-
+MIT

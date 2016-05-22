@@ -1,0 +1,59 @@
+/* ******************************
+*  Main window layout 
+*/
+body{
+    background-color: #fff;
+    color: #222;
+    margin: 0;
+    padding: 0;
+}
+
+article p{
+    margin-left: 2em;
+}
+figure {
+    text-align: center;
+}
+figcaption {
+    font-size: 80%;
+}
+
+h2 {
+    border-bottom: solid 1px silver;
+    margin-top: 1em;
+}
+h3 {
+    color: #005;
+}
+h4 {
+    color: #055;
+}
+
+pre {
+    border: solid 1px silver;
+    padding: 1em;
+    margin: 1em 3em 1em 3em;
+    background-color: #ffe;
+}
+
+
+span.button-text{
+    display: inline-block;
+    
+    margin: 0.2em 0;
+    padding:0;
+
+    display: inline-block;
+    border: none;
+    color: #000000;
+    border-radius: 0.2em;
+    -webkit-border-radius: 0.2em;
+    -moz-border-radius: 0.2em;
+    /*font-family: Verdana;*/
+    width: auto;
+    height: auto;
+    font-size: 1em;
+    padding: 0.5em;
+    -text-shadow: 0 1px 0 #FFFFFF;
+    background-color: #E0E0E0;
+}

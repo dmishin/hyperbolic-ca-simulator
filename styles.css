@@ -53,6 +53,21 @@ div.popup {
     text-align: center;
     width: 100%;
 }
+#references{
+    display:inine-block;
+    position: absolute;
+    top:0;
+    right: 0;
+}
+
+#references a{
+    color: black;
+    text-decoration: none;
+}
+#references a:hover{
+    text-decoration: underline;
+}
+
 #main-row{
     display: table-row;
 }
@@ -266,6 +281,9 @@ input.wide {
     width: 100%;
 }
 
+#navigator{
+    margin-top: 4em;
+}
 #navigator-wrap {
     overflow-y: auto;
     -overflow-x: visible;
