@@ -13,11 +13,6 @@ Key features are:
 * Support of arbitrary regular tilings.
 * Unlimited world size
 
-<video controls loop>
-	<source src="./media/glider-73.webm" type="video/webm"/>
-	Your browser does not support HTML5 video.
-</video>
-
 Building
 ========
 Build requirements are: Node.JS, NPM, GNU Make.
