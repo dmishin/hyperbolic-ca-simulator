@@ -1,8 +1,8 @@
 "use strict";
-{unity, showNode, node2array} = require "./vondyck_chain.coffee"
-{makeXYT2path, poincare2hyperblic, hyperbolic2poincare, visibleNeighborhood} = require "./poincare_view.coffee"
-{eliminateFinalA} = require "./vondyck_rewriter.coffee"
-M = require "./matrix3.coffee"
+{unity, showNode, node2array} = require "../core/vondyck_chain.coffee"
+{makeXYT2path, poincare2hyperblic, hyperbolic2poincare, visibleNeighborhood} = require "../core/poincare_view.coffee"
+{eliminateFinalA} = require "../core/vondyck_rewriter.coffee"
+M = require "../core/matrix3.coffee"
 
 
 exports.FieldObserver = class FieldObserver

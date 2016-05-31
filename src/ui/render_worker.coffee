@@ -1,8 +1,9 @@
 #The purpose of this worker is to render bezier curves positions for Poincare tessellation.
 #
-{Tessellation} = require "./hyperbolic_tessellation.coffee"
 {ContextDelegate} = require "./context_delegate.coffee"
-M = require "./matrix3.coffee"
+
+{Tessellation} = require "../core/hyperbolic_tessellation.coffee"
+M = require "../core/matrix3.coffee"
 
 cellMatrices = null
 tessellation = null

@@ -1,29 +1,30 @@
 "use strict"
-{Tessellation} = require "./hyperbolic_tessellation.coffee"
-{unity, inverseChain, appendChain, appendInverseChain, NodeHashMap, showNode, parseNode, node2array} = require "./vondyck_chain.coffee"
-{makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
-{RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
-{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, importField, randomFillFixedNum, exportField, randomStateGenerator} = require "./field.coffee"
-{OpenDialog, SaveDialog} = require "./indexeddb.coffee"
+#Core hyperbolic group compuatation library
+{Tessellation} = require "../core/hyperbolic_tessellation.coffee"
+{unity, inverseChain, appendChain, appendInverseChain, NodeHashMap, showNode, parseNode, node2array} = require "../core/vondyck_chain.coffee"
+{makeAppendRewrite, vdRule, eliminateFinalA} = require "../core/vondyck_rewriter.coffee"
+{RewriteRuleset, knuthBendix} = require "../core/knuth_bendix.coffee"
+{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, importField, randomFillFixedNum, exportField, randomStateGenerator} = require "../core/field.coffee"
+{GenericTransitionFunc, BinaryTransitionFunc,DayNightTransitionFunc, parseTransitionFunction} = require "../core/rule.coffee"
+M = require "../core/matrix3.coffee"
 
-{GenerateFileList} = require "./indexeddb.coffee"
-
-{getCanvasCursorPosition} = require "./canvas_util.coffee"
-{lzw_encode} = require "./lzw.coffee"
-{Navigator} = require "./navigator.coffee"
-{DomBuilder} = require "./dom_builder.coffee"
-{E, getAjax, ButtonGroup, windowWidth, windowHeight, documentWidth, removeClass, addClass, ValidatingInput} = require "./htmlutil.coffee"
-{FieldObserver} = require "./observer.coffee"
-#{FieldObserverWithRemoreRenderer} = require "./observer_remote.coffee"
-{parseIntChecked, parseFloatChecked} = require "./utils.coffee"
+#Application components
 {Animator} = require "./animator.coffee"
 {MouseToolCombo} = require "./mousetool.coffee"
-{GenericTransitionFunc, BinaryTransitionFunc,DayNightTransitionFunc, parseTransitionFunction} = require "./rule.coffee"
-{parseUri} = require "./parseuri.coffee"
-M = require "./matrix3.coffee"
+{Navigator} = require "./navigator.coffee"
+{FieldObserver} = require "./observer.coffee"
+{GenerateFileList, OpenDialog, SaveDialog} = require "./indexeddb.coffee"
+#{FieldObserverWithRemoreRenderer} = require "./observer_remote.coffee"
 
-C2S = require "./ext/canvas2svg.js"
+#Misc utilities
+{E, getAjax, ButtonGroup, windowWidth, windowHeight, documentWidth, removeClass, addClass, ValidatingInput} = require "./htmlutil.coffee"
+{DomBuilder} = require "./dom_builder.coffee"
+{parseIntChecked, parseFloatChecked} = require "../core/utils.coffee"
+{parseUri} = require "./parseuri.coffee"
+{getCanvasCursorPosition} = require "./canvas_util.coffee"
+C2S = require "../ext/canvas2svg.js"
+#{lzw_encode} = require "../ext/lzw.coffee"
 
 MIN_WIDTH = 100
 

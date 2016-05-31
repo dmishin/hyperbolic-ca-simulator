@@ -16,7 +16,7 @@
 {E,removeClass, addClass} = require "./htmlutil.coffee"
 {DomBuilder} = require "./dom_builder.coffee"
 
-M = require "./matrix3.coffee"
+#M = require "../core/matrix3.coffee"
 
 VERSION = 1
 

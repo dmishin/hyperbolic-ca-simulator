@@ -1,6 +1,6 @@
 assert = require "assert"
-M = require "../src/matrix3"
-{decomposeToTranslations, decomposeToTranslationsAggresively} = require "../src/decompose_to_translations"
+M = require "../src/core/matrix3"
+{decomposeToTranslations, decomposeToTranslationsAggresively} = require "../src/core/decompose_to_translations"
 
 describe "decomposeToTranslations", ->
   it "must decompose unity matrix to itself", ->

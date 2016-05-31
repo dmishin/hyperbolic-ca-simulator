@@ -1,7 +1,7 @@
 #search for cell  clusters and navigate through them
+{chainLen} = require "../core/vondyck_chain.coffee"
+{allClusters} = require "../core/field.coffee"
 
-{chainLen} = require "./vondyck_chain.coffee"
-{allClusters} = require "./field.coffee"
 {DomBuilder} = require "./dom_builder.coffee"
 {E} = require "./htmlutil.coffee"
 

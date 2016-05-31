@@ -1,6 +1,6 @@
 assert = require "assert"
 
-M = require "../src/matrix3"
+M = require "../src/core/matrix3"
 
 describe "approxEq", ->
   it "must return true for equal matrices", ->

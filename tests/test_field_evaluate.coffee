@@ -1,8 +1,8 @@
 assert = require "assert"
-{allClusters, exportField, importField, mooreNeighborhood, neighborsSum, parseFieldData, randomStateGenerator, stringifyFieldData, evaluateTotalisticAutomaton} = require "../src/field.coffee"
-{makeAppendRewrite, vdRule, eliminateFinalA} = require "../src/vondyck_rewriter.coffee"
-{unity, NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "../src/vondyck_chain.coffee"
-{RewriteRuleset, knuthBendix} = require "../src/knuth_bendix.coffee"
+{allClusters, exportField, importField, mooreNeighborhood, neighborsSum, parseFieldData, randomStateGenerator, stringifyFieldData, evaluateTotalisticAutomaton} = require "../src/core/field.coffee"
+{makeAppendRewrite, vdRule, eliminateFinalA} = require "../src/core/vondyck_rewriter.coffee"
+{unity, NodeHashMap, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "../src/core/vondyck_chain.coffee"
+{RewriteRuleset, knuthBendix} = require "../src/core/knuth_bendix.coffee"
 
 
 describe "evaluateTotalisticAutomaton", ->

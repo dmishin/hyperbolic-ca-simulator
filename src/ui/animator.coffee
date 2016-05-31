@@ -1,10 +1,12 @@
 "use strict"
+#Hyperbolic computations core
+{inverseChain, appendChain, appendInverseChain, showNode} = require "../core/vondyck_chain.coffee"
+M = require "../core/matrix3.coffee"
+{decomposeToTranslations} = require "../core/decompose_to_translations.coffee"
+
+#Misc utilities
 {E,flipSetTimeout} = require "./htmlutil.coffee"
-{inverseChain, appendChain, appendInverseChain, showNode} = require "./vondyck_chain.coffee"
-M = require "./matrix3.coffee"
-{parseIntChecked} = require "./utils.coffee"
-{formatString, pad} = require "./utils.coffee"
-{decomposeToTranslations} = require "./decompose_to_translations.coffee"
+{formatString, pad, parseIntChecked} = require "../core/utils.coffee"
 
 interpolateHyperbolic = (T) ->
   [Trot, Tdx, Tdy] = M.hyperbolicDecompose T

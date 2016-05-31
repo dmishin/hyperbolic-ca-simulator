@@ -1,6 +1,6 @@
 assert = require "assert"
 
-{fminsearch} = require "../src/fminsearch"
+{fminsearch} = require "../src/core/fminsearch"
 
 
 near = (x, y, eps=1e-5) -> Math.abs(x-y)<eps

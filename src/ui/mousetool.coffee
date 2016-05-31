@@ -1,4 +1,4 @@
-M = require "./matrix3.coffee"
+M = require "../core/matrix3.coffee"
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 {Debouncer} = require "./htmlutil.coffee"
 

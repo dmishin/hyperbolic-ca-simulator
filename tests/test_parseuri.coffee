@@ -1,4 +1,4 @@
-{parseUri} = require "../src/parseuri.coffee"
+{parseUri} = require "../src/ui/parseuri.coffee"
 assert = require "assert"
 
 describe "parseUri", ->
