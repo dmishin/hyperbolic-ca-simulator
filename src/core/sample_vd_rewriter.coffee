@@ -1,7 +1,7 @@
 # Generates JS code that effectively rewrites
-{RewriteRuleset}= require "./knuth_bendix.coffee"
-{unity, chainEquals, appendSimple} = require "./vondyck_chain.coffee"
-{makeAppendRewrite, groupPowersVd} = require "./vondyck_rewriter.coffee"
+{RewriteRuleset}= require "./core/knuth_bendix.coffee"
+{unity, chainEquals, appendSimple} = require "./core/vondyck_chain.coffee"
+{makeAppendRewrite, groupPowersVd} = require "./core/vondyck_rewriter.coffee"
 
 testRewriter = (appendRewrite, sSource, sExpected)->  
   gSource = groupPowersVd sSource

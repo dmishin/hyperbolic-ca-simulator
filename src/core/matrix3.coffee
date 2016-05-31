@@ -137,3 +137,14 @@ exports.hyperbolicDecompose = (m)->
 
   [Math.atan2(sin, cos), dx, dy]
 
+###  array of matrix powers, from 0th to (n-1)th
+###
+exports.powers = (matrix, n) ->
+  #current power
+  m_n= eye()
+  
+  pows = [m_n]
+  for i in [1...n]
+    m_n = mul matrix, m_n
+    pows.push m_n
+  return pows

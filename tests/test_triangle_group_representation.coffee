@@ -10,33 +10,33 @@ powm = (m, n) ->
   return mp
 
 
-describe "TriangleGroup", ->
+# describe "TriangleGroup", ->
 
-  g = new TriangleGroup 2,3,5
+#   g = new TriangleGroup 2,3,5
   
-  it "must return non-identity matrices", ->
-    assert.ok not M.approxEq g.m_pqr[0], M.eye()
-    assert.ok not M.approxEq g.m_pqr[1], M.eye()
-    assert.ok not M.approxEq g.m_pqr[2], M.eye()
+#   it "must return non-identity matrices", ->
+#     assert.ok not M.approxEq g.m_pqr[0], M.eye()
+#     assert.ok not M.approxEq g.m_pqr[1], M.eye()
+#     assert.ok not M.approxEq g.m_pqr[2], M.eye()
 
-  it "must have idempotent generators", ->
-    assert.ok M.approxEq M.eye(), M.mul(g.m_pqr[0], g.m_pqr[0])
-    assert.ok M.approxEq M.eye(), M.mul(g.m_pqr[1], g.m_pqr[1])
-    assert.ok M.approxEq M.eye(), M.mul(g.m_pqr[2], g.m_pqr[2])
+#   it "must have idempotent generators", ->
+#     assert.ok M.approxEq M.eye(), M.mul(g.m_pqr[0], g.m_pqr[0])
+#     assert.ok M.approxEq M.eye(), M.mul(g.m_pqr[1], g.m_pqr[1])
+#     assert.ok M.approxEq M.eye(), M.mul(g.m_pqr[2], g.m_pqr[2])
 
-  it "must give rotations for pairs fo different generators", ->
-    [p,q,r]= g.m_pqr
-    pq = M.mul p, q
-    pr = M.mul p, r
-    qr = M.mul q, r
+#   it "must give rotations for pairs fo different generators", ->
+#     [p,q,r]= g.m_pqr
+#     pq = M.mul p, q
+#     pr = M.mul p, r
+#     qr = M.mul q, r
 
-    assert.ok M.approxEq powm(pq,2), M.eye()
-    assert.ok M.approxEq powm(qr,3), M.eye()
-    assert.ok M.approxEq powm(pr,5), M.eye()
+#     assert.ok M.approxEq powm(pq,2), M.eye()
+#     assert.ok M.approxEq powm(qr,3), M.eye()
+#     assert.ok M.approxEq powm(pr,5), M.eye()
 
-    assert.ok not M.approxEq powm(pq,1), M.eye()
-    assert.ok not M.approxEq powm(qr,2), M.eye()
-    assert.ok not M.approxEq powm(pr,4), M.eye()
+#     assert.ok not M.approxEq powm(pq,1), M.eye()
+#     assert.ok not M.approxEq powm(qr,2), M.eye()
+#     assert.ok not M.approxEq powm(pr,4), M.eye()
 
 
 

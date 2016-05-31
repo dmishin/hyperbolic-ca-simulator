@@ -189,3 +189,23 @@ describe "hyperbolicDecompose", ->
       assert.ok( (drot<1e-6) or Math.abs(drot-Math.PI*2)<1e-6, message )
 
         
+describe "powers", ->
+  
+  it "must return array of N first powers of a matrix", ->
+
+    a = [1,2,-1,
+         2,-1,0,
+         -3,0,0]
+
+    pows3 = M.powers a, 4
+
+    assert.equal pows3.length, 4
+
+    assert.ok M.approxEq pows3[0], M.eye()
+    assert.ok M.approxEq pows3[1], a
+    assert.ok M.approxEq pows3[2], M.mul(a,a)
+    assert.ok M.approxEq pows3[3], M.mul(a,M.mul(a,a))
+    
+    
+    
+    
