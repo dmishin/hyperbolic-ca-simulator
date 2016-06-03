@@ -31,14 +31,16 @@ exports.Node = class Node
       else
         @mtx = M.mul @t.repr(generatorMatrices), generatorMatrices.generatorPower(@letter, @p)
   equals: (c) -> chainEquals(this, c)
-          
-identityMatrix = M.eye()
-
+  a: (pow) -> new NodeA pow, this
+  b: (pow) -> new NodeB pow, this
+  toString: -> showNode this
+  asStack: -> node2array this
+  
 exports.unity = unity = new Node
 unity.l = 0
 unity.h = 0
 unity.mtx = M.eye()
-unity.repr = (g) -> @.mtx #jsut reload with a faster code.
+unity.repr = (g) -> @.mtx #jsut overload with a faster code.
   
 exports.NodeA = class NodeA extends Node
   letter: 'a'
@@ -104,9 +106,6 @@ exports.parseNode = (s) ->
       power = -power
     prepend = updPrepender prepend, letterLow, power
   prepend unity
-    
-    
-    
 
 exports.truncateA = truncateA = (chain)->
   while (chain isnt unity) and (chain.letter is "a")
