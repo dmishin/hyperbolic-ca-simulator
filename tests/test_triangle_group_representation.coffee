@@ -67,3 +67,30 @@ describe "CenteredVonDyck(5,4)", ->
     assert.ok M.approxEqv v1, M.mulv(g.b, v1)
     assert.ok not M.approxEqv v1, M.mulv(g.a, v1)
             
+
+describe "CenteredVonDyck(5,4,3)", ->
+  g = new CenteredVonDyck(5,4,3)
+  it "must produce generators with expected properties", ->
+    assert.ok not M.approxEq g.a, M.eye()
+    assert.ok not M.approxEq g.b, M.eye()
+    
+    assert.ok M.approxEq powm(g.a, 5), M.eye()
+    assert.ok M.approxEq powm(g.b, 4), M.eye()
+    
+    ab = M.mul(g.a, g.b)
+    
+    assert.ok not M.approxEq ab, M.eye()
+    assert.ok M.approxEq powm(ab,3), M.eye()
+
+  it "must have stable point of A at (0,0,1)", ->
+    v0 = [0.0, 0.0, 1.0]
+    assert.ok M.approxEqv v0, v0
+    assert.ok M.approxEqv v0, M.mulv(g.a, v0)
+    assert.ok not M.approxEqv v0, M.mulv(g.b, v0)
+    
+  it "must provide coordinates of stable point of B", ->
+    v1 = [g.sinh_r, 0, g.cosh_r]
+    assert.ok M.approxEqv v1, v1
+    assert.ok M.approxEqv v1, M.mulv(g.b, v1)
+    assert.ok not M.approxEqv v1, M.mulv(g.a, v1)
+            

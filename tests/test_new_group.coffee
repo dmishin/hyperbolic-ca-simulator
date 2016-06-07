@@ -15,6 +15,8 @@ describe "New API", ->
     assert.equal group.m, 4
     assert.equal group.k, 2
 
+    assert.equal group.type(), "spheric" #octahedron
+
     u = group.unity
 
     #Parsing and stringification
@@ -68,3 +70,20 @@ describe "New API", ->
     checkTrimmingIsUnique group.parse "B"
     checkTrimmingIsUnique group.parse "ba^2ba^2B"
     checkTrimmingIsUnique group.parse "Ba^3bab^2"
+
+describe "New VonDyck", ->
+  it "must detect group type", ->
+    assert.equal (new VonDyck 3,3).type(), "spheric" 
+    assert.equal (new VonDyck 3,4).type(), "spheric"
+    assert.equal (new VonDyck 3,5).type(), "spheric"
+    assert.equal (new VonDyck 3,6).type(), "euclidean" #triangualr tiling
+    assert.equal (new VonDyck 3,7).type(), "hyperbolic" #triangualr tiling
+
+    assert.equal (new VonDyck 4,3).type(), "spheric" 
+    assert.equal (new VonDyck 4,4).type(), "euclidean"
+    assert.equal (new VonDyck 4,5).type(), "hyperbolic"
+
+
+    assert.equal (new VonDyck 5,3).type(), "spheric" 
+    assert.equal (new VonDyck 5,4).type(), "hyperbolic"
+                        

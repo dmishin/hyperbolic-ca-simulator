@@ -1,6 +1,5 @@
 M = require "./matrix3.coffee"
-{} = M
-
+{mod} = require "./utils.coffee"
 
 # exports.TriangleGroup = class TriangleGroup
 #   constructor: (p,q,r) ->
@@ -35,29 +34,44 @@ M = require "./matrix3.coffee"
 #  such that `a` has fixed point (0,0,1)
 ###
 exports.CenteredVonDyck = class CenteredVonDyck
-  constructor: (n, m) ->
+  constructor: (n, m, k=2) ->
     #a^n = b^m = (abab) = e
+    {cos, sin, sqrt, PI} = Math
+    alpha = PI / n
+    beta = PI / m
+    gamma = PI / k
 
-    @a = M.rot 0, 1, (Math.PI*2/n)
     @n = n
     @m = m
+    @k = k
 
-    @cosh_r = 1.0 / (Math.tan(Math.PI/n) * Math.tan(Math.PI/m))
-    if @cosh_r <= 1.0
-      throw new Error("von Dyck group is not hyperbolic!")
-    @sinh_r = Math.sqrt( @cosh_r**2 - 1 )
+    #Representation of generator A: rotation of the 2N-gon
+    @a = M.rot 0, 1, (2*alpha)
+    
+    #Hyp.cosine of the distance from the center of ne 2N-gon to the order-K vertex. (when K=2, it is the center of the edge of N-gon)
+    @cosh_x = (cos(beta)+cos(alpha)*cos(gamma))/(sin(alpha)*sin(gamma))
+    
+    #Hyp.cosine of the distance from the center of ne 2N-gon to the order-N vertex.
+    @cosh_r = (cos(gamma)+cos(alpha)*cos(beta))/(sin(alpha)*sin(beta))
 
-    @b = M.mul( M.mul(M.hrot(0, 2, @sinh_r), M.rot(0, 1, Math.PI*2/m)), M.hrot(0, 2, -@sinh_r) )
+    if @cosh_r < 1.0 + 1e-10 #treshold
+      throw new Error("von Dyck group {#{n},#{m},#{k}} is not hyperbolic, representation not supported.")
+      
+    @sinh_r = sqrt( @cosh_r**2 - 1 )
+    @sinh_x = sqrt( @cosh_x**2 - 1 )
+
+    #REpresentation of generator B: rotation of the 2N-gon around the vertex of order M.
+    @b = M.mul( M.mul(M.hrot(0, 2, @sinh_r), M.rot(0, 1, 2*beta)), M.hrot(0, 2, -@sinh_r) )
 
     @aPowers = M.powers @a, n
     @bPowers = M.powers @b, m
     
 
-  aPower: (i) -> @aPowers[ ((i%@n)+@n)%@n ]
-  bPower: (i) -> @bPowers[ ((i%@m)+@m)%@m ]
+  aPower: (i) -> @aPowers[ mod i, @n ]
+  bPower: (i) -> @bPowers[ mod i, @m ]
   generatorPower: (g, i)->
     if g is 'a'
       @aPower i
     else if g is 'b'
       @bPower i
-    else throw new Error("Unknown generator: #{g}")
+    else throw new Error "Unknown generator: #{g}"

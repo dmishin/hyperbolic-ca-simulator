@@ -1,6 +1,6 @@
 assert = require "assert"
 
-{formatString, pad} = require "../src/core/utils.coffee"
+{formatString, pad, mod} = require "../src/core/utils.coffee"
 
 describe "formatString", ->
   it "must format string with several args", ->
@@ -19,3 +19,18 @@ describe "pad", ->
     assert.equal pad(123,2), "123"
     assert.equal pad(123,1), "123"
     
+describe "mod", ->
+  it "must calculate modulo of positive values", ->
+    assert.equal 0, mod 0, 5
+    assert.equal 1, mod 1, 5
+    assert.equal 2, mod 2, 5
+
+    assert.equal 0, mod 25, 5
+    assert.equal 1, mod 26, 5
+    assert.equal 2, mod 27, 5
+
+  it "must calculate modulo of negative values mathematically", ->
+    assert.equal 0, mod -25, 5
+    assert.equal 1, mod -24, 5
+    assert.equal 2, mod -23, 5
+                

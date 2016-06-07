@@ -251,7 +251,7 @@ describe "NodeHashMap", ->
 
 
 describe "nodeMatrixRepr", ->
-  group = new CenteredVonDyck 4, 4
+  group = new CenteredVonDyck 4, 5
   
   it "should return unity matrix for empty node", ->
     assert M.approxEq nodeMatrixRepr(unity, group), M.eye()

@@ -17,4 +17,6 @@ exports.parseFloatChecked = (s)->
   v = parseFloat s
   throw new Error("Bad number: #{s}") if Number.isNaN v
   return v
-  
+
+#mathematical modulo
+exports.mod = (i,n) -> ((i%n)+n)%n
