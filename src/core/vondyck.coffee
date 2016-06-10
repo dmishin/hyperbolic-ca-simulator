@@ -1,4 +1,4 @@
-{makeAppendRewrite, vdRule, eliminateFinalA} = require "./vondyck_rewriter.coffee"
+{makeAppendRewrite, vdRule} = require "./vondyck_rewriter.coffee"
 {parseNode, unity} = require "./vondyck_chain.coffee"
 {RewriteRuleset, knuthBendix} = require "../core/knuth_bendix.coffee"
 {CenteredVonDyck} = require "./triangle_group_representation.coffee"
@@ -47,10 +47,6 @@ exports.VonDyck = class VonDyck
     
   appendRewrite: (chain, stack)->
     throw new Error "Group not solved"
-
-  trimA: (chain)->
-    eliminateFinalA chain, @appendRewrite, @n
-
   
   rewrite: (chain)->
     @appendRewrite @unity, chain.asStack()

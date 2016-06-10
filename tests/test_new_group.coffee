@@ -1,6 +1,7 @@
 assert = require "assert"
 M = require "../src/core/matrix3"
 {VonDyck} = require "../src/core/vondyck.coffee"
+{RegularTiling} = require "../src/core/regular_tiling.coffee"
 
 # Knuth-Bendix solver for vonDyck groups, cleaned up API
 #
@@ -49,27 +50,6 @@ describe "New API", ->
     assert.ok x.equals x2
     assert.ok x.equals x3
     
-    #last A elimination
-    x = group.parse "bab" #eliminated to 1 by adding a: bab+a = baba = e
-    assert.ok group.trimA(x).equals(u)
-
-
-    checkTrimmingIsUnique = (chain) ->
-      trimmedChain = group.trimA chain
-      for aPower in [-group.n .. group.n]
-        if aPower is 0 then continue
-        chain1 = chain.a(aPower)
-        if not group.trimA(chain1).equals(trimmedChain)
-          throw new Error "Chain #{chain1} trimmed returns #{group.trimA chain1} != #{trimmedChain}"
-      
-      
-    checkTrimmingIsUnique group.parse "e"
-    checkTrimmingIsUnique group.parse "a"
-    checkTrimmingIsUnique group.parse "A"
-    checkTrimmingIsUnique group.parse "b"
-    checkTrimmingIsUnique group.parse "B"
-    checkTrimmingIsUnique group.parse "ba^2ba^2B"
-    checkTrimmingIsUnique group.parse "Ba^3bab^2"
 
 describe "New VonDyck", ->
   it "must detect group type", ->
@@ -87,3 +67,68 @@ describe "New VonDyck", ->
     assert.equal (new VonDyck 5,3).type(), "spheric" 
     assert.equal (new VonDyck 5,4).type(), "hyperbolic"
                         
+
+describe "RegularTiling", ->
+  it "must support cell coordinate normalization", ->
+    tiling = new RegularTiling 3, 4
+    #last A elimination
+    x = tiling.parse "bab" #eliminated to 1 by adding a: bab+a = baba = e
+    assert.ok tiling.trimA(x).equals(tiling.unity)
+
+
+    checkTrimmingIsUnique = (chain) ->
+      trimmedChain = tiling.trimA chain
+      for aPower in [-tiling.n .. tiling.n]
+        if aPower is 0 then continue
+        chain1 = chain.a(aPower)
+        if not tiling.trimA(chain1).equals(trimmedChain)
+          throw new Error "Chain #{chain1} trimmed returns #{tiling.trimA chain1} != #{trimmedChain}"
+      
+      
+    checkTrimmingIsUnique tiling.parse "e"
+    checkTrimmingIsUnique tiling.parse "a"
+    checkTrimmingIsUnique tiling.parse "A"
+    checkTrimmingIsUnique tiling.parse "b"
+    checkTrimmingIsUnique tiling.parse "B"
+    checkTrimmingIsUnique tiling.parse "ba^2ba^2B"
+    checkTrimmingIsUnique tiling.parse "Ba^3bab^2"
+    
+describe "RegularTiling.moore", ->
+  #prepare data: rewriting ruleset for group 5;4
+  #
+  [N, M] = [5, 4]
+  tiling = new RegularTiling N, M
+  unity = tiling.unity
+  cells = []
+  
+  cells.push  unity
+  cells.push  tiling.trimA tiling.rewrite tiling.parse "b"
+  cells.push  tiling.trimA tiling.rewrite tiling.parse "b^2"
+  cells.push  tiling.trimA tiling.rewrite tiling.parse "ab^2"
+  
+  it "must return expected number of cells different from origin", ->
+    for cell in cells
+      neighbors = tiling.moore cell
+      assert.equal neighbors.length, N*(M-2)
+
+      for nei, i in neighbors
+        assert not cell.equals nei
+
+        for nei1, j in neighbors
+          if i isnt j
+            assert not nei.equals(nei1), "neighbors #{i}=#{nei1} and #{j}=#{nei1} must be not equal"
+    return
+    
+  it "must be true that one of neighbor's neighbor is self", ->
+    for cell in cells
+      for nei in tiling.moore cell
+        foundCell = 0
+        for nei1 in tiling.moore nei
+          if nei1.equals cell
+            foundCell += 1
+        assert.equal foundCell, 1, "Exactly 1 of the #{nei}'s neighbors must be original chain: #{cell}, but #{foundCell} found"
+    return
+
+    
+describe "RegularTiling.moore", ->
+  

@@ -1,7 +1,7 @@
 {mooreNeighborhood} = require "./field.coffee"
 M = require "./matrix3.coffee"
-{unity, nodeMatrixRepr, node2array, NodeHashMap} = require "./vondyck_chain.coffee"
-
+{unity, nodeMatrixRepr, node2array} = require "./vondyck_chain.coffee"
+{NodeHashMap} = require "./chain_map.coffee"
 
 #determine cordinates of the cell, containing given point
 exports.makeXYT2path = (group, appendRewrite, maxSteps=100) -> 

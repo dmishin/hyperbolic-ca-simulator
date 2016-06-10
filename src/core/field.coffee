@@ -1,10 +1,10 @@
 #{Tessellation} = require "./hyperbolic_tessellation.coffee"
-{unity, NodeHashMap, newNode, showNode, node2array} = require "./vondyck_chain.coffee"
+{unity, newNode, showNode, node2array} = require "./vondyck_chain.coffee"
 {makeAppendRewrite, eliminateFinalA} = require "./vondyck_rewriter.coffee"
+{NodeHashMap} = require "./chain_map.coffee"
 #{RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
 #High-level utils for working with hyperbolic cellular fields
-
 
 
 exports.mooreNeighborhood = mooreNeighborhood = (n, m, appendRewrite)->(chain)->

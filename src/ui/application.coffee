@@ -2,7 +2,8 @@
 
 #Core hyperbolic group compuatation library
 {Tessellation} = require "../core/hyperbolic_tessellation.coffee"
-{unity, inverseChain, appendChain, appendInverseChain, NodeHashMap, showNode, parseNode, node2array} = require "../core/vondyck_chain.coffee"
+{unity, inverseChain, appendChain, appendInverseChain, showNode, parseNode, node2array} = require "../core/vondyck_chain.coffee"
+{NodeHashMap} = require "../core/chain_map.coffee"
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "../core/vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "../core/knuth_bendix.coffee"
 {stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, importField, randomFillFixedNum, exportField, randomStateGenerator} = require "../core/field.coffee"
