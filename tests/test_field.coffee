@@ -2,7 +2,7 @@
 assert = require "assert"
 {allClusters, exportField, importField, mooreNeighborhood, neighborsSum, parseFieldData, randomStateGenerator, stringifyFieldData, forFarNeighborhood, randomFillFixedNum} = require "../src/core/field"
 {makeAppendRewrite, vdRule, eliminateFinalA} = require "../src/core/vondyck_rewriter.coffee"
-{unity, nodeMatrixRepr, newNode, showNode, chainEquals, nodeHash, node2array} = require "../src/core/vondyck_chain.coffee"
+{unity, nodeMatrixRepr, newNode, showNode, nodeHash, node2array} = require "../src/core/vondyck_chain.coffee"
 {NodeHashMap} = require "../src/core/chain_map.coffee"
 {RewriteRuleset, knuthBendix} = require "../src/core/knuth_bendix.coffee"
 
@@ -32,7 +32,7 @@ describe "allClusters", ->
     assert.equal clusters.length, 1
     assert.deepEqual clusters[0].length, 1
 
-    assert chainEquals(clusters[0][0], c)
+    assert clusters[0][0].equals c
 
 describe "neighborsSum", ->
   [N, M] = [5, 4]
@@ -91,11 +91,11 @@ describe "mooreNeighborhood", ->
       assert.equal neighbors.length, N*(M-2)
 
       for nei, i in neighbors
-        assert not chainEquals(cell, nei)
+        assert not cell.equals nei
 
         for nei1, j in neighbors
           if i isnt j
-            assert not chainEquals(nei, nei1), "neighbors #{i}=#{showNode nei1} and #{j}=#{showNode nei1} must be not equal"
+            assert not nei.equals(nei1), "neighbors #{i}=#{showNode nei1} and #{j}=#{showNode nei1} must be not equal"
     return
     
   it "must be true that one of neighbor's neighbor is self", ->
@@ -103,7 +103,7 @@ describe "mooreNeighborhood", ->
       for nei in getNeighbors cell
         foundCell = 0
         for nei1 in getNeighbors nei
-          if chainEquals nei1, cell
+          if nei1.equals cell
             foundCell += 1
         assert.equal foundCell, 1, "Exactly 1 of the #{showNode nei}'s neighbors must be original chain: #{showNode cell}, but #{foundCell} found"
     return
@@ -276,19 +276,19 @@ describe "forFarNeighborhood", ->
 
   chain1 = norm [['b',1], ['a', 2]]
 
-  assert not chainEquals chain1, unity
+  assert not chain1.equals unity
       
   it "should start enumeration from the original cell", ->
     
     forFarNeighborhood unity, appendRewrite, N, M, (node, radius) ->
       assert.equal radius, 0, "Must start from 0 radius"
-      assert.ok chainEquals node, unity, "Must start from the center"
+      assert.ok node.equals(unity), "Must start from the center"
       #Stop after the first.
       return false
       
     forFarNeighborhood chain1, appendRewrite, N, M, (node, radius) ->
       assert.equal radius, 0, "Must start from 0 radius"
-      assert.ok chainEquals node, chain1, "Must start from the center"
+      assert.ok node.equals(chain1), "Must start from the center"
       #Stop after the first.
       return false
 
@@ -298,7 +298,7 @@ describe "forFarNeighborhood", ->
     forFarNeighborhood chain1, appendRewrite, N, M, (node, level) ->
       assert.ok (level is lastLevel) or (level is lastLevel+1)
       for visited in visitedNodes
-        assert.ok not chainEquals visited, node
+        assert.ok not visited.equals node
       visitedNodes.push node
       lastLevel = level      
       return level < 6

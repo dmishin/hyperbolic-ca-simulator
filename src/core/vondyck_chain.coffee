@@ -57,7 +57,7 @@ exports.NodeB = class NodeB extends Node
     @h = null
     @mtx = null
     
-exports.chainEquals = chainEquals = (a, b) ->
+chainEquals = chainEquals = (a, b) ->
   while true
     return true if a is b 
     if a is unity or b is unity

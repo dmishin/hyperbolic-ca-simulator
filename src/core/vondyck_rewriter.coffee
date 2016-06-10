@@ -1,6 +1,6 @@
 #Generates JS code that effectively rewrites
 {RewriteRuleset}= require "./knuth_bendix.coffee"
-{unity, NodeA, NodeB, chainEquals, appendSimple, nodeConstructors, newNode, reverseShortlexLess, showNode, node2array} = require "./vondyck_chain.coffee"
+{unity, NodeA, NodeB, appendSimple, nodeConstructors, newNode, reverseShortlexLess, showNode, node2array} = require "./vondyck_chain.coffee"
 
 collectPowers = ( elemsWithPowers )->
     ### List (elem, power::int) -> List (elem, power::int)
@@ -555,7 +555,7 @@ exports.makeAppendRewriteVerified = (rewriteRule) ->
     refValue = appendRewriteRef chain, stack[..]
     value = appendRewrite chain, stack[..]
 
-    if not chainEquals refValue, value
+    if not refValue.equals value
       for [k, v] in rewriteRule.items()
         console.log "  #{k} -> #{v}"
       throw new Error "rewriter verification failed. args: chain = #{showNode chain}, stack: #{JSON.stringify stack}, refValue: #{showNode refValue}, value: #{showNode value}"

@@ -1,20 +1,20 @@
 assert = require "assert"
 {RewriteRuleset} = require "../src/core/knuth_bendix.coffee"
 {string2chain, chain2string, makeAppendRewriteRef, makeAppendRewrite, extendLastPowerRewriteTable} = require "../src/core/vondyck_rewriter.coffee"
-{unity, chainEquals, newNode, showNode} = require "../src/core/vondyck_chain.coffee"
+{unity, newNode, showNode} = require "../src/core/vondyck_chain.coffee"
 
 describe "string2chain", ->
   it "must convert empty string", ->
     assert.equal unity, string2chain ""
 
   it "must convert  nonempty strings", ->
-    assert chainEquals string2chain("a"), newNode('a', 1, unity) 
-    assert chainEquals string2chain("A"), newNode('a', -1, unity) 
-    assert chainEquals string2chain("aa"), newNode('a', 2, unity) 
-    assert chainEquals string2chain("AA"), newNode('a', -2, unity) 
+    assert string2chain("a").equals newNode('a', 1, unity) 
+    assert string2chain("A").equals newNode('a', -1, unity) 
+    assert string2chain("aa").equals newNode('a', 2, unity) 
+    assert string2chain("AA").equals newNode('a', -2, unity) 
 
   it "must convert complex chains", ->
-    assert chainEquals 
+    #Todo
 
 
 
@@ -65,7 +65,7 @@ describe "Compiled rewriter", ->
     #console.log "#{showNode chainRef} != #{showNode chain}"
     chainRef = refRewriter chain0, stack[..]
     chain = compiledRewriter chain0, stack[..]
-    assert chainEquals(chainRef, chain), "#{showNode chain0} ++ #{JSON.stringify stack} -> #{showNode chainRef} (ref) != #{showNode chain}"
+    assert (chainRef.equals chain), "#{showNode chain0} ++ #{JSON.stringify stack} -> #{showNode chainRef} (ref) != #{showNode chain}"
     return
 
   walkChains = (stack, depth, callback) ->

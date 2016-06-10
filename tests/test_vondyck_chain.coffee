@@ -1,5 +1,5 @@
 assert = require "assert"
-{unity, reverseShortlexLess, nodeMatrixRepr, chainEquals, NodeA, NodeB, nodeHash, newNode, showNode, parseNode, inverseChain, appendChain, appendInverseChain} = require "../src/core/vondyck_chain.coffee"
+{unity, reverseShortlexLess, nodeMatrixRepr, NodeA, NodeB, nodeHash, newNode, showNode, parseNode, inverseChain, appendChain, appendInverseChain} = require "../src/core/vondyck_chain.coffee"
 
 M = require "../src/core/matrix3.coffee"
 {CenteredVonDyck} = require "../src/core/triangle_group_representation.coffee"
@@ -8,16 +8,16 @@ M = require "../src/core/matrix3.coffee"
 {makeAppendRewrite, vdRule} = require "../src/core/vondyck_rewriter.coffee"
 {RewriteRuleset, knuthBendix} = require "../src/core/knuth_bendix.coffee"
 
-describe "chainEquals", ->
+describe "chain.equals", ->
   it "should return true for empty chains", ->
-    assert chainEquals unity, unity
+    assert unity.equals unity
   it "should return false for comparing non-empty with empty", ->
     a1 = new NodeA(1,unity)
     b1 = new NodeB(1,unity)
-    assert not chainEquals unity, a1
-    assert not chainEquals a1, unity
-    assert not chainEquals unity, b1
-    assert not chainEquals b1, unity
+    assert not unity.equals a1
+    assert not a1.equals unity
+    assert not unity.equals b1
+    assert not b1.equals unity
 
   it "should correctly compare chains of length 1", ->
     a1 = new NodeA(1,unity)
@@ -28,15 +28,15 @@ describe "chainEquals", ->
     a2 = new NodeA(2,unity)
 
 
-    assert chainEquals a1, a1
-    assert chainEquals a1, a1_
-    assert chainEquals a1_, a1
+    assert a1.equals a1
+    assert a1.equals a1_
+    assert a1_.equals a1
 
     
-    assert not chainEquals a1, a2
-    assert not chainEquals a2, a1
-    assert not chainEquals a1, b1
-    assert not chainEquals b1, a1
+    assert not a1.equals a2
+    assert not a2.equals a1
+    assert not a1.equals b1
+    assert not b1.equals a1
   
   it "should compare chains of length 2 and more", ->
 
@@ -44,10 +44,10 @@ describe "chainEquals", ->
     a1b2 = new NodeA(1, new NodeB(2, unity))
     a1b1a3 = new NodeA(1, new NodeB(1, new NodeA(3, unity)))
     
-    assert chainEquals a1b1, a1b1
-    assert not chainEquals a1b1, a1b2
-    assert not chainEquals a1b1, a1b1a3
-    assert not chainEquals a1b1, unity
+    assert a1b1.equals a1b1
+    assert not a1b1.equals a1b2
+    assert not a1b1.equals a1b1a3
+    assert not a1b1.equals unity
   
 describe "nodeHash", ->
   isNumber = (x) -> parseInt(''+x, 10) is x
@@ -82,13 +82,13 @@ describe "showNode", ->
     
 describe "parseNode", ->
   it "should convert node to text", ->
-    assert.ok chainEquals parseNode('e'), unity
-    assert.ok chainEquals parseNode('a'), newNode 'a', 1, unity
-    assert.ok chainEquals parseNode('A'), newNode 'a', -1, unity
-    assert.ok chainEquals parseNode('b'), newNode 'b', 1, unity
-    assert.ok chainEquals parseNode('B'), newNode 'b', -1, unity
-    assert.ok chainEquals parseNode('a^3'), newNode 'a', 3, unity
-    assert.ok chainEquals parseNode('Aba^3'), newNode 'a', 3, newNode 'b',1, newNode 'a', -1, unity
+    assert.ok parseNode('e').equals unity
+    assert.ok parseNode('a').equals newNode 'a', 1, unity
+    assert.ok parseNode('A').equals newNode 'a', -1, unity
+    assert.ok parseNode('b').equals newNode 'b', 1, unity
+    assert.ok parseNode('B').equals newNode 'b', -1, unity
+    assert.ok parseNode('a^3').equals newNode 'a', 3, unity
+    assert.ok parseNode('Aba^3').equals newNode 'a', 3, newNode 'b',1, newNode 'a', -1, unity
     
 
 
@@ -132,11 +132,11 @@ describe "inverseChain", ->
   appendRewrite = makeAppendRewrite rewriteRuleset
   
   it "should inverse unity", ->
-    assert chainEquals unity, inverseChain(unity, appendRewrite)
+    assert unity.equals inverseChain(unity, appendRewrite)
   it "should inverse simple 1-element values", ->
     c = newNode 'a', 1, unity
     ic = newNode 'a', -1, unity
-    assert chainEquals inverseChain(c, appendRewrite), ic
+    assert inverseChain(c, appendRewrite).equals ic
 
 
   it "should return same chain after double rewrite", ->
@@ -145,7 +145,7 @@ describe "inverseChain", ->
     ic = inverseChain c, appendRewrite
     iic = inverseChain ic, appendRewrite
 
-    assert chainEquals c, iic
+    assert c.equals iic
 
 describe "appendInverseChain", ->
   n = 5
@@ -154,16 +154,16 @@ describe "appendInverseChain", ->
   appendRewrite = makeAppendRewrite rewriteRuleset
   
   it "unity * unity^-1 = unity", ->
-    assert chainEquals unity, appendInverseChain(unity, unity, appendRewrite)
+    assert unity.equals appendInverseChain(unity, unity, appendRewrite)
     
   it "For simple 1-element values, x * (x^-1) = unity", ->
     c = newNode 'a', 1, unity
-    assert chainEquals appendInverseChain(c, c, appendRewrite), unity
+    assert appendInverseChain(c, c, appendRewrite).equals unity
 
 
   it "For non-simple chain, x*(x^-1) = unitu", ->
     c = appendRewrite unity, [['b',1],['a',2],['b',-2],['a',3],['b',1]]
-    assert appendInverseChain(c, c, appendRewrite), unity
+    assert appendInverseChain(c, c, appendRewrite).equals unity
 
 
 describe "appendChain", ->
@@ -174,11 +174,11 @@ describe "appendChain", ->
   
 
   it "choud append unity", ->
-    assert chainEquals unity, appendChain(unity, unity, appendRewrite)
+    assert unity.equals appendChain(unity, unity, appendRewrite)
 
     c = newNode 'a', 1, unity
-    assert chainEquals c, appendChain(c, unity, appendRewrite)
-    assert chainEquals c, appendChain(unity, c, appendRewrite)
+    assert c.equals appendChain(c, unity, appendRewrite)
+    assert c.equals appendChain(unity, c, appendRewrite)
 
   it "shouls append inverse and return unity", ->
 
@@ -186,5 +186,5 @@ describe "appendChain", ->
 
     ic = inverseChain c, appendRewrite
 
-    assert chainEquals unity, appendChain c, ic, appendRewrite
-    assert chainEquals unity, appendChain ic, c, appendRewrite    
+    assert unity.equals appendChain c, ic, appendRewrite
+    assert unity.equals appendChain ic, c, appendRewrite    
