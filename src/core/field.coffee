@@ -1,34 +1,8 @@
-#{Tessellation} = require "./hyperbolic_tessellation.coffee"
-{unity, newNode, showNode, node2array} = require "./vondyck_chain.coffee"
+{unity, newNode} = require "./vondyck_chain.coffee"
 {NodeHashMap} = require "./chain_map.coffee"
-#{RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
 #High-level utils for working with hyperbolic cellular fields
 
-
-
-exports.neighborsSum = neighborsSum = (cells, getNeighbors, plus=((x,y)->x+y), plusInitial=0)->
-  sums = new NodeHashMap
-  cells.forItems (cell, value)->
-    for neighbor in getNeighbors cell
-      sums.putAccumulate neighbor, value, plus, plusInitial
-    #don't forget the cell itself! It must also present, with zero (initial) neighbor sum
-    if sums.get(cell) is null
-      sums.put(cell, plusInitial)
-  return sums
-
-exports.evaluateTotalisticAutomaton = evaluateTotalisticAutomaton = (cells, getNeighborhood, nextStateFunc, plus, plusInitial)->
-  newCells = new NodeHashMap
-  sums = neighborsSum cells, getNeighborhood, plus, plusInitial
-  sums.forItems (cell, neighSum)->
-    cellState = cells.get(cell) ? 0
-    nextState = nextStateFunc cellState, neighSum
-    if nextState isnt 0
-      newCells.put cell, nextState
-  return newCells
-
-
-  
 exports.extractClusterAt = extractClusterAt = (cells, tiling, chain) ->
   #use cycle instead of recursion in order to avoid possible stack overflow.
   #Clusters may be big.
