@@ -75,7 +75,7 @@ exports.OpenDialog = class OpenDialog
     
   _generateFileList: ->
     @filelistElement.innerHTML = '<img src="media/hrz-spinner.gif"/>'
-    grid = if @allGridsEnabled then null else [@application.getGroup().n, @application.getGroup().m]
+    grid = if @allGridsEnabled then null else [@application.tiling.n, @application.tiling.m]
     rule = if @allGridsEnabled or @allRuelsEnabled
       null
     else
@@ -145,7 +145,7 @@ exports.SaveDialog = class SaveDialog
     
   _generateFileList: ->
     @filelistElement.innerHTML = '<img src="media/hrz-spinner.gif"/>'
-    grid = [@application.getGroup().n, @application.getGroup().m]
+    grid = [@application.tiling.n, @application.tiling.m]
     rule = ""+@application.getTransitionFunc()
       
     fileListGen = new GenerateFileList grid, rule, @filelistElement,

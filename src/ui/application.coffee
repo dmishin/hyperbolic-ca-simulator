@@ -216,7 +216,7 @@ class Application
     
   #Actions
   doRandomFill: ->
-    randomFillFixedNum @cells, randomFillPercent, unity, randomFillNum, @tiling.appendRewrite, @tiling.n, @tiling.m, randomStateGenerator(@transitionFunc.numStates)
+    randomFillFixedNum @cells, randomFillPercent, unity, randomFillNum, @tiling, randomStateGenerator(@transitionFunc.numStates)
     updatePopulation()
     redraw()
 
