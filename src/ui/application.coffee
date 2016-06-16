@@ -74,7 +74,7 @@ class UriConfig
       
   getViewBase: ->
     return unity unless @keys.viewbase?
-    RegularTiling.parse @keys.viewbase
+    RegularTiling::parse @keys.viewbase
     
   getViewOffset: ->
     return M.eye() unless @keys.viewoffset?
