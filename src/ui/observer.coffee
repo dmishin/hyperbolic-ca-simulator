@@ -85,7 +85,7 @@ exports.FieldObserver = class FieldObserver
     
   translateBy: (appendArray) ->
     #console.log  "New center at #{ newCenter}"
-    @rebuildAt @appendRewrite @center, appendArray
+    @rebuildAt @tiling.appendRewrite @center, appendArray
     
   canDraw: -> true        
   draw: (cells, context) ->

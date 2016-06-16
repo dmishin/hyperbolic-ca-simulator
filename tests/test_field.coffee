@@ -5,30 +5,28 @@ assert = require "assert"
 {unity, nodeMatrixRepr, newNode, showNode, nodeHash, node2array} = require "../src/core/vondyck_chain.coffee"
 {NodeHashMap} = require "../src/core/chain_map.coffee"
 {RewriteRuleset, knuthBendix} = require "../src/core/knuth_bendix.coffee"
+{RegularTiling} = require "../src/core/regular_tiling.coffee"
 
 describe "allClusters", ->
 
   #prepare data: rewriting ruleset for group 5;4
   #
   [N, M] = [5, 4]
-  rewriteRuleset = knuthBendix vdRule N, M
-  appendRewrite = makeAppendRewrite rewriteRuleset
-
+  tiling = new RegularTiling N, M
   
   it "should give one cell, if only one central cell present", ->
     cells = new NodeHashMap
     cells.put unity, 1
-    clusters = allClusters cells, N, M, appendRewrite
+    clusters = allClusters cells, tiling
     assert.equal clusters.length, 1
     assert.deepEqual clusters, [[unity]] #one cluster of 1 cell
 
   it "should give one cell, if only one central cell present", ->
     cells = new NodeHashMap
-    c = newNode 'a', 2, newNode 'b', 2, newNode 'a', -1, unity
-    c = eliminateFinalA c, appendRewrite, N
+    c = tiling.toCell tiling.parse "Ab^2a^2"
     
     cells.put c, 1
-    clusters = allClusters cells, N, M, appendRewrite
+    clusters = allClusters cells, tiling
     assert.equal clusters.length, 1
     assert.deepEqual clusters[0].length, 1
 

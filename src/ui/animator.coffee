@@ -1,6 +1,6 @@
 "use strict"
 #Hyperbolic computations core
-{inverseChain, appendChain, appendInverseChain, showNode} = require "../core/vondyck_chain.coffee"
+#{inverseChain, appendChain, appendInverseChain} = require "../core/vondyck_chain.coffee"
 M = require "../core/matrix3.coffee"
 {decomposeToTranslations} = require "../core/decompose_to_translations.coffee"
 
@@ -153,19 +153,18 @@ exports.Animator = class Animator
     # T = MoffsetEnd * (M(chainEnd) * M(chainStart)^-1) * MoffsetStart^-1
     #
     # T = MoffsetEnd * M(chainEnd + invChain(chainStart) * MoffsetStart^-1
-    appendRewrite = @application.getAppendRewrite()
+    tiling = @application.tiling
 
     #Not very sure but lets try
-    #Mdelta = appendInverseChain(@endChain, @startChain,appendRewrite).repr(tessellation.group)
-    inv = (c) -> inverseChain(c, appendRewrite)
-    app = (c1, c2) -> appendChain(c1,c2, appendRewrite)
+    #Mdelta = tiling.repr tiling.appendInverse(@endChain, @startChain)
+    inv = (c) -> tiling.inverse c
+    app = (c1, c2) -> tiling.append c1,c2
 
     # e, S bad
     # S, e bad
     # 
     # E, s good? Seems to be good, but power calculation is wrong.
-    Mdelta = app(inv(@endChain), @startChain ).repr(@application.getGroup())
-    
+    Mdelta = tiling.repr app(inv(@endChain), @startChain)
     
     T = M.mul(M.mul(@endOffset, Mdelta), M.hyperbolicInv(@startOffset))
     return T

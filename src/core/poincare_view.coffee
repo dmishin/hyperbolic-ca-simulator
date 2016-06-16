@@ -6,7 +6,7 @@ len2 = (x,y) -> x*x + y*y
 
 #determine cordinates of the cell, containing given point
 exports.makeXYT2path = (tiling, maxSteps=100) -> 
-  cell2point = (cell) -> M.mulv cell.repr(tiling), [0.0,0.0,1.0]
+  cell2point = (cell) -> M.mulv tiling.repr(cell), [0.0,0.0,1.0]
   vectorDist = ([x1,y1,t1], [x2,y2,t2]) ->
     #actually, this is the correct way:
     # Math.acosh t1*t2 - x1*x2 - y1*y2

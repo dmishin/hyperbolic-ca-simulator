@@ -14,10 +14,10 @@ exports.Navigator = class Navigator
     
   search: (field)->
     #field is NodeHashMap
-    n = @application.getGroup().n
-    m = @application.getGroup().m
+    n = @application.tiling.n
+    m = @application.tiling.m
     
-    @clusters = allClusters field, n, m, @application.getAppendRewrite()
+    @clusters = allClusters field, @application.tiling
     @sortByDistance()
     @updateClusterList()
     @btnClear.style.display = if @clusters then '' else 'none'

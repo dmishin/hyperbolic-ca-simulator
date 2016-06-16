@@ -112,7 +112,7 @@ exports.forFarNeighborhood = forFarNeighborhood = (center, appendRewrite, n, m, 
     #And loop!
   #The loop is only finished by 'return'.
 
-exports.extractClusterAt = extractClusterAt = (cells, getNeighbors, chain) ->
+exports.extractClusterAt = extractClusterAt = (cells, tiling, chain) ->
   #use cycle instead of recursion in order to avoid possible stack overflow.
   #Clusters may be big.
   stack = [chain]
@@ -124,19 +124,18 @@ exports.extractClusterAt = extractClusterAt = (cells, getNeighbors, chain) ->
     cells.remove c
     cluster.push c
     
-    for neighbor in getNeighbors c
+    for neighbor in tiling.moore c
       if cells.get(neighbor) isnt null
         stack.push neighbor
   return cluster
   
-exports.allClusters = (cells, n, m, appendRewrite) ->
+exports.allClusters = (cells, tiling) ->
   cellsCopy = cells.copy()
   clusters = []
-  getNeighbors = mooreNeighborhood n, m, appendRewrite
-    
+      
   cells.forItems (chain, value) ->
     if cellsCopy.get(chain) isnt null
-      clusters.push extractClusterAt(cellsCopy, getNeighbors, chain)
+      clusters.push extractClusterAt(cellsCopy, tiling, chain)
 
   return clusters      
   
