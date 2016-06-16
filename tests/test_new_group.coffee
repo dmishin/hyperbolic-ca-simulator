@@ -73,16 +73,16 @@ describe "RegularTiling", ->
     tiling = new RegularTiling 3, 4
     #last A elimination
     x = tiling.parse "bab" #eliminated to 1 by adding a: bab+a = baba = e
-    assert.ok tiling.trimA(x).equals(tiling.unity)
+    assert.ok tiling.toCell(x).equals(tiling.unity)
 
 
     checkTrimmingIsUnique = (chain) ->
-      trimmedChain = tiling.trimA chain
+      trimmedChain = tiling.toCell chain
       for aPower in [-tiling.n .. tiling.n]
         if aPower is 0 then continue
         chain1 = chain.a(aPower)
-        if not tiling.trimA(chain1).equals(trimmedChain)
-          throw new Error "Chain #{chain1} trimmed returns #{tiling.trimA chain1} != #{trimmedChain}"
+        if not tiling.toCell(chain1).equals(trimmedChain)
+          throw new Error "Chain #{chain1} trimmed returns #{tiling.toCell chain1} != #{trimmedChain}"
       
       
     checkTrimmingIsUnique tiling.parse "e"
@@ -102,9 +102,9 @@ describe "RegularTiling.moore", ->
   cells = []
   
   cells.push  unity
-  cells.push  tiling.trimA tiling.rewrite tiling.parse "b"
-  cells.push  tiling.trimA tiling.rewrite tiling.parse "b^2"
-  cells.push  tiling.trimA tiling.rewrite tiling.parse "ab^2"
+  cells.push  tiling.toCell tiling.rewrite tiling.parse "b"
+  cells.push  tiling.toCell tiling.rewrite tiling.parse "b^2"
+  cells.push  tiling.toCell tiling.rewrite tiling.parse "ab^2"
   
   it "must return expected number of cells different from origin", ->
     for cell in cells
@@ -129,6 +129,77 @@ describe "RegularTiling.moore", ->
         assert.equal foundCell, 1, "Exactly 1 of the #{nei}'s neighbors must be original chain: #{cell}, but #{foundCell} found"
     return
 
-    
-describe "RegularTiling.moore", ->
+describe "RegularTiling.forFarNeighborhood", ->
+  [N, M] = [5, 4]
+  tiling = new RegularTiling N, M
+  unity = tiling.unity
+  #Make normalized node from array
+  norm = (arr) -> tiling.toCell tiling.appendRewrite unity, arr
   
+  chain1 = norm [['b',1], ['a', 2]]
+
+  assert not chain1.equals unity
+  
+  it "should start enumeration from the original cell", ->
+    tiling.forFarNeighborhood unity, (node, radius) ->
+      assert.equal radius, 0, "Must start from 0 radius"
+      assert.ok node.equals(unity), "Must start from the center"
+      #Stop after the first.
+      return false
+      
+    tiling.forFarNeighborhood chain1, (node, radius) ->
+      assert.equal radius, 0, "Must start from 0 radius"
+      assert.ok node.equals(chain1), "Must start from the center"
+      #Stop after the first.
+      return false
+
+  it "should produce all different cells in strictly increasing order", ->
+    visitedNodes = []
+    lastLevel = 0
+    tiling.forFarNeighborhood chain1, (node, level) ->
+      assert.ok (level is lastLevel) or (level is lastLevel+1)
+      for visited in visitedNodes
+        assert.ok not visited.equals node
+      visitedNodes.push node
+      lastLevel = level
+      return level < 6
+
+    assert.equal lastLevel, 6
+    assert.ok visitedNodes.length > 10
+  
+describe "RegularTiling.mooreNeighborhood", ->
+  #prepare data: rewriting ruleset for group 5;4
+  #
+  [N, M] = [5, 4]
+  tiling = new RegularTiling N, M
+  unity = tiling.unity
+  rewriteChain = (arr) -> tiling.appendRewrite unity, arr[..]
+  
+  cells = []
+  cells.push  unity
+  cells.push  tiling.toCell rewriteChain [['b',1]]
+  cells.push  tiling.toCell rewriteChain [['b', 2]]
+  cells.push  tiling.toCell rewriteChain [['b', 2],['a', 1]]
+  
+  it "must return expected number of cells different from origin", ->
+    for cell in cells
+      neighbors = tiling.moore cell
+      assert.equal neighbors.length, N*(M-2)
+
+      for nei, i in neighbors
+        assert not cell.equals nei
+
+        for nei1, j in neighbors
+          if i isnt j
+            assert not nei.equals(nei1), "neighbors #{i}=#{nei1} and #{j}=#{nei1} must be not equal"
+    return
+    
+  it "must be true that one of neighbor's neighbor is self", ->
+    for cell in cells
+      for nei in tiling.moore cell
+        foundCell = 0
+        for nei1 in tiling.moore nei
+          if nei1.equals cell
+            foundCell += 1
+        assert.equal foundCell, 1, "Exactly 1 of the #{nei}'s neighbors must be original chain: #{cell}, but #{foundCell} found"
+    return

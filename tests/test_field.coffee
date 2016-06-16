@@ -34,79 +34,6 @@ describe "allClusters", ->
 
     assert clusters[0][0].equals c
 
-describe "neighborsSum", ->
-  [N, M] = [5, 4]
-  rewriteRuleset = knuthBendix vdRule N, M
-  appendRewrite = makeAppendRewrite rewriteRuleset
-
-
-  getNeighbors = mooreNeighborhood N, M, appendRewrite
-  eliminate = (chain)-> eliminateFinalA chain, appendRewrite, N
-  rewriteChain = (arr) -> appendRewrite unity, arr[..]
-  
-  cells = []
-  cells.push  unity
-
-  field = new NodeHashMap
-  field.put unity, 1
-
-
-  neighSum = neighborsSum field, getNeighbors
-
-  #Checking values.
-  # Initial cell has no neighbors. Its sum is null or 0.
-  assert.equal neighSum.get(unity)?0, 0
-
-  #neighbor of unity has 1 cell.
-  neighbor = eliminate rewriteChain [['b',1]]
-  assert.equal neighSum.get(neighbor), 1
-  
-  
-  #cells.push  eliminate rewriteChain [['b',1]]
-  #cells.push  eliminate rewriteChain [['b', 2]]
-  #cells.push  eliminate rewriteChain [['b', 2],['a', 1]]
-  
-
-describe "mooreNeighborhood", ->
-  #prepare data: rewriting ruleset for group 5;4
-  #
-  [N, M] = [5, 4]
-  rewriteRuleset = knuthBendix vdRule N, M
-  appendRewrite = makeAppendRewrite rewriteRuleset
-
-
-  getNeighbors = mooreNeighborhood N, M, appendRewrite
-  eliminate = (chain)-> eliminateFinalA chain, appendRewrite, N
-  rewriteChain = (arr) -> appendRewrite unity, arr[..]
-  
-  cells = []
-  cells.push  unity
-  cells.push  eliminate rewriteChain [['b',1]]
-  cells.push  eliminate rewriteChain [['b', 2]]
-  cells.push  eliminate rewriteChain [['b', 2],['a', 1]]
-  
-  it "must return expected number of cells different from origin", ->
-    for cell in cells
-      neighbors = getNeighbors cell
-      assert.equal neighbors.length, N*(M-2)
-
-      for nei, i in neighbors
-        assert not cell.equals nei
-
-        for nei1, j in neighbors
-          if i isnt j
-            assert not nei.equals(nei1), "neighbors #{i}=#{showNode nei1} and #{j}=#{showNode nei1} must be not equal"
-    return
-    
-  it "must be true that one of neighbor's neighbor is self", ->
-    for cell in cells
-      for nei in getNeighbors cell
-        foundCell = 0
-        for nei1 in getNeighbors nei
-          if nei1.equals cell
-            foundCell += 1
-        assert.equal foundCell, 1, "Exactly 1 of the #{showNode nei}'s neighbors must be original chain: #{showNode cell}, but #{foundCell} found"
-    return
 
 describe "exportField", ->
   it "must export empty field", ->
@@ -262,49 +189,6 @@ describe "importField", ->
     assert.equal 'value2', f1.get(newNode 'b', 2, newNode 'a', -1, newNode 'b', 3, newNode 'a',1, unity)
     
 
-describe "forFarNeighborhood", ->
-  
-  [N, M] = [5, 4]
-  rewriteRuleset = knuthBendix vdRule N, M
-  appendRewrite = makeAppendRewrite rewriteRuleset
-
-  #Make normalized node from array
-  norm = (arr) ->
-    chain = appendRewrite unity, arr
-    eliminateFinalA chain, appendRewrite, N
-
-
-  chain1 = norm [['b',1], ['a', 2]]
-
-  assert not chain1.equals unity
-      
-  it "should start enumeration from the original cell", ->
-    
-    forFarNeighborhood unity, appendRewrite, N, M, (node, radius) ->
-      assert.equal radius, 0, "Must start from 0 radius"
-      assert.ok node.equals(unity), "Must start from the center"
-      #Stop after the first.
-      return false
-      
-    forFarNeighborhood chain1, appendRewrite, N, M, (node, radius) ->
-      assert.equal radius, 0, "Must start from 0 radius"
-      assert.ok node.equals(chain1), "Must start from the center"
-      #Stop after the first.
-      return false
-
-  it "should produce all different cells in strictly increasing order", ->
-    visitedNodes = []
-    lastLevel = 0
-    forFarNeighborhood chain1, appendRewrite, N, M, (node, level) ->
-      assert.ok (level is lastLevel) or (level is lastLevel+1)
-      for visited in visitedNodes
-        assert.ok not visited.equals node
-      visitedNodes.push node
-      lastLevel = level      
-      return level < 6
-
-    assert.equal lastLevel, 6
-    assert.ok visitedNodes.length > 10
 
 describe "randomFillFixedNum", ->
   it "must fill some reasonable number of cells", ->
