@@ -1,17 +1,17 @@
 "use strict";
-{unity, showNode, node2array} = require "../core/vondyck_chain.coffee"
-{makeXYT2path, poincare2hyperblic, hyperbolic2poincare, visibleNeighborhood} = require "../core/poincare_view.coffee"
-{eliminateFinalA} = require "../core/vondyck_rewriter.coffee"
+{unity, node2array} = require "../core/vondyck_chain.coffee"
+{makeXYT2path, poincare2hyperblic, hyperbolic2poincare, visibleNeighborhood, makeCellShapePoincare} = require "../core/poincare_view.coffee"
+#{eliminateFinalA} = require "../core/vondyck_rewriter.coffee"
 M = require "../core/matrix3.coffee"
 
 
 exports.FieldObserver = class FieldObserver
-  constructor: (@tessellation, @appendRewrite, @minCellSize=1.0/400.0, center = unity, @tfm = M.eye())->
+  constructor: (@tiling, @minCellSize=1.0/400.0, center = unity, @tfm = M.eye())->
     
     @cells = null
     @center = null
-    cells = visibleNeighborhood @tessellation, @appendRewrite, @minCellSize
-    @cellOffsets = (node2array(c) for c in cells)
+    cells = visibleNeighborhood @tiling, @minCellSize
+    @cellOffsets = (c.asStack() for c in cells)
     @isDrawingHomePtr = true
     @colorHomePtr = 'rgba(255,100,100,0.7)'
     
@@ -21,7 +21,7 @@ exports.FieldObserver = class FieldObserver
       @cells = cells
       @center = center
     
-    @cellTransforms = (c.repr(@tessellation.group) for c in cells)
+    @cellTransforms = (@tiling.repr(c) for c in cells)
     @drawEmpty = true
     @jumpLimit = 1.5
     
@@ -29,7 +29,7 @@ exports.FieldObserver = class FieldObserver
     @viewUpdates = 0
     #precision falls from 1e-16 to 1e-9 in 1000 steps.
     @maxViewUpdatesBeforeCleanup = 50
-    @xyt2path = makeXYT2path @tessellation.group, @appendRewrite
+    @xyt2path = makeXYT2path @tiling
     @pattern = ["red", "black", "green", "blue", "yellow", "cyan", "magenta", "gray", "orange"]
 
     @onFinish = null
@@ -40,13 +40,13 @@ exports.FieldObserver = class FieldObserver
     # xyt = genPow(head.letter, -head.p) * ... * xyt0
     #
     # reference formula.
-    #     #xyt = M.mulv M.hyperbolicInv(@center.repr(@tessellation.group)), xyt
+    #     #xyt = M.mulv M.hyperbolicInv(@center.repr(@tiling)), xyt
     # it works, but matrix values can become too large.
     # 
-    stack = node2array(@center)
+    stack = @center.asStack()
     #apply inverse transformations in reverse order
     for [letter, p] in stack by -1
-      xyt = M.mulv @tessellation.group.generatorPower(letter, -p), xyt
+      xyt = M.mulv @tiling.representation.generatorPower(letter, -p), xyt
       #Denormalize coordinates to avoid extremely large values.
       invT = 1.0/xyt[2]
       xyt[0] *= invT
@@ -70,12 +70,12 @@ exports.FieldObserver = class FieldObserver
     @center = newCenter
     @cells = for offset in @cellOffsets
       #it is important to make copy since AR empties the array!
-      eliminateFinalA @appendRewrite(newCenter, offset[..]), @appendRewrite, @tessellation.group.n
+      @tiling.toCell @tiling.appendRewrite(newCenter, offset[..])
     @_observedCellsChanged()
     return
 
   navigateTo: (chain, offsetMatrix=M.eye()) ->
-    console.log "navigated to #{showNode chain}"
+    console.log "navigated to #{chain}"
     @rebuildAt chain
     @tfm = offsetMatrix
     @renderGrid @tfm
@@ -84,7 +84,7 @@ exports.FieldObserver = class FieldObserver
   _observedCellsChanged: ->
     
   translateBy: (appendArray) ->
-    #console.log  "New center at #{showNode newCenter}"
+    #console.log  "New center at #{ newCenter}"
     @rebuildAt @appendRewrite @center, appendArray
     
   canDraw: -> true        
@@ -109,7 +109,7 @@ exports.FieldObserver = class FieldObserver
       for cellIndex in cellIndices
         cellTfm = @cellTransforms[cellIndex]
         mtx = M.mul @tfm, cellTfm
-        @tessellation.makeCellShapePoincare mtx, context
+        makeCellShapePoincare @tiling, mtx, context
         
       if state is 0
         context.stroke()
@@ -200,8 +200,8 @@ exports.FieldObserver = class FieldObserver
     pathToCenterCell = @xyt2path centerCoord
     if pathToCenterCell is unity
       return
-    #console.log "Jump by #{showNode pathToCenterCell}"
-    m = pathToCenterCell.repr @tessellation.group
+    #console.log "Jump by #{pathToCenterCell}"
+    m = pathToCenterCell.repr @tiling
 
     #modifyView won't work, since it multiplies in different order.
     @tfm = M.mul @tfm, m
@@ -209,14 +209,14 @@ exports.FieldObserver = class FieldObserver
 
     #console.log JSON.stringify @tfm
     #move observation point
-    @translateBy node2array pathToCenterCell
+    @translateBy pathToCenterCell.asStack()
     @renderGrid @tfm
     
   straightenView: ->
     @rebaseView()
     originalTfm = @getViewOffsetMatrix()
 
-    dAngle = Math.PI/@tessellation.group.n
+    dAngle = Math.PI/@tiling.n
     minusEye = M.smul(-1, M.eye())
     distanceToEye = (m) ->
       d = M.add m, minusEye
@@ -226,9 +226,9 @@ exports.FieldObserver = class FieldObserver
     bestDifference = null
 
     angleOffsets = [0.0]
-    angleOffsets.push Math.PI/2 if @tessellation.group.n % 2 is 1
+    angleOffsets.push Math.PI/2 if @tiling.n % 2 is 1
     for additionalAngle in angleOffsets
-      for i in [0...2*@tessellation.group.n]
+      for i in [0...2*@tiling.n]
         angle = dAngle*i + additionalAngle
         rotMtx = M.rotationMatrix angle
         difference = distanceToEye M.mul originalTfm, M.hyperbolicInv rotMtx
@@ -246,7 +246,7 @@ exports.FieldObserver = class FieldObserver
     #inverse transform it...
     xyt = M.mulv (M.inv @tfm), xyt
     visibleCell = @xyt2path xyt
-    eliminateFinalA @appendRewrite(@center, node2array(visibleCell)), @appendRewrite, @tessellation.group.n
+    @tiling.toCell @tiling.appendRewrite @center, visibleCell.asStack()
     
   shutdown: -> #nothing to do.
   

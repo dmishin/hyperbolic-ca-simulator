@@ -1,5 +1,5 @@
 {makeAppendRewrite, vdRule} = require "./vondyck_rewriter.coffee"
-{parseNode, unity} = require "./vondyck_chain.coffee"
+{appendChain, appendInverseChain, inverseChain, parseNode, unity} = require "./vondyck_chain.coffee"
 {RewriteRuleset, knuthBendix} = require "../core/knuth_bendix.coffee"
 {CenteredVonDyck} = require "./triangle_group_representation.coffee"
 
@@ -53,3 +53,7 @@ exports.VonDyck = class VonDyck
   
   repr: (chain) -> chain.repr @representation
     
+  inverse: (chain) -> inverseChain chain, @appendRewrite
+  appendInverse: (a, c) -> appendInverseChain a, c, @appendRewrite
+
+  append: (a, c) -> appendChain a, c, @appendRewrite

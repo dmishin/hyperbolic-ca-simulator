@@ -1,12 +1,12 @@
 "use strict"
 
 #Core hyperbolic group compuatation library
-{Tessellation} = require "../core/hyperbolic_tessellation.coffee"
-{unity, inverseChain, appendChain, appendInverseChain, showNode, parseNode, node2array} = require "../core/vondyck_chain.coffee"
+{unity} = require "../core/vondyck_chain.coffee"
 {NodeHashMap} = require "../core/chain_map.coffee"
-{makeAppendRewrite, vdRule, eliminateFinalA} = require "../core/vondyck_rewriter.coffee"
-{RewriteRuleset, knuthBendix} = require "../core/knuth_bendix.coffee"
-{stringifyFieldData, parseFieldData, mooreNeighborhood, evaluateTotalisticAutomaton, importField, randomFillFixedNum, exportField, randomStateGenerator} = require "../core/field.coffee"
+{RegularTiling} = require "../core/regular_tiling.coffee"
+{evaluateTotalisticAutomaton} = require "../core/cellular_automata.coffee"
+
+{stringifyFieldData, parseFieldData, importField, randomFillFixedNum, exportField, randomStateGenerator} = require "../core/field.coffee"
 {GenericTransitionFunc, BinaryTransitionFunc,DayNightTransitionFunc, parseTransitionFunction} = require "../core/rule.coffee"
 M = require "../core/matrix3.coffee"
 
@@ -74,7 +74,7 @@ class UriConfig
       
   getViewBase: ->
     return unity unless @keys.viewbase?
-    parseNode @keys.viewbase
+    RegularTiling.parse @keys.viewbase
     
   getViewOffset: ->
     return M.eye() unless @keys.viewoffset?
@@ -83,8 +83,7 @@ class UriConfig
     
 class Application
   constructor: ->
-    @tessellation = null
-    @appendRewrite = null
+    @tiling = null
     @observer = null
     @navigator = null
     @animator = null
@@ -97,7 +96,6 @@ class Application
     @ObserverClass = FieldObserver
     @margin = 16 #margin pixels
     
-  getAppendRewrite: -> @appendRewrite
   setCanvasResize: (enable) -> canvasSizeUpdateBlocked = enable
   getCanvasResize: -> canvasSizeUpdateBlocked
   redraw: -> redraw()
@@ -105,7 +103,6 @@ class Application
   drawEverything: -> drawEverything canvas.width, canvas.height, context
   uploadToServer: (name, cb) -> uploadToServer name, cb
   getCanvas: -> canvas
-  getGroup: -> @tessellation.group
   getTransitionFunc: -> @transitionFunc
 
   getMargin: -> if @observer.isDrawingHomePtr then @margin else 0
@@ -124,13 +121,8 @@ class Application
     
   initialize: (config = new DefaultConfig)->
     [n,m] = config.getGrid()
-    @tessellation = new Tessellation n, m
-    console.log "Running knuth-bendix algorithm...."
-    rewriteRuleset = knuthBendix vdRule @getGroup().n, @getGroup().m
-    console.log "Finished"    
-    @appendRewrite = makeAppendRewrite rewriteRuleset
-    @getNeighbors = mooreNeighborhood @getGroup().n, @getGroup().m, @appendRewrite
-
+    @tiling = new RegularTiling n, m
+    
     cellData = config.getCellData()
     if cellData
       console.log "import: #{cellData}"
@@ -139,7 +131,7 @@ class Application
       @cells = new NodeHashMap
       @cells.put unity, 1
     
-    @observer = new @ObserverClass @tessellation, @appendRewrite, minVisibleSize, config.getViewBase(), config.getViewOffset()
+    @observer = new @ObserverClass @tiling, minVisibleSize, config.getViewBase(), config.getViewOffset()
     if (isDrawing=localStorage?.getItem('observer.isDrawingHomePtr'))?
       isDrawing = isDrawing is '1'
       E('flag-origin-mark').checked = isDrawing
@@ -154,14 +146,14 @@ class Application
     @animator = new Animator this
     @paintStateSelector = new PaintStateSelector this, E("state-selector"), E("state-selector-buttons")
 
-    @transitionFunc = parseTransitionFunction config.getFunctionCode(), application.getGroup().n, application.getGroup().m
+    @transitionFunc = parseTransitionFunction config.getFunctionCode(), application.tiling.n, application.tiling.m
     @lastBinaryTransitionFunc = @transitionFunc
     @openDialog = new OpenDialog this
     @saveDialog = new SaveDialog this
     @svgDialog = new SvgDialog this
 
     @ruleEntry = new ValidatingInput E('rule-entry'),
-      ((ruleStr)=>parseTransitionFunction ruleStr, @getGroup().n, @getGroup().m),
+      ((ruleStr)=>parseTransitionFunction ruleStr, @tiling.n, @tiling.m),
       ((rule)->""+rule),
       @transitionFunc 
       
@@ -199,21 +191,16 @@ class Application
     E('controls-rule-generic').style.display="none"
 
   setGridImpl: (n, m)->
-    @tessellation = new Tessellation n, m
-    console.log "Running knuth-bendix algorithm for {#{n}, #{m}}...."
-    rewriteRuleset = knuthBendix vdRule @getGroup().n, @getGroup().m
-    console.log "Finished"
-    @appendRewrite = makeAppendRewrite rewriteRuleset
-    @getNeighbors = mooreNeighborhood @getGroup().n, @getGroup().m, @appendRewrite
+    @tiling = new RegularTiling n, m
     #transition function should be changed too.
 
     if @transitionFunc?
-      @transitionFunc = @transitionFunc.changeGrid @getGroup().n, @getGroup().m
+      @transitionFunc = @transitionFunc.changeGrid @tiling.n, @tiling.m
     
     @observer?.shutdown()
     
     oldObserver = @observer
-    @observer = new @ObserverClass @tessellation, @appendRewrite, minVisibleSize    
+    @observer = new @ObserverClass @tiling, minVisibleSize    
     @observer.isDrawingHomePtr = oldObserver.isDrawingHomePtr
     
     @observer.onFinish = -> redraw()
@@ -223,13 +210,13 @@ class Application
     @updateGridUI()
     
   updateGridUI: ->
-    E('entry-n').value = "" + application.getGroup().n
-    E('entry-m').value = "" + application.getGroup().m
-    E('grid-num-neighbors').innerHTML = (@getGroup().m-2)*@getGroup().n
+    E('entry-n').value = "" + application.tiling.n
+    E('entry-m').value = "" + application.tiling.m
+    E('grid-num-neighbors').innerHTML = (@tiling.m-2)*@tiling.n
     
   #Actions
   doRandomFill: ->
-    randomFillFixedNum @cells, randomFillPercent, unity, randomFillNum, @appendRewrite, @getGroup().n, @getGroup().m, randomStateGenerator(@transitionFunc.numStates)
+    randomFillFixedNum @cells, randomFillPercent, unity, randomFillNum, @tiling.appendRewrite, @tiling.n, @tiling.m, randomStateGenerator(@transitionFunc.numStates)
     updatePopulation()
     redraw()
 
@@ -264,14 +251,12 @@ class Application
       n = parseIntChecked match[1]
       m = parseIntChecked match[2]
 
-      if n isnt @getGroup().n or m isnt @getGroup().m
+      if n isnt @tiling.n or m isnt @tiling.m
         console.log "Need to change grid"
         @setGridImpl n, m
 
       #normzlize chain coordinates, so that importing of user-generated data could be possible
-      normalizeChain = (chain) =>
-        rewritten = @appendRewrite unity, node2array(chain)
-        eliminateFinalA rewritten, @appendRewrite, @getGroup().n
+      normalizeChain = (chain) => @tiling.toCell @tiling.rewrite chain
         
       @cells = importField parseFieldData(match[3]), null, normalizeChain
       console.log "Imported #{@cells.count} cells"
@@ -288,7 +273,7 @@ class Application
     @cells = importField parseFieldData assert(cellData)
     @generation = assert record.generation
 
-    @observer.navigateTo parseNode(assert(record.base)), assert(record.offset)
+    @observer.navigateTo @tiling.parse(assert(record.base)), assert(record.offset)
 
     console.log "LOading func type= #{record.funcType}"
     switch record.funcType
@@ -312,12 +297,12 @@ class Application
     funcId = ""+@getTransitionFunc()
     funcType = @getTransitionFunc().getType()
     catalogRecord =
-      gridN: @getGroup().n
-      gridM: @getGroup().m
+      gridN: @tiling.n
+      gridM: @tiling.m
       name: fname
       funcId: funcId
       funcType: funcType
-      base: showNode @getObserver().getViewCenter()
+      base: @getObserver().getViewCenter().toString()
       offset: @getObserver().getViewOffsetMatrix()
       size: fieldData.length
       time: Date.now()
@@ -348,15 +333,15 @@ class Application
   doExportUrl: ->
     #Export field state as URL
     keys = []
-    keys.push "grid=#{@getGroup().n},#{@getGroup().m}"
+    keys.push "grid=#{@tiling.n},#{@tiling.m}"
     if @cells.count != 0
-      keys.push "cells=#{@getGroup().n}$#{@getGroup().m}$#{stringifyFieldData exportField @cells}"
+      keys.push "cells=#{@tiling.n}$#{@tiling.m}$#{stringifyFieldData exportField @cells}"
     keys.push "generation=#{@generation}"
     if @transitionFunc.getType() is "binary"
       ruleStr = ""+@transitionFunc
       ruleStr = ruleStr.replace /\s/g, '_'
       keys.push "rule=#{ruleStr}"
-    keys.push "viewbase=#{showNode @getObserver().getViewCenter()}"
+    keys.push "viewbase=#{@getObserver().getViewCenter()}"
     [rot, dx, dy] = M.hyperbolicDecompose @getObserver().getViewOffsetMatrix()
     
     keys.push "viewoffset=#{rot}:#{dx}:#{dy}"
@@ -668,14 +653,14 @@ updateGeneration = ->
 #exportTrivial = (cells) ->
 #  parts = []
 #  cells.forItems (cell, value)->
-#    parts.push showNode cell
+#    parts.push ""+cell
 #    parts.push ""+value
 #  return parts.join " "
   
 doExport = ->
   data = stringifyFieldData exportField application.cells
-  n = application.getGroup().n
-  m = application.getGroup().m
+  n = application.tiling.n
+  m = application.tiling.m
   showExportDialog "#{n}$#{m}$#{data}"
 
 doExportClose = ->
@@ -720,11 +705,11 @@ updateMemoryButtons = ->
   E('btn-mem-get').disabled = E('btn-mem-clear').disabled = memo is null
 
 encodeVisible = ->
-  iCenter = inverseChain application.observer.cellFromPoint(0,0), application.appendRewrite
+  iCenter = application.tiling.inverse application.observer.cellFromPoint(0,0)
   visibleCells = new NodeHashMap
   for [cell, state] in application.observer.visibleCells application.cells
-    translatedCell = appendChain iCenter, cell, application.appendRewrite
-    translatedCell = eliminateFinalA translatedCell, application.appendRewrite, application.getGroup().n
+    translatedCell = application.tiling.appendChain iCenter, cell
+    translatedCell = application.tiling.toCell translatedCell
     visibleCells.put translatedCell, state
   return exportField visibleCells
 
@@ -735,8 +720,8 @@ showExportDialog = (sdata) ->
   E('export').select()
   
 doExportVisible = ->
-  n = application.getGroup().n
-  m = application.getGroup().m
+  n = application.tiling.n
+  m = application.tiling.m
   data = stringifyFieldData encodeVisible()
   showExportDialog "#{n}$#{m}$#{data}"
   

@@ -1,3 +1,4 @@
+"use strict"
 {eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {VonDyck} = require "./vondyck.coffee"
 {mooreNeighborhood, forFarNeighborhood} = require "./field.coffee"
@@ -11,6 +12,8 @@ exports.RegularTiling = class RegularTiling extends VonDyck
   constructor: (n,m) ->
     super(n,m,2)
     @solve()
+    if @type() == "hyperbolic"
+      @cellShape = @_generateNGon n, @representation.sinh_r, @representation.cosh_r
     
   toString: -> "VonDyck(#{@n}, #{@m}, #{@k})"
 
@@ -79,3 +82,9 @@ exports.RegularTiling = class RegularTiling extends VonDyck
 
 
   
+  #produces shape (array of 3-vectors)
+  _generateNGon: (n, sinh_r, cosh_r) ->
+    alpha = Math.PI*2/n
+    for i in [0...n]
+      angle = alpha*i
+      [sinh_r*Math.cos(angle), sinh_r*Math.sin(angle), cosh_r]
