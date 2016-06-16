@@ -1,6 +1,5 @@
 "use strict"
 #Hyperbolic computations core
-#{inverseChain, appendChain, appendInverseChain} = require "../core/vondyck_chain.coffee"
 M = require "../core/matrix3.coffee"
 {decomposeToTranslations} = require "../core/decompose_to_translations.coffee"
 

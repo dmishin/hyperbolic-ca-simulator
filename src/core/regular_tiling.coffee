@@ -1,7 +1,7 @@
 "use strict"
 {eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {VonDyck} = require "./vondyck.coffee"
-{mooreNeighborhood, forFarNeighborhood} = require "./field.coffee"
+#{} = require "./field.coffee"
 
 #???
 {unity} = require "./vondyck_chain.coffee"
@@ -81,6 +81,27 @@ exports.RegularTiling = class RegularTiling extends VonDyck
     #The loop is only finished by 'return'.
 
 
+  # r - radius
+  # appendRewrite: rewriter for chains.
+  # n,m - parameters of the tessellation
+  # Return value:
+  #  list of chains to append
+  farNeighborhood:(center, r) ->
+    #map of visited cells
+    cells = new NodeHashMap
+    cells.put center, true
+    getCellList = (cells) ->
+      cellList = []
+      cells.forItems (cell, state) ->
+        cellList.push cell
+      return cellList
+
+    for i in [0...r] by 1
+      for cell in getCellList cells
+        for nei in @moore cell
+          cells.put nei, true
+
+    getCellList cells
   
   #produces shape (array of 3-vectors)
   _generateNGon: (n, sinh_r, cosh_r) ->

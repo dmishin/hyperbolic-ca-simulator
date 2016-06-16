@@ -14,9 +14,6 @@ exports.Navigator = class Navigator
     
   search: (field)->
     #field is NodeHashMap
-    n = @application.tiling.n
-    m = @application.tiling.m
-    
     @clusters = allClusters field, @application.tiling
     @sortByDistance()
     @updateClusterList()

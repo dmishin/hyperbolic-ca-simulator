@@ -1,30 +1,10 @@
 #{Tessellation} = require "./hyperbolic_tessellation.coffee"
 {unity, newNode, showNode, node2array} = require "./vondyck_chain.coffee"
-{makeAppendRewrite, eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {NodeHashMap} = require "./chain_map.coffee"
 #{RewriteRuleset, knuthBendix} = require "./knuth_bendix.coffee"
 
 #High-level utils for working with hyperbolic cellular fields
 
-
-exports.mooreNeighborhood = mooreNeighborhood = (n, m, appendRewrite)->(chain)->
-  #reutrns Moore (vertex) neighborhood of the cell.
-  # it contains N cells of von Neumann neighborhood
-  #    and N*(M-3) cells, sharing single vertex.
-  # In total, N*(M-2) cells.
-  neighbors = new Array(n*(m-2))
-  i = 0
-  for powerA in [0...n] by 1
-    for powerB in [1...m-1] by 1
-      #adding truncateA to eliminate final rotation of the chain.
-      nStep = if powerA
-            [['b', powerB], ['a', powerA]]
-        else
-            [['b', powerB]]
-      neigh = eliminateFinalA appendRewrite(chain, nStep), appendRewrite, n
-      neighbors[i] = neigh
-      i += 1
-  return neighbors
 
 
 exports.neighborsSum = neighborsSum = (cells, getNeighbors, plus=((x,y)->x+y), plusInitial=0)->
@@ -48,70 +28,7 @@ exports.evaluateTotalisticAutomaton = evaluateTotalisticAutomaton = (cells, getN
   return newCells
 
 
-# r - radius
-# appendRewrite: rewriter for chains.
-# n,m - parameters of the tessellation
-# Return value:
-#  list of chains to append
-exports.farNeighborhood = farNeighborhood = (center, r, appendRewrite, n, m) ->
-  #map of visited cells
-  cells = new NodeHashMap
-  cells.put center, true
-  getNeighbors = mooreNeighborhood n, m, appendRewrite
-  getCellList = (cells) ->
-    cellList = []
-    cells.forItems (cell, state) ->
-      cellList.push cell
-    return cellList
-
-  for i in [0...r] by 1
-    for cell in getCellList cells
-      for nei in getNeighbors cell
-        cells.put nei, true
-
-  getCellList cells
   
-#calls a callback fucntion for each cell in the far neighborhood of the original.
-# starts from the original cell, and then calls the callback for more and more far cells, encircling it.
-# stops when callback returns false.
-exports.forFarNeighborhood = forFarNeighborhood = (center, appendRewrite, n, m, callback) ->
-  getNeighbors = mooreNeighborhood n, m, appendRewrite
-  cells = new NodeHashMap
-  cells.put center, true
-  #list of cells of the latest complete layer
-  thisLayer = [center]
-  #list of cells in the previous complete layer
-  prevLayer = []
-  #Radius of the latest complete layer
-  radius = 0
-  
-  return if not callback center, radius
-
-  while true
-    #now for each cell in the latest layer, find neighbors, that are not marked yet.
-    # They would form a new layer.
-    radius += 1
-    newLayer = []
-    for cell in thisLayer
-      for neighCell in getNeighbors cell
-        if not cells.get neighCell
-          #Detected new unvisited cell - register it and call a callback
-          newLayer.push neighCell
-          cells.put neighCell, true
-          return if not callback neighCell, radius
-    #new layer complete at this point.
-    # Now move to the next layer.
-    # memory optimization: remove from the visited map cells of the prevLayer, since they are not neeed anymore.
-    # actually, this is quite minor optimization, since cell counts grow exponentially, but I would like to do it.
-    for cell in prevLayer
-      if not cells.remove cell
-        throw new Error("Assertion failed: cell not present")
-    #rename layers
-    prevLayer = thisLayer
-    thisLayer = newLayer
-    #And loop!
-  #The loop is only finished by 'return'.
-
 exports.extractClusterAt = extractClusterAt = (cells, tiling, chain) ->
   #use cycle instead of recursion in order to avoid possible stack overflow.
   #Clusters may be big.
@@ -203,25 +120,25 @@ exports.importField = (fieldData, cells = new NodeHashMap, preprocess)->
 exports.randomStateGenerator = (nStates) -> ->
   (Math.floor(Math.random()*(nStates-1))|0) + 1
   
-exports.randomFill = (field, density, center, r, appendRewrite, n, m, randomState ) ->
+exports.randomFill = (field, density, center, r, tiling, randomState ) ->
   if density < 0 or density > 1.0
     throw new Error "Density must be in [0;1]"
   #by default, fill with ones.    
   randomState = randomState ? -> 1
     
-  for cell in farNeighborhood center, r, appendRewrite, n, m
+  for cell in tiling.farNeighborhood center, r
     if Math.random() < density
       field.put cell, randomState()
   return
 
 #Fill randomly, visiting numCells cells around the given center.
-exports.randomFillFixedNum = (field, density, center, numCells, appendRewrite, n, m, randomState ) ->
+exports.randomFillFixedNum = (field, density, center, numCells, tiling, randomState ) ->
   if density < 0 or density > 1.0
     throw new Error "Density must be in [0;1]"
   #by default, fill with ones.    
   randomState = randomState ? -> 1
   visited = 0
-  forFarNeighborhood center, appendRewrite, n, m, (cell, _)->
+  tiling.forFarNeighborhood center, (cell, _)->
     #Time to stop iteration?
     return false if visited >= numCells
     if Math.random() < density

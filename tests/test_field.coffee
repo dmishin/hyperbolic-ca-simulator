@@ -1,10 +1,8 @@
 
 assert = require "assert"
-{allClusters, exportField, importField, mooreNeighborhood, neighborsSum, parseFieldData, randomStateGenerator, stringifyFieldData, forFarNeighborhood, randomFillFixedNum} = require "../src/core/field"
-{makeAppendRewrite, vdRule, eliminateFinalA} = require "../src/core/vondyck_rewriter.coffee"
-{unity, nodeMatrixRepr, newNode, showNode, nodeHash, node2array} = require "../src/core/vondyck_chain.coffee"
+{allClusters, exportField, importField, parseFieldData, randomStateGenerator, stringifyFieldData, randomFillFixedNum} = require "../src/core/field"
+{unity, newNode} = require "../src/core/vondyck_chain.coffee"
 {NodeHashMap} = require "../src/core/chain_map.coffee"
-{RewriteRuleset, knuthBendix} = require "../src/core/knuth_bendix.coffee"
 {RegularTiling} = require "../src/core/regular_tiling.coffee"
 
 describe "allClusters", ->
@@ -191,13 +189,12 @@ describe "importField", ->
 describe "randomFillFixedNum", ->
   it "must fill some reasonable number of cells", ->
     [N, M] = [5, 4]
-    rewriteRuleset = knuthBendix vdRule N, M
-    appendRewrite = makeAppendRewrite rewriteRuleset
+    tiling = new RegularTiling N, M
 
     field = new NodeHashMap
 
     nCells = 10000
-    randomFillFixedNum field, 0.4, unity, 10000, appendRewrite, N, M
+    randomFillFixedNum field, 0.4, unity, 10000, tiling
 
     #not guaranteed, but chances of failure are small.
     assert.ok field.count > 0.4*nCells*0.7
