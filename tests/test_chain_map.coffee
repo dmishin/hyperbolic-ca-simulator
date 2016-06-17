@@ -1,10 +1,10 @@
 assert = require "assert"
 {unity, newNode} = require "../src/core/vondyck_chain.coffee"
-{NodeHashMap} = require "../src/core/chain_map.coffee"
+{ChainMap} = require "../src/core/chain_map.coffee"
 
-describe "NodeHashMap", ->
+describe "ChainMap", ->
   it "should support putting and removing empty chain", ->
-    m = new NodeHashMap
+    m = new ChainMap
     m.put unity, "empty"
     assert.equal m.get(unity), "empty"
     assert.equal m.count, 1
@@ -18,7 +18,7 @@ describe "NodeHashMap", ->
     assert.equal m.count, 0
 
   it "should support putting values wtih accumulation", ->
-    m = new NodeHashMap
+    m = new ChainMap
     e = unity
     a1 = newNode("a", 1, unity)
     b2 = newNode("b", 2, unity)
@@ -33,7 +33,7 @@ describe "NodeHashMap", ->
     
         
   it "should support putting and removing non - empty chains", ->
-    m = new NodeHashMap
+    m = new ChainMap
     e = unity
     a1 = newNode("a", 1, unity)
     b2 = newNode("b", 2, unity)
@@ -52,7 +52,7 @@ describe "NodeHashMap", ->
     assert.equal m.get(a1b1), "a1b1"
     
   it "should support copy", ->
-    m = new NodeHashMap
+    m = new ChainMap
     c1 = unity
     c2 = newNode 'a', 2, unity
     c3 = newNode 'b', 3, unity
@@ -86,7 +86,7 @@ describe "NodeHashMap", ->
     
 
   it "should remove cells without corrupting data", ->
-    m = new NodeHashMap
+    m = new ChainMap
     c1 = unity
     c2 = newNode 'a', 2, unity
     c3 = newNode 'b', 3, unity
@@ -124,7 +124,7 @@ describe "NodeHashMap", ->
 
   it "should support growing the table", ->
 
-    m = new NodeHashMap
+    m = new ChainMap
     initialTableSize = m.table.length
     
     for i1 in [-5..5]

@@ -1,5 +1,5 @@
 {unity, newNode} = require "./vondyck_chain.coffee"
-{NodeHashMap} = require "./chain_map.coffee"
+{ChainMap} = require "./chain_map.coffee"
 
 #High-level utils for working with hyperbolic cellular fields
 
@@ -47,7 +47,7 @@ exports.allClusters = (cells, tiling) ->
 exports.exportField = (cells) ->
   root = {
   }
-  chain2treeNode = new NodeHashMap
+  chain2treeNode = new ChainMap
   chain2treeNode.put unity, root
   
   putChain = (chain) -> #returns tree node for that chain
@@ -84,7 +84,7 @@ exports.importFieldTo = importFieldTo = (fieldData, callback) ->
     return
   putNode unity, fieldData
     
-exports.importField = (fieldData, cells = new NodeHashMap, preprocess)->
+exports.importField = (fieldData, cells = new ChainMap, preprocess)->
   importFieldTo fieldData, (chain, value) ->
     if preprocess? then chain = preprocess(chain) 
     cells.put chain, value

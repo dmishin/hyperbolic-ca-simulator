@@ -1,6 +1,6 @@
 M = require "./matrix3.coffee"
 {unity} = require "./vondyck_chain.coffee"
-{NodeHashMap} = require "./chain_map.coffee"
+{ChainMap} = require "./chain_map.coffee"
 
 len2 = (x,y) -> x*x + y*y
 
@@ -65,7 +65,7 @@ exports.poincare2hyperblic = (x,y) ->
 # Create list of cells, that in Poincare projection are big enough.
 exports.visibleNeighborhood = (tiling, minCellSize) ->
   #Visible size of the polygon far away
-  cells = new NodeHashMap
+  cells = new ChainMap
   walk = (cell) ->
     return if cells.get(cell) isnt null
     cellSize = visiblePolygonSize tiling, tiling.repr cell

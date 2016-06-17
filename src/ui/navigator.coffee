@@ -12,7 +12,7 @@ exports.Navigator = class Navigator
     @btnClear.style.display = 'none'
     
   search: (field)->
-    #field is NodeHashMap
+    #field is ChainMap
     @clusters = allClusters field, @application.tiling
     @sortByDistance()
     @updateClusterList()

@@ -1,6 +1,6 @@
 "use strict"
 {VonDyck} = require "./vondyck.coffee"
-{NodeHashMap} = require "./chain_map.coffee"
+{ChainMap} = require "./chain_map.coffee"
 {unity, reverseShortlexLess} = require "./vondyck_chain.coffee"
 M = require "./matrix3.coffee"
 
@@ -40,7 +40,7 @@ exports.RegularTiling = class RegularTiling extends VonDyck
   # starts from the original cell, and then calls the callback for more and more far cells, encircling it.
   # stops when callback returns false.
   forFarNeighborhood: (center, callback) ->
-    cells = new NodeHashMap
+    cells = new ChainMap
     cells.put center, true
     #list of cells of the latest complete layer
     thisLayer = [center]
@@ -84,7 +84,7 @@ exports.RegularTiling = class RegularTiling extends VonDyck
   #  list of chains to append
   farNeighborhood:(center, r) ->
     #map of visited cells
-    cells = new NodeHashMap
+    cells = new ChainMap
     cells.put center, true
     getCellList = (cells) ->
       cellList = []

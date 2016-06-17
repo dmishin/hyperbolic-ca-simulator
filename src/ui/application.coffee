@@ -2,7 +2,7 @@
 
 #Core hyperbolic group compuatation library
 {unity} = require "../core/vondyck_chain.coffee"
-{NodeHashMap} = require "../core/chain_map.coffee"
+{ChainMap} = require "../core/chain_map.coffee"
 {RegularTiling} = require "../core/regular_tiling.coffee"
 {evaluateTotalisticAutomaton} = require "../core/cellular_automata.coffee"
 
@@ -128,7 +128,7 @@ class Application
       console.log "import: #{cellData}"
       @importData cellData
     else
-      @cells = new NodeHashMap
+      @cells = new ChainMap
       @cells.put unity, 1
     
     @observer = new @ObserverClass @tiling, minVisibleSize, config.getViewBase(), config.getViewOffset()
@@ -230,7 +230,7 @@ class Application
     updateGeneration()
     onFinish?()
   doReset: ->
-    @cells = new NodeHashMap
+    @cells = new ChainMap
     @generation = 0
     @cells.put unity, 1
     updatePopulation()
@@ -262,7 +262,7 @@ class Application
       console.log "Imported #{@cells.count} cells"
     catch e
       alert "Faield to import data: #{e}"
-      @cells = new NodeHashMap
+      @cells = new ChainMap
 
   loadData: (record, cellData) ->
     assert = (x) ->
@@ -706,7 +706,7 @@ updateMemoryButtons = ->
 
 encodeVisible = ->
   iCenter = application.tiling.inverse application.observer.cellFromPoint(0,0)
-  visibleCells = new NodeHashMap
+  visibleCells = new ChainMap
   for [cell, state] in application.observer.visibleCells application.cells
     translatedCell = application.tiling.append iCenter, cell
     translatedCell = application.tiling.toCell translatedCell

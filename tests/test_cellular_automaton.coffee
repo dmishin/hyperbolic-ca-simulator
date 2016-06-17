@@ -1,6 +1,6 @@
 assert = require "assert"
 {allClusters, exportField, importField, parseFieldData, randomStateGenerator, stringifyFieldData} = require "../src/core/field.coffee"
-{NodeHashMap} = require "../src/core/chain_map.coffee"
+{ChainMap} = require "../src/core/chain_map.coffee"
 {RegularTiling} = require "../src/core/regular_tiling.coffee"
 
 {neighborsSum, evaluateTotalisticAutomaton}  = require "../src/core/cellular_automata.coffee"
@@ -20,7 +20,7 @@ describe "evaluateTotalisticAutomaton", ->
     unity = tiling.unity
     
     #prepare field with only one cell
-    field = new NodeHashMap
+    field = new ChainMap
     field.put unity, 1
 
     field1 = evaluateTotalisticAutomaton field, tiling, ruleNext
@@ -42,7 +42,7 @@ describe "evaluateTotalisticAutomaton", ->
     tiling = new RegularTiling N, M
     
     #prepare field with only one cell
-    field = new NodeHashMap
+    field = new ChainMap
     field.put tiling.unity, 1
 
     field1 = evaluateTotalisticAutomaton field, tiling, ruleNext

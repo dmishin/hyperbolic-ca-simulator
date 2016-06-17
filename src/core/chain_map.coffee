@@ -1,5 +1,5 @@
 #Hash map that uses chain as key
-exports.NodeHashMap = class NodeHashMap
+exports.ChainMap = class ChainMap
   constructor: (initialSize = 16) ->
     #table size MUST be power of 2! Or else write your own implementation of % that works with negative hashes.
     if initialSize & (initialSize-1) isnt 0 #this trick works!
@@ -48,7 +48,7 @@ exports.NodeHashMap = class NodeHashMap
     return false
     
   _growTable: ->
-    newTable = new NodeHashMap (@table.length * 2)
+    newTable = new ChainMap (@table.length * 2)
     #console.log "Growing table to #{newTable.table.length}"
     for cell in @table
       for [key, value] in cell
@@ -64,7 +64,7 @@ exports.NodeHashMap = class NodeHashMap
     return    
 
   copy: ->
-    copied = new NodeHashMap 1 #minimal size
+    copied = new ChainMap 1 #minimal size
 
     copied.count = @count
     copied.maxFillRatio = @maxFillRatio

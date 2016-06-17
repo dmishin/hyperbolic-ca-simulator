@@ -2,7 +2,7 @@
 assert = require "assert"
 {allClusters, exportField, importField, parseFieldData, randomStateGenerator, stringifyFieldData, randomFillFixedNum} = require "../src/core/field"
 {unity, newNode} = require "../src/core/vondyck_chain.coffee"
-{NodeHashMap} = require "../src/core/chain_map.coffee"
+{ChainMap} = require "../src/core/chain_map.coffee"
 {RegularTiling} = require "../src/core/regular_tiling.coffee"
 
 describe "allClusters", ->
@@ -13,14 +13,14 @@ describe "allClusters", ->
   tiling = new RegularTiling N, M
   
   it "should give one cell, if only one central cell present", ->
-    cells = new NodeHashMap
+    cells = new ChainMap
     cells.put unity, 1
     clusters = allClusters cells, tiling
     assert.equal clusters.length, 1
     assert.deepEqual clusters, [[unity]] #one cluster of 1 cell
 
   it "should give one cell, if only one central cell present", ->
-    cells = new NodeHashMap
+    cells = new ChainMap
     c = tiling.toCell tiling.parse "Ab^2a^2"
     
     cells.put c, 1
@@ -33,18 +33,18 @@ describe "allClusters", ->
 
 describe "exportField", ->
   it "must export empty field", ->
-    f = new NodeHashMap
+    f = new ChainMap
     tree = exportField f
     assert.deepEqual tree, {}
     
   it "must export field with only root cell", ->
-    f = new NodeHashMap
+    f = new ChainMap
     f.put unity, 1
     tree = exportField f
     assert.deepEqual tree, {v: 1}
     
   it "must export field with 1 non-root cell", ->
-    f = new NodeHashMap
+    f = new ChainMap
     #ab^3a^2
     chain = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, unity
     f.put chain, "value"
@@ -147,7 +147,7 @@ describe "importField", ->
     
   
   it "must import some nontrivial exported field", ->
-    f = new NodeHashMap
+    f = new ChainMap
     #ab^3a^2
     chain1 = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, unity
     #a^-1b^3a^2
@@ -165,7 +165,7 @@ describe "importField", ->
     assert.equal f1.get(chain2), 'value2'
     
   it "must support preprocessing imported data", ->
-    f = new NodeHashMap
+    f = new ChainMap
     #ab^3a^2
     chain1 = newNode 'a', 2, newNode 'b', 3, newNode 'a',1, unity
     #a^-1b^3a^2
@@ -191,7 +191,7 @@ describe "randomFillFixedNum", ->
     [N, M] = [5, 4]
     tiling = new RegularTiling N, M
 
-    field = new NodeHashMap
+    field = new ChainMap
 
     nCells = 10000
     randomFillFixedNum field, 0.4, unity, 10000, tiling
