@@ -8,8 +8,8 @@ exports.RegularTiling = class RegularTiling extends VonDyck
   constructor: (n,m) ->
     super(n,m,2)
     @solve()
-    if @type() == "hyperbolic"
-      @cellShape = @_generateNGon @representation
+    if @representation?
+      @cellShape = @_generateNGon()
     
   toString: -> "VonDyck(#{@n}, #{@m}, #{@k})"
 
@@ -100,16 +100,17 @@ exports.RegularTiling = class RegularTiling extends VonDyck
     getCellList cells
   
   #produces shape (array of 3-vectors)
-  _generateNGon: (representation) ->
+  _generateNGon:  ->
     #Take center of generator B and rotate it by action of A
 
-    if representation.k is 2
-      for i in [0...representation.n]
-        M.mulv representation.aPower(i), representation.centerB
+    if @k is 2
+      for i in [0...@n]
+        M.mulv @representation.aPower(i), @representation.centerB
     else
-      for i2 in [0...representation.n*2]
+      #dead code actually, but interesting for experiments
+      for i2 in [0...@n*2]
         i = (i2/2) | 0
-        if i2 & 1 is 0
-          M.mulv representation.aPower(i), representation.centerB
+        if (i2 % 2) is 0
+          M.mulv @representation.aPower(i), @representation.centerB
         else
-          M.mulv representation.aPower(i), representation.centerAB
+          M.mulv @representation.aPower(i), @representation.centerAB
