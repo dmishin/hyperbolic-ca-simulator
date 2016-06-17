@@ -33,7 +33,16 @@ exports.Node = class Node
   a: (pow) -> new NodeA pow, this
   b: (pow) -> new NodeB pow, this
   toString: -> showNode this
-  asStack: -> node2array this
+  ### Convert chain to array of pairs: [letter, power], where letter is "a" or "b" and power is integer.
+  # Top element of the chain becomes first element of the array
+  ###
+  asStack: ->
+    result = []
+    node = this
+    while node isnt unity
+      result.push [node.letter, node.p]
+      node = node.t
+    return result
   
   #Append elements from the array to the chain.
   # First element of the array becomes top element of the chain;
@@ -137,12 +146,7 @@ exports.newNode = newNode = (letter, power, parent) ->
 ### Convert chain to array of pairs: [letter, power], where letter is "a" or "b" and power is integer.
 # Top element of the chain becomes first element of the array
 ###
-exports.node2array = node2array = (node) ->
-  result = []
-  while node isnt unity
-    result.push [node.letter, node.p]
-    node = node.t
-  return result
+#exports.node2array = node2array = (node) -> node.asStack()
 
 
 
@@ -186,7 +190,7 @@ exports.inverseChain = (c, appendRewrite) -> appendInverseChain unity, c, append
 
 # appends c^-1 to a
 exports.appendInverseChain = appendInverseChain = (a, c, appendRewrite) ->
-  elementsWithPowers = node2array c
+  elementsWithPowers = c.asStack()
   elementsWithPowers.reverse()
   for e_p in elementsWithPowers
     e_p[1] *= -1
@@ -194,4 +198,4 @@ exports.appendInverseChain = appendInverseChain = (a, c, appendRewrite) ->
 
 
 exports.appendChain = appendChain = (c1, c2, appendRewrite) ->
-  appendRewrite c1, node2array(c2)  
+  appendRewrite c1, c2.asStack()  

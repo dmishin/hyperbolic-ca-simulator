@@ -1,5 +1,5 @@
 "use strict";
-{unity, node2array} = require "../core/vondyck_chain.coffee"
+{unity} = require "../core/vondyck_chain.coffee"
 {makeXYT2path, poincare2hyperblic, hyperbolic2poincare, visibleNeighborhood, makeCellShapePoincare} = require "../core/poincare_view.coffee"
 #{eliminateFinalA} = require "../core/vondyck_rewriter.coffee"
 M = require "../core/matrix3.coffee"
