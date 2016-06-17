@@ -148,12 +148,6 @@ exports.newNode = newNode = (letter, power, parent) ->
 ###
 #exports.node2array = node2array = (node) -> node.asStack()
 
-
-
-exports.nodeMatrixRepr = nodeMatrixRepr = (node, generatorMatrices) -> node.repr(generatorMatrices)
-    
-
-
 # Hash function of the node
 #
 exports.nodeHash = nodeHash = (node) -> node.hash()

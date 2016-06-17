@@ -1,5 +1,5 @@
 assert = require "assert"
-M = require "../src/core/matrix3"
+M = require "../src/core/matrix3.coffee"
 {VonDyck} = require "../src/core/vondyck.coffee"
 {RegularTiling} = require "../src/core/regular_tiling.coffee"
 
@@ -66,7 +66,17 @@ describe "New VonDyck", ->
 
     assert.equal (new VonDyck 5,3).type(), "spheric" 
     assert.equal (new VonDyck 5,4).type(), "hyperbolic"
-                        
+
+describe "VonDyck.repr", ->
+  group = new VonDyck 4, 5
+  
+  it "should return unity matrix for empty node", ->
+    assert M.approxEq group.repr(group.unity), M.eye()
+    assert not M.approxEq group.repr(group.parse "a"), M.eye()
+    assert not M.approxEq group.repr(group.parse "b"), M.eye()
+    assert M.approxEq group.repr(group.parse "abab"), M.eye()
+    
+                                                
 
 describe "RegularTiling", ->
   it "must support cell coordinate normalization", ->
@@ -96,8 +106,8 @@ describe "RegularTiling", ->
 describe "RegularTiling.moore", ->
   #prepare data: rewriting ruleset for group 5;4
   #
-  [N, M] = [5, 4]
-  tiling = new RegularTiling N, M
+  [n, m] = [5, 4]
+  tiling = new RegularTiling n, m
   unity = tiling.unity
   cells = []
   
@@ -109,7 +119,7 @@ describe "RegularTiling.moore", ->
   it "must return expected number of cells different from origin", ->
     for cell in cells
       neighbors = tiling.moore cell
-      assert.equal neighbors.length, N*(M-2)
+      assert.equal neighbors.length, n*(m-2)
 
       for nei, i in neighbors
         assert not cell.equals nei
@@ -130,8 +140,7 @@ describe "RegularTiling.moore", ->
     return
 
 describe "RegularTiling.forFarNeighborhood", ->
-  [N, M] = [5, 4]
-  tiling = new RegularTiling N, M
+  tiling = new RegularTiling 5, 4 
   unity = tiling.unity
   #Make normalized node from array
   norm = (arr) -> tiling.toCell tiling.appendRewrite unity, arr
@@ -170,8 +179,8 @@ describe "RegularTiling.forFarNeighborhood", ->
 describe "RegularTiling.mooreNeighborhood", ->
   #prepare data: rewriting ruleset for group 5;4
   #
-  [N, M] = [5, 4]
-  tiling = new RegularTiling N, M
+  [n, m] = [5, 4]
+  tiling = new RegularTiling n, m
   unity = tiling.unity
   rewriteChain = (arr) -> tiling.appendRewrite unity, arr[..]
   
@@ -184,7 +193,7 @@ describe "RegularTiling.mooreNeighborhood", ->
   it "must return expected number of cells different from origin", ->
     for cell in cells
       neighbors = tiling.moore cell
-      assert.equal neighbors.length, N*(M-2)
+      assert.equal neighbors.length, n*(m-2)
 
       for nei, i in neighbors
         assert not cell.equals nei

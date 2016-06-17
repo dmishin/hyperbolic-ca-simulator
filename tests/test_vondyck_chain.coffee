@@ -1,5 +1,5 @@
 assert = require "assert"
-{unity, reverseShortlexLess, nodeMatrixRepr, NodeA, NodeB, nodeHash, newNode, parseNode, inverseChain, appendChain, appendInverseChain} = require "../src/core/vondyck_chain.coffee"
+{unity, reverseShortlexLess, NodeA, NodeB, nodeHash, newNode, parseNode, inverseChain, appendChain, appendInverseChain} = require "../src/core/vondyck_chain.coffee"
 
 M = require "../src/core/matrix3.coffee"
 {CenteredVonDyck} = require "../src/core/triangle_group_representation.coffee"
@@ -91,12 +91,6 @@ describe "parseNode", ->
     assert.ok parseNode('Aba^3').equals newNode 'a', 3, newNode 'b',1, newNode 'a', -1, unity
     
 
-
-describe "nodeMatrixRepr", ->
-  group = new CenteredVonDyck 4, 5
-  
-  it "should return unity matrix for empty node", ->
-    assert M.approxEq nodeMatrixRepr(unity, group), M.eye()
 
 describe "reverseShortlexLess", ->
   chain_a = newNode('a',1,unity)
