@@ -76,7 +76,7 @@ exports.NodeB = class NodeB extends Node
     @h = null
     @mtx = null
     
-chainEquals = chainEquals = (a, b) ->
+chainEquals = (a, b) ->
   while true
     return true if a is b 
     if a is unity or b is unity
@@ -88,7 +88,7 @@ chainEquals = chainEquals = (a, b) ->
     b = b.t
 
 
-showNode = exports.showNode = (node) ->
+showNode = (node) ->
   if node is unity
     return 'e'
   parts = []

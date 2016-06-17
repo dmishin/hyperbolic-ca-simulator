@@ -1,5 +1,5 @@
 assert = require "assert"
-{unity, reverseShortlexLess, nodeMatrixRepr, NodeA, NodeB, nodeHash, newNode, showNode, parseNode, inverseChain, appendChain, appendInverseChain} = require "../src/core/vondyck_chain.coffee"
+{unity, reverseShortlexLess, nodeMatrixRepr, NodeA, NodeB, nodeHash, newNode, parseNode, inverseChain, appendChain, appendInverseChain} = require "../src/core/vondyck_chain.coffee"
 
 M = require "../src/core/matrix3.coffee"
 {CenteredVonDyck} = require "../src/core/triangle_group_representation.coffee"
@@ -67,18 +67,18 @@ describe "nodeHash", ->
     for c1, i in chains
       for c2, j in chains
         if i isnt j
-          assert.notEqual nodeHash(c1), nodeHash(c2), "H #{showNode c1} != H #{showNode c2}"
+          assert.notEqual nodeHash(c1), nodeHash(c2), "H #{c1} != H #{c2}"
 
   
-describe "showNode", ->
+describe "Chain.toStr", ->
   it "should convert node to text", ->
-    assert.equal 'e', showNode unity
-    assert.equal 'a', showNode newNode 'a', 1, unity
-    assert.equal 'A', showNode newNode 'a', -1, unity
-    assert.equal 'b', showNode newNode 'b', 1, unity
-    assert.equal 'B', showNode newNode 'b', -1, unity
-    assert.equal 'a^3', showNode newNode 'a', 3, unity
-    assert.equal 'Aba^3', showNode newNode 'a', 3, newNode 'b',1, newNode 'a', -1, unity
+    assert.equal 'e', ""+unity
+    assert.equal 'a', "" + (newNode 'a', 1, unity)
+    assert.equal 'A', "" + (newNode 'a', -1, unity)
+    assert.equal 'b', "" + (newNode 'b', 1, unity)
+    assert.equal 'B', "" + (newNode 'b', -1, unity)
+    assert.equal 'a^3', "" + (newNode 'a', 3, unity)
+    assert.equal 'Aba^3', "" + (newNode 'a', 3, newNode 'b',1, newNode 'a', -1, unity)
     
 describe "parseNode", ->
   it "should convert node to text", ->

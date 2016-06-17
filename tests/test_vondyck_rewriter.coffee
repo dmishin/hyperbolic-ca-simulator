@@ -1,7 +1,7 @@
 assert = require "assert"
 {RewriteRuleset} = require "../src/core/knuth_bendix.coffee"
 {string2chain, chain2string, makeAppendRewriteRef, makeAppendRewrite, extendLastPowerRewriteTable} = require "../src/core/vondyck_rewriter.coffee"
-{unity, newNode, showNode} = require "../src/core/vondyck_chain.coffee"
+{unity, newNode} = require "../src/core/vondyck_chain.coffee"
 
 describe "string2chain", ->
   it "must convert empty string", ->
@@ -62,10 +62,10 @@ describe "Compiled rewriter", ->
 
   doTest = ( stack, chain0=unity ) ->
     #console.log "should stringify #{JSON.stringify stack}"
-    #console.log "#{showNode chainRef} != #{showNode chain}"
+    #console.log "#{chainRef} != #{chain}"
     chainRef = refRewriter chain0, stack[..]
     chain = compiledRewriter chain0, stack[..]
-    assert (chainRef.equals chain), "#{showNode chain0} ++ #{JSON.stringify stack} -> #{showNode chainRef} (ref) != #{showNode chain}"
+    assert (chainRef.equals chain), "#{chain0} ++ #{JSON.stringify stack} -> #{chainRef} (ref) != #{chain}"
     return
 
   walkChains = (stack, depth, callback) ->

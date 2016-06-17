@@ -19,8 +19,8 @@ testRewriter = (appendRewrite, sSource, sExpected)->
     console.log("Test #{sSource}->#{sExpected} passed")
   else
     console.log("Test #{sSource}->#{sExpected} failed")
-    console.log("   expected result:"+showNode(expected))
-    console.log("   received result:"+showNode(result))
+    console.log("   expected result:"+(expected))
+    console.log("   received result:"+(result))
 
 
 

@@ -30,7 +30,7 @@ exports.NodeHashMap = class NodeHashMap
   put: (chain, value) -> @putAccumulate chain, value, (x,y)->y
 
   get: (chain) ->
-    # console.log "geting for #{showNode chain}"
+    # console.log "geting for #{chain}"
     for key_value in @table[@_index chain]
       if key_value[0].equals chain
         #console.log "   found something"
