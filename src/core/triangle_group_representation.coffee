@@ -66,9 +66,10 @@ exports.CenteredVonDyck = class CenteredVonDyck
     @aPowers = M.powers @a, n
     @bPowers = M.powers @b, m
 
+    #Points, that are invariant under generator action. Rotation centers.
     @centerA = [0.0,0.0,1.0]
     @centerB = [@sinh_r, 0.0, @cosh_r]
-    @centerAB = [@sinh_x*Math.cos(alpha), @sinh_x*Math.sin(alpha), @cosh_x ]
+    @centerAB = [@sinh_x*cos(alpha), @sinh_x*sin(alpha), @cosh_x ]
 
   aPower: (i) -> @aPowers[ mod i, @n ]
   bPower: (i) -> @bPowers[ mod i, @m ]
