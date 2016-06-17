@@ -1,19 +1,15 @@
 "use strict"
 {eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {VonDyck} = require "./vondyck.coffee"
-#{} = require "./field.coffee"
-
-#???
-{unity} = require "./vondyck_chain.coffee"
 {NodeHashMap} = require "./chain_map.coffee"
-
+M = require "./matrix3.coffee"
 
 exports.RegularTiling = class RegularTiling extends VonDyck
   constructor: (n,m) ->
     super(n,m,2)
     @solve()
     if @type() == "hyperbolic"
-      @cellShape = @_generateNGon n, @representation.sinh_r, @representation.cosh_r
+      @cellShape = @_generateNGon @representation
     
   toString: -> "VonDyck(#{@n}, #{@m}, #{@k})"
 
@@ -104,8 +100,16 @@ exports.RegularTiling = class RegularTiling extends VonDyck
     getCellList cells
   
   #produces shape (array of 3-vectors)
-  _generateNGon: (n, sinh_r, cosh_r) ->
-    alpha = Math.PI*2/n
-    for i in [0...n]
-      angle = alpha*i
-      [sinh_r*Math.cos(angle), sinh_r*Math.sin(angle), cosh_r]
+  _generateNGon: (representation) ->
+    #Take center of generator B and rotate it by action of A
+
+    if representation.k is 2
+      for i in [0...representation.n]
+        M.mulv representation.aPower(i), representation.centerB
+    else
+      for i2 in [0...representation.n*2]
+        i = (i2/2) | 0
+        if i2 & 1 is 0
+          M.mulv representation.aPower(i), representation.centerB
+        else
+          M.mulv representation.aPower(i), representation.centerAB
