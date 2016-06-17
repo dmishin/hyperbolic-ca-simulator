@@ -59,7 +59,7 @@ exports.unity = unity = new Node
 unity.l = 0
 unity.h = 0
 unity.mtx = M.eye()
-unity.repr = (g) -> @.mtx #jsut overload with a faster code.
+unity.repr = (g) -> @mtx #jsut overload with a faster code.
   
 exports.NodeA = class NodeA extends Node
   letter: 'a'
