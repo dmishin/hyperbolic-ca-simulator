@@ -35,6 +35,16 @@ exports.Node = class Node
   toString: -> showNode this
   asStack: -> node2array this
   
+  #Append elements from the array to the chain.
+  # First element of the array becomes top element of the chain;
+  # stack itself becomes empty
+  appendStack: (stack)->
+    chain = this
+    while stack.length > 0
+      [e, p] = stack.pop()
+      chain = newNode e, p, chain
+    return chain
+    
 exports.unity = unity = new Node
 unity.l = 0
 unity.h = 0
@@ -123,15 +133,6 @@ exports.nodeConstructors = nodeConstructors =
 
 exports.newNode = newNode = (letter, power, parent) ->
   new nodeConstructors[letter](power, parent)
-
-#Append elements from the array to the chain.
-# First element of the array becomes top element of the chain;
-# stack itself becomes empty
-exports.appendSimple = appendSimple = (chain, stack) ->
-  while stack.length > 0
-    [e, p] = stack.pop()
-    chain = newNode(e, p, chain)
-  return chain
 
 ### Convert chain to array of pairs: [letter, power], where letter is "a" or "b" and power is integer.
 # Top element of the chain becomes first element of the array

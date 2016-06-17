@@ -1,6 +1,6 @@
 #Generates JS code that effectively rewrites
 {RewriteRuleset}= require "./knuth_bendix.coffee"
-{unity, NodeA, NodeB, appendSimple, nodeConstructors, newNode, reverseShortlexLess, showNode, node2array} = require "./vondyck_chain.coffee"
+{unity, NodeA, NodeB, nodeConstructors, newNode, reverseShortlexLess} = require "./vondyck_chain.coffee"
 
 collectPowers = ( elemsWithPowers )->
     ### List (elem, power::int) -> List (elem, power::int)
@@ -202,13 +202,13 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
     generateMain: ->
         @line('if (chain.letter==="a")')
         @block =>
-            @line('console.log("Append "+JSON.stringify(_e)+" to chain ending with A:"+showNode(chain));')
+            @line('console.log("Append "+JSON.stringify(_e)+" to chain ending with A:"+chain);')
             @generatePowerAccumulation("a")
             @generateRewriterFrom("b")
             
         @line('else if (chain.letter==="b")')
         @block =>
-            @line('console.log("Append "+JSON.stringify(_e)+" to chain ending with B:"+showNode(chain));')
+            @line('console.log("Append "+JSON.stringify(_e)+" to chain ending with B:"+chain);')
             @generatePowerAccumulation("b")
             @generateRewriterFrom("a")
             
@@ -233,7 +233,7 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
             if @debug
               @line('else')
               @block =>
-                @line( 'console.log("      power reduced to 0, new chain="+showNode(chain));')
+                @line( 'console.log("      power reduced to 0, new chain="+chain);')
                 
     generateRewriterFrom: ( newElement)->
         ###Generate rewriters, when `newElement` is added, and it is not the same as the last element of the chain###
@@ -282,7 +282,7 @@ exports.CodeGenerator = class CodeGenerator extends JsCodeGenerator
         throw new Error("power?") unless elemPower? 
         @line("console.log( 'Leaf: rewrite this to #{rewrite}');")
         @line("//elem: #{elem}, power: #{elemPower}: rewrite this to #{rewrite}")
-        @line("console.log( 'Truncate chain from ' + showNode(chain) + ' to ' + showNode(#{chain}) + ' with additional elem: #{elem}^#{-elemPower}' );")
+        @line("console.log( 'Truncate chain from ' + chain + ' to ' + #{chain} + ' with additional elem: #{elem}^#{-elemPower}' );")
         @line("chain = #{chain};")
         @line("//Append rewrite")
 
@@ -415,7 +415,7 @@ exports.string2chain = string2chain = (s) ->
   #last element of the string is chain head
   grouped = groupPowersVd s
   grouped.reverse()
-  appendSimple unity, grouped
+  unity.appendStack grouped
 
 exports.chain2string = chain2string = (chain)->
   s = ""
@@ -479,7 +479,7 @@ exports.eliminateFinalA = eliminateFinalA = (chain, appendRewrite, orderA) ->
     chain_i = appendRewrite chain, [['a', i]]
     if reverseShortlexLess chain_i, bestChain
       bestChain = chain_i
-  #console.log "EliminateA: got #{showNode chain}, produced #{showNode bestChain}"
+  #console.log "EliminateA: got #{chain}, produced #{bestChain}"
   return bestChain
 
 #Takes some rewrite ruleset and extends it by adding new rules with increased power of last element
@@ -558,5 +558,5 @@ exports.makeAppendRewriteVerified = (rewriteRule) ->
     if not refValue.equals value
       for [k, v] in rewriteRule.items()
         console.log "  #{k} -> #{v}"
-      throw new Error "rewriter verification failed. args: chain = #{showNode chain}, stack: #{JSON.stringify stack}, refValue: #{showNode refValue}, value: #{showNode value}"
+      throw new Error "rewriter verification failed. args: chain = #{chain}, stack: #{JSON.stringify stack}, refValue: #{refValue}, value: #{value}"
     return value
