@@ -65,7 +65,10 @@ exports.CenteredVonDyck = class CenteredVonDyck
 
     @aPowers = M.powers @a, n
     @bPowers = M.powers @b, m
-    
+
+    @centerA = [0.0,0.0,1.0]
+    @centerB = [@sinh_r, 0.0, @cosh_r]
+    @centerAB = [@sinh_x*Math.cos(alpha), @sinh_x*Math.sin(alpha), @cosh_x ]
 
   aPower: (i) -> @aPowers[ mod i, @n ]
   bPower: (i) -> @bPowers[ mod i, @m ]
@@ -75,3 +78,4 @@ exports.CenteredVonDyck = class CenteredVonDyck
     else if g is 'b'
       @bPower i
     else throw new Error "Unknown generator: #{g}"
+  toString: -> "CenteredVonDyck(#{@n},#{@m},#{@k})"

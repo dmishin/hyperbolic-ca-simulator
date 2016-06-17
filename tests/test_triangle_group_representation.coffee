@@ -94,3 +94,29 @@ describe "CenteredVonDyck(5,4,3)", ->
     assert.ok M.approxEqv v1, M.mulv(g.b, v1)
     assert.ok not M.approxEqv v1, M.mulv(g.a, v1)
             
+
+
+describe "CenteredVonDyck.centerA/B/C", ->
+  isNormalVector = ([x,y,t])->Math.abs(t**2-x**2-y**2-1) < 1e-5
+
+
+  groups = [ [5,4,3], [5,4,2], [3,7,2], [7,3,2] ]
+
+  for [n,m,k] in groups
+    g = new CenteredVonDyck n,m,k
+    
+    it "must be located on the hyperboloid for group #{g}", ->
+      assert isNormalVector g.centerA
+      assert isNormalVector g.centerB
+      assert isNormalVector g.centerAB
+
+    it "must not be changed by the corresponding transforms for group #{g}",->
+
+      assert M.approxEqv g.centerA, M.mulv(g.a,g.centerA)
+      assert M.approxEqv g.centerB, M.mulv(g.b,g.centerB)
+
+      ab = M.mul(g.a, g.b)
+      assert M.approxEqv g.centerAB, M.mulv(ab,g.centerAB)
+    
+    
+    
