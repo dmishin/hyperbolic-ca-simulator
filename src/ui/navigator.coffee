@@ -1,5 +1,4 @@
 #search for cell  clusters and navigate through them
-{chainLen} = require "../core/vondyck_chain.coffee"
 {allClusters} = require "../core/field.coffee"
 
 {DomBuilder} = require "./dom_builder.coffee"
@@ -22,7 +21,7 @@ exports.Navigator = class Navigator
 
   sortByDistance: ->
     @clusters.sort (a, b) ->
-      d = chainLen(b[0]) - chainLen(a[0])
+      d = b[0].len() - a[0].len()
       return d if d isnt 0
       d = b.length - a.length
       return d
@@ -31,7 +30,7 @@ exports.Navigator = class Navigator
     @clusters.sort (a, b) ->
       d = b.length - a.length
       return d if d isnt 0
-      d = chainLen(b[0]) - chainLen(a[0])
+      d = b[0].len() - a[0].len()
       return d
       
   makeNavigateTo: (chain) -> (e) =>
@@ -75,7 +74,7 @@ exports.Navigator = class Navigator
     dom.tag "tbody"
     for cluster, idx in @clusters
       size = cluster.length
-      dist = chainLen cluster[0]
+      dist = cluster[0].len()
 
       dom.tag("tr")
          .tag("td")

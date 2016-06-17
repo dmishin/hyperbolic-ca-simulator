@@ -1,5 +1,5 @@
 assert = require "assert"
-{unity, reverseShortlexLess, NodeA, NodeB, nodeHash, newNode, parseNode, inverseChain, appendChain, appendInverseChain} = require "../src/core/vondyck_chain.coffee"
+{unity, reverseShortlexLess, NodeA, NodeB, newNode, parseNode, inverseChain, appendChain, appendInverseChain} = require "../src/core/vondyck_chain.coffee"
 
 M = require "../src/core/matrix3.coffee"
 {CenteredVonDyck} = require "../src/core/triangle_group_representation.coffee"
@@ -49,7 +49,7 @@ describe "chain.equals", ->
     assert not a1b1.equals a1b1a3
     assert not a1b1.equals unity
   
-describe "nodeHash", ->
+describe "Node.hash", ->
   isNumber = (x) -> parseInt(''+x, 10) is x
   it "must return different values for empty node, nodes of lenght 1", ->
     e = unity
@@ -62,12 +62,12 @@ describe "nodeHash", ->
     chains = [e, a1, a2, b1, b2, a1b1]
 
     for c in chains
-      assert isNumber nodeHash c
+      assert isNumber c.hash()
 
     for c1, i in chains
       for c2, j in chains
         if i isnt j
-          assert.notEqual nodeHash(c1), nodeHash(c2), "H #{c1} != H #{c2}"
+          assert.notEqual c1.hash(), c2.hash(), "H #{c1} != H #{c2}"
 
   
 describe "Chain.toStr", ->

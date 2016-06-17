@@ -29,6 +29,7 @@ exports.Node = class Node
         m
       else
         @mtx = M.mul @t.repr(generatorMatrices), generatorMatrices.generatorPower(@letter, @p)
+  len: -> @l
   equals: (c) -> chainEquals(this, c)
   a: (pow) -> new NodeA pow, this
   b: (pow) -> new NodeB pow, this
@@ -143,16 +144,6 @@ exports.nodeConstructors = nodeConstructors =
 exports.newNode = newNode = (letter, power, parent) ->
   new nodeConstructors[letter](power, parent)
 
-### Convert chain to array of pairs: [letter, power], where letter is "a" or "b" and power is integer.
-# Top element of the chain becomes first element of the array
-###
-#exports.node2array = node2array = (node) -> node.asStack()
-
-# Hash function of the node
-#
-exports.nodeHash = nodeHash = (node) -> node.hash()
-exports.chainLen = chainLen = (chain)-> chain.l
-    
 ###
 # Reverse compare 2 chains by shortlex algorithm
 ###
