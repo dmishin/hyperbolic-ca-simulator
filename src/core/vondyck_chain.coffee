@@ -33,7 +33,7 @@ exports.Node = class Node
   equals: (c) -> chainEquals(this, c)
   a: (pow) -> new NodeA pow, this
   b: (pow) -> new NodeB pow, this
-  toString: -> showNode this
+  toString: -> showChain this
   ### Convert chain to array of pairs: [letter, power], where letter is "a" or "b" and power is integer.
   # Top element of the chain becomes first element of the array
   ###
@@ -89,7 +89,7 @@ chainEquals = (a, b) ->
     b = b.t
 
 
-showNode = (node) ->
+showChain = (node) ->
   if node is unity
     return 'e'
   parts = []
@@ -106,8 +106,8 @@ showNode = (node) ->
     node = node.t
   return parts.reverse().join ''
 
-#reverse of showNode
-exports.parseNode = (s) ->
+#reverse of showChain
+exports.parseChain = (s) ->
   return unity if s is '' or s is 'e'
   prepend = (tail) -> tail
   

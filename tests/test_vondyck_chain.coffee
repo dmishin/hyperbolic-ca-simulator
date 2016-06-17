@@ -1,5 +1,5 @@
 assert = require "assert"
-{unity, reverseShortlexLess, NodeA, NodeB, newNode, parseNode} = require "../src/core/vondyck_chain.coffee"
+{unity, reverseShortlexLess, NodeA, NodeB, newNode, parseChain} = require "../src/core/vondyck_chain.coffee"
 
 describe "chain.equals", ->
   it "should return true for empty chains", ->
@@ -73,15 +73,15 @@ describe "Chain.toStr", ->
     assert.equal 'a^3', "" + (newNode 'a', 3, unity)
     assert.equal 'Aba^3', "" + (newNode 'a', 3, newNode 'b',1, newNode 'a', -1, unity)
     
-describe "parseNode", ->
+describe "parseChain", ->
   it "should convert node to text", ->
-    assert.ok parseNode('e').equals unity
-    assert.ok parseNode('a').equals newNode 'a', 1, unity
-    assert.ok parseNode('A').equals newNode 'a', -1, unity
-    assert.ok parseNode('b').equals newNode 'b', 1, unity
-    assert.ok parseNode('B').equals newNode 'b', -1, unity
-    assert.ok parseNode('a^3').equals newNode 'a', 3, unity
-    assert.ok parseNode('Aba^3').equals newNode 'a', 3, newNode 'b',1, newNode 'a', -1, unity
+    assert.ok parseChain('e').equals unity
+    assert.ok parseChain('a').equals newNode 'a', 1, unity
+    assert.ok parseChain('A').equals newNode 'a', -1, unity
+    assert.ok parseChain('b').equals newNode 'b', 1, unity
+    assert.ok parseChain('B').equals newNode 'b', -1, unity
+    assert.ok parseChain('a^3').equals newNode 'a', 3, unity
+    assert.ok parseChain('Aba^3').equals newNode 'a', 3, newNode 'b',1, newNode 'a', -1, unity
     
 
 
