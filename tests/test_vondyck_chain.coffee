@@ -1,12 +1,5 @@
 assert = require "assert"
-{unity, reverseShortlexLess, NodeA, NodeB, newNode, parseNode, inverseChain, appendChain, appendInverseChain} = require "../src/core/vondyck_chain.coffee"
-
-M = require "../src/core/matrix3.coffee"
-{CenteredVonDyck} = require "../src/core/triangle_group_representation.coffee"
-
-#for testing algebra
-{makeAppendRewrite, vdRule} = require "../src/core/vondyck_rewriter.coffee"
-{RewriteRuleset, knuthBendix} = require "../src/core/knuth_bendix.coffee"
+{unity, reverseShortlexLess, NodeA, NodeB, newNode, parseNode} = require "../src/core/vondyck_chain.coffee"
 
 describe "chain.equals", ->
   it "should return true for empty chains", ->
@@ -119,66 +112,5 @@ describe "reverseShortlexLess", ->
     assert reverseShortlexLess chain_a, chain_B
     assert not reverseShortlexLess chain_B, chain_a
 
-describe "inverseChain", ->
-  n = 5
-  m = 4
-  rewriteRuleset = knuthBendix vdRule n, m
-  appendRewrite = makeAppendRewrite rewriteRuleset
-  
-  it "should inverse unity", ->
-    assert unity.equals inverseChain(unity, appendRewrite)
-  it "should inverse simple 1-element values", ->
-    c = newNode 'a', 1, unity
-    ic = newNode 'a', -1, unity
-    assert inverseChain(c, appendRewrite).equals ic
 
 
-  it "should return same chain after double rewrite", ->
-
-    c = appendRewrite unity, [['b',1],['a',2],['b',-2],['a',3],['b',1]]
-    ic = inverseChain c, appendRewrite
-    iic = inverseChain ic, appendRewrite
-
-    assert c.equals iic
-
-describe "appendInverseChain", ->
-  n = 5
-  m = 4
-  rewriteRuleset = knuthBendix vdRule n, m
-  appendRewrite = makeAppendRewrite rewriteRuleset
-  
-  it "unity * unity^-1 = unity", ->
-    assert unity.equals appendInverseChain(unity, unity, appendRewrite)
-    
-  it "For simple 1-element values, x * (x^-1) = unity", ->
-    c = newNode 'a', 1, unity
-    assert appendInverseChain(c, c, appendRewrite).equals unity
-
-
-  it "For non-simple chain, x*(x^-1) = unitu", ->
-    c = appendRewrite unity, [['b',1],['a',2],['b',-2],['a',3],['b',1]]
-    assert appendInverseChain(c, c, appendRewrite).equals unity
-
-
-describe "appendChain", ->
-  n = 5
-  m = 4
-  rewriteRuleset = knuthBendix vdRule n, m
-  appendRewrite = makeAppendRewrite rewriteRuleset
-  
-
-  it "choud append unity", ->
-    assert unity.equals appendChain(unity, unity, appendRewrite)
-
-    c = newNode 'a', 1, unity
-    assert c.equals appendChain(c, unity, appendRewrite)
-    assert c.equals appendChain(unity, c, appendRewrite)
-
-  it "shouls append inverse and return unity", ->
-
-    c = appendRewrite unity, [['b',1],['a',2],['b',-2],['a',3],['b',1]]
-
-    ic = inverseChain c, appendRewrite
-
-    assert unity.equals appendChain c, ic, appendRewrite
-    assert unity.equals appendChain ic, c, appendRewrite    

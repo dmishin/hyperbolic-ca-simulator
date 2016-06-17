@@ -708,7 +708,7 @@ encodeVisible = ->
   iCenter = application.tiling.inverse application.observer.cellFromPoint(0,0)
   visibleCells = new NodeHashMap
   for [cell, state] in application.observer.visibleCells application.cells
-    translatedCell = application.tiling.appendChain iCenter, cell
+    translatedCell = application.tiling.append iCenter, cell
     translatedCell = application.tiling.toCell translatedCell
     visibleCells.put translatedCell, state
   return exportField visibleCells

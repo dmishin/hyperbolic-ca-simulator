@@ -76,7 +76,74 @@ describe "VonDyck.repr", ->
     assert not M.approxEq group.repr(group.parse "b"), M.eye()
     assert M.approxEq group.repr(group.parse "abab"), M.eye()
     
-                                                
+
+describe "VonDyck.inverse", ->
+  n = 5
+  m = 4
+  group = new VonDyck n, m
+  group.solve()
+  unity = group.unity
+  
+  it "should inverse unity", ->
+    assert unity.equals group.inverse unity
+    
+  it "should inverse simple 1-element values", ->
+    c = group.parse "a"
+    ic = group.parse "A"
+    assert group.inverse(c).equals ic
+
+
+  it "should return same chain after double rewrite", ->
+
+    c = group.rewrite group.parse "ba^2B^2a^3b"
+    ic = group.inverse c
+    iic = group.inverse ic
+
+    assert not c.equals ic
+    assert c.equals iic
+
+describe "VonDyck.appendInverse", ->
+  n = 5
+  m = 4
+  group = new VonDyck n, m
+  group.solve()
+  unity = group.unity
+    
+  it "unity * unity^-1 = unity", ->
+    assert unity.equals group.appendInverse(unity, unity)
+    
+  it "For simple 1-element values, x * (x^-1) = unity", ->
+    c = group.parse "a"
+    assert group.appendInverse(c, c).equals unity
+
+  it "For non-simple chain, x*(x^-1) = unitu", ->
+    c = group.rewrite group.parse "ba^2B^2a^3b"
+    assert not c.equals unity
+    assert group.appendInverse(c, c).equals unity
+
+describe "VonDyck.append", ->
+  n = 5
+  m = 4
+  group = new VonDyck n, m
+  group.solve()
+  unity=group.unity
+
+  it "choud append unity", ->
+    assert unity.equals group.append(unity, unity)
+
+    c = group.parse 'a'
+    assert c.equals group.append(c, unity)
+    assert c.equals group.append(unity, c)
+
+  it "shouls append inverse and return unity", ->
+
+    c = group.rewrite unity.appendStack [['b',1],['a',2],['b',-2],['a',3],['b',1]]
+
+    ic = group.inverse c
+
+    assert unity.equals group.append c, ic
+    assert unity.equals group.append ic, c    
+                                                                                                
 
 describe "RegularTiling", ->
   it "must support cell coordinate normalization", ->
