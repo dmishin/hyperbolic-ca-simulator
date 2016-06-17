@@ -1,7 +1,7 @@
 "use strict"
-{eliminateFinalA} = require "./vondyck_rewriter.coffee"
 {VonDyck} = require "./vondyck.coffee"
 {NodeHashMap} = require "./chain_map.coffee"
+{unity, reverseShortlexLess} = require "./vondyck_chain.coffee"
 M = require "./matrix3.coffee"
 
 exports.RegularTiling = class RegularTiling extends VonDyck
@@ -114,3 +114,33 @@ exports.RegularTiling = class RegularTiling extends VonDyck
           M.mulv @representation.aPower(i), @representation.centerB
         else
           M.mulv @representation.aPower(i), @representation.centerAB
+
+
+#Remove last element of a chain, if it is A.
+takeLastA = (chain) ->
+  if (chain is unity) or (chain.letter isnt 'a')
+    chain
+  else
+    chain.t
+
+# Add all possible rotations powers of A generator) to the end of the chain,
+# and choose minimal of all chains (by some ordering).
+eliminateFinalA = (chain, appendRewrite, orderA) ->
+  chain = takeLastA chain
+  #zero chain is always shortest, return it.
+  if chain is unity
+    return chain
+  #now chain ends with B power, for sure.
+  #if chain.letter isnt 'b' then throw new Error "two A's in the chain!"
+    
+  #bPower = chain.p
+
+  #TODO: only try to append A powers that cause rewriting.
+      
+  bestChain = chain
+  for i in [1...orderA]
+    chain_i = appendRewrite chain, [['a', i]]
+    if reverseShortlexLess chain_i, bestChain
+      bestChain = chain_i
+  #console.log "EliminateA: got #{chain}, produced #{bestChain}"
+  return bestChain
