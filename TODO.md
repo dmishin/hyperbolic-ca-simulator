@@ -17,6 +17,9 @@ Things left to implement
 * [x] Manually setting image size
 * [x] Export to SVG
 * [x] Upload frames of smooth animations
+* [ ] Enable upload interface by button, not only on localhost.
+* [ ] Animator: handle large distances
+* [ ] Animator: remember initial position
 
 ### Internal code structure
 * [ ] Improve performance of eliminateFinalA, by trying only rewrites that change something. (Is it really different? Check performance.)
