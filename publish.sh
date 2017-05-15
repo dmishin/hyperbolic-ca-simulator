@@ -2,7 +2,7 @@
 set -e
 
 echo Publishing data on dmishin home page
-ODIR=../homepage-sources/src/hyperbolic-ca-simulator
+ODIR=../homepage-sources/res/hyperbolic-ca-simulator
 
 cp -r *.html *.js media *.css README.md $ODIR
 

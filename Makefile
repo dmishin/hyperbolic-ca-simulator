@@ -22,4 +22,4 @@ clean:
 publish: test application
 	git checkout master
 	sh publish.sh
-	sh ../homepage-sources/publish.sh
+	cd ../homepage-sources && sh ./publish.sh
