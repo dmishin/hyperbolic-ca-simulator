@@ -140,7 +140,9 @@ exports.ValidatingInput = class ValidatingInput
     newText = @stringifyValue val
     @element.value = newText
     @_setClass @stateStyleClasses.ok
-
+    
+  revalidate: -> @_parse()    
+    
   _reset: ->
     @setValue @value
     
@@ -163,8 +165,8 @@ exports.ValidatingInput = class ValidatingInput
     removeClass @element, @stateStyleClasses.modified
 
     addClass @element, cls
-  
-  _modified: ->
+
+  _parse: ->
     try
       newVal = @parseValue @element.value
       if newVal?
@@ -174,9 +176,12 @@ exports.ValidatingInput = class ValidatingInput
       
       @_setMessage null
       @_setClass @stateStyleClasses.ok
-      @onparsed? @value
+      return true
     catch e
       @_setMessage "Failed to parse value: #{e}"
       @_setClass @stateStyleClasses.error
+      return false
       
-  
+  _modified: ->
+    if @_parse()
+      @onparsed? @value

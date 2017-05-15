@@ -153,7 +153,9 @@ class Application
     @svgDialog = new SvgDialog this
 
     @ruleEntry = new ValidatingInput E('rule-entry'),
-      ((ruleStr)=>parseTransitionFunction ruleStr, @tiling.n, @tiling.m),
+      ((ruleStr) =>
+        console.log "Parsing TF {@tiling.n} {@tiling.m}"
+        parseTransitionFunction ruleStr, @tiling.n, @tiling.m),
       ((rule)->""+rule),
       @transitionFunc 
       
@@ -180,7 +182,9 @@ class Application
     if @ruleEntry.message?
       alert "Failed to parse function: #{@ruleEntry.message}"
       @transitionFunc = @lastBinaryTransitionFunc ? @transitionFunc
-    else      
+    else
+      console.log "revalidate"
+      @ruleEntry.revalidate()
       @transitionFunc = @ruleEntry.value
       @lastBinaryTransitionFunc = @transitionFunc
     @paintStateSelector.update @transitionFunc
