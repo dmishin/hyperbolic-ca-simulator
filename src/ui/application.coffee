@@ -582,6 +582,29 @@ doCanvasMouseDown = (e) ->
   else
     dragHandler = new MouseToolCombo application, x, y
 
+doCanvasMouseUp = (e) ->
+  if dragHandler isnt null
+    e.preventDefault()
+    dragHandler?.mouseUp e
+    dragHandler = null
+
+doCanvastouchStart = (e)->
+  if e.touches.length is 1
+    doCanvasMouseDown(e)
+    e.preventDefault()
+      
+doCanvastouchLeave = (e)->
+  doCanvasMouseOut(e)
+    
+doCanvastouchEnd = (e)->
+  e.preventDefault()
+  doCanvasMouseUp(e)
+      
+doCanvastouchMove = (e)->
+  doCanvasMouseMove(e)
+    
+
+
 doSetPanMode = (mode) ->
   isPanMode = mode
 
@@ -601,11 +624,6 @@ doCanvasMouseMove = (e) ->
     e.preventDefault()
     dragHandler.mouseMoved e
 
-doCanvasMouseUp = (e) ->
-  if dragHandler isnt null
-    e.preventDefault()
-    dragHandler?.mouseUp e
-    dragHandler = null
 
 doOpenEditor = ->
   E('generic-tf-code').value = application.transitionFunc.code  
@@ -768,6 +786,12 @@ mouseMoveReceiver.addEventListener "mousedown", doCanvasMouseDown
 mouseMoveReceiver.addEventListener "mouseup", doCanvasMouseUp
 mouseMoveReceiver.addEventListener "mousemove", doCanvasMouseMove
 mouseMoveReceiver.addEventListener "mousedrag", doCanvasMouseMove
+
+mouseMoveReceiver.addEventListener "touchstart", doCanvasTouchStart
+mouseMoveReceiver.addEventListener "touchend", doCanvasTouchEnd
+mouseMoveReceiver.addEventListener "touchmove", doCanvasTouchMove
+mouseMoveReceiver.addEventListener "touchleave", doCanvasTouchLeave
+
 
 E("btn-set-rule").addEventListener "click", (e)->application.doSetRule()
 E("btn-set-rule-generic").addEventListener "click", (e)->
