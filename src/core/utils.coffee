@@ -20,3 +20,4 @@ exports.parseFloatChecked = (s)->
 
 #mathematical modulo
 exports.mod = (i,n) -> ((i%n)+n)%n
+

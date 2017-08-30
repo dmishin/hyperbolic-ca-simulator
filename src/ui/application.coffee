@@ -27,6 +27,8 @@ M = require "../core/matrix3.coffee"
 C2S = require "../ext/canvas2svg.js"
 #{lzw_encode} = require "../ext/lzw.coffee"
 require "../ext/polyfills.js"
+require "../core/acosh_polyfill.coffee"
+
 {GhostClickDetector} = require "./ghost_click_detector.coffee"
 MIN_WIDTH = 100
 
@@ -489,7 +491,6 @@ context = canvas.getContext "2d"
 
 dragHandler = null
 ghostClickDetector = new GhostClickDetector
-ghostClickDetector.addListeners canvas
 
 player = null
 playerTimeout = 500
@@ -571,7 +572,6 @@ doCanvasMouseDown = (e) ->
   #Allow normal right-click to support image sacing
   E('canvas-container').focus()
   return if e.button is 2
-  return if ghostClickDetector.isGhost
   #Only in mozilla?
   canvas.setCapture? true
   
@@ -587,12 +587,12 @@ doCanvasMouseDown = (e) ->
 
 doCanvasMouseUp = (e) ->
   e.preventDefault()
-  if (dragHandler isnt null) and not ghostClickDetector.isGhost
+  if dragHandler isnt null
     dragHandler?.mouseUp e
     dragHandler = null
 
 doCanvasTouchStart = (e)->
-  if e.touches.length is 1
+  if e.touches.length is 1 
     doCanvasMouseDown(e)
     e.preventDefault()
       
@@ -785,8 +785,8 @@ doNavigateHome = ->
 E("btn-reset").addEventListener "click", ->application.doReset()
 E("btn-step").addEventListener "click", ->application.doStep()
 mouseMoveReceiver = E("canvas-container")
-mouseMoveReceiver.addEventListener "mousedown", doCanvasMouseDown
-mouseMoveReceiver.addEventListener "mouseup", doCanvasMouseUp
+mouseMoveReceiver.addEventListener "mousedown", (e) -> doCanvasMouseDown(e) unless ghostClickDetector.isGhost
+mouseMoveReceiver.addEventListener "mouseup", (e) -> doCanvasMouseUp(e) unless ghostClickDetector.isGhost
 mouseMoveReceiver.addEventListener "mousemove", doCanvasMouseMove
 mouseMoveReceiver.addEventListener "mousedrag", doCanvasMouseMove
 
@@ -794,6 +794,8 @@ mouseMoveReceiver.addEventListener "touchstart", doCanvasTouchStart
 mouseMoveReceiver.addEventListener "touchend", doCanvasTouchEnd
 mouseMoveReceiver.addEventListener "touchmove", doCanvasTouchMove
 mouseMoveReceiver.addEventListener "touchleave", doCanvasTouchLeave
+
+ghostClickDetector.addListeners canvas
 
 
 E("btn-set-rule").addEventListener "click", (e)->application.doSetRule()
