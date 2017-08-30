@@ -589,19 +589,19 @@ doCanvasMouseUp = (e) ->
     dragHandler?.mouseUp e
     dragHandler = null
 
-doCanvastouchStart = (e)->
+doCanvasTouchStart = (e)->
   if e.touches.length is 1
     doCanvasMouseDown(e)
     e.preventDefault()
       
-doCanvastouchLeave = (e)->
+doCanvasTouchLeave = (e)->
   doCanvasMouseOut(e)
     
-doCanvastouchEnd = (e)->
+doCanvasTouchEnd = (e)->
   e.preventDefault()
   doCanvasMouseUp(e)
       
-doCanvastouchMove = (e)->
+doCanvasTouchMove = (e)->
   doCanvasMouseMove(e)
     
 
