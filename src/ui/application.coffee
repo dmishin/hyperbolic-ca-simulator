@@ -26,6 +26,7 @@ M = require "../core/matrix3.coffee"
 {getCanvasCursorPosition} = require "./canvas_util.coffee"
 C2S = require "../ext/canvas2svg.js"
 #{lzw_encode} = require "../ext/lzw.coffee"
+require "../ext/polyfills.js"
 
 MIN_WIDTH = 100
 
