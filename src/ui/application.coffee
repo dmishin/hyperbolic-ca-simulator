@@ -27,7 +27,7 @@ M = require "../core/matrix3.coffee"
 C2S = require "../ext/canvas2svg.js"
 #{lzw_encode} = require "../ext/lzw.coffee"
 require "../ext/polyfills.js"
-
+{GhostClickDetector} = require "./ghost_click_detector.coffee"
 MIN_WIDTH = 100
 
 minVisibleSize = 1/100
@@ -488,6 +488,8 @@ context = canvas.getContext "2d"
 
 
 dragHandler = null
+ghostClickDetector = new GhostClickDetector
+ghostClickDetector.addListeners canvas
 
 player = null
 playerTimeout = 500
@@ -569,7 +571,7 @@ doCanvasMouseDown = (e) ->
   #Allow normal right-click to support image sacing
   E('canvas-container').focus()
   return if e.button is 2
-
+  return if ghostClickDetector.isGhost
   #Only in mozilla?
   canvas.setCapture? true
   
@@ -584,8 +586,8 @@ doCanvasMouseDown = (e) ->
     dragHandler = new MouseToolCombo application, x, y
 
 doCanvasMouseUp = (e) ->
-  if dragHandler isnt null
-    e.preventDefault()
+  e.preventDefault()
+  if (dragHandler isnt null) and not ghostClickDetector.isGhost
     dragHandler?.mouseUp e
     dragHandler = null
 
