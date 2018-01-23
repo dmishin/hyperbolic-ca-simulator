@@ -109,6 +109,10 @@ class Application
   getTransitionFunc: -> @transitionFunc
 
   getMargin: -> if @observer.isDrawingHomePtr then @margin else 0
+  setShowLiveBorders: (isDrawing)->
+    @observer.isDrawingLiveBorders = isDrawing
+    redraw()
+    
   setDrawingHomePtr: (isDrawing)->
     @observer.isDrawingHomePtr = isDrawing
     redraw()
@@ -142,6 +146,7 @@ class Application
       console.log "restore #{isDrawing}"
     else
       @setDrawingHomePtr E('flag-origin-mark').checked
+      @setShowLiveBorders E('flag-live-borders').checked
       
     @observer.onFinish = -> redraw()
 
@@ -541,11 +546,7 @@ drawEverything = (w, h, context) ->
   s = Math.min( w, h ) / 2 #
   s1 = s-application.getMargin()
   context.translate s, s
-  context.scale s1, s1
-  context.fillStyle = "black"
-  context.lineWidth = 1.0/s
-  context.strokeStyle = "rgb(128,128,128)"
-  application.observer.draw application.cells, context
+  application.observer.draw application.cells, context, s1
   context.restore()
   return true
 
@@ -847,6 +848,8 @@ E('image-size').addEventListener 'change', (e) ->
   
 E('flag-origin-mark').addEventListener 'change', (e)->
   application.setDrawingHomePtr E('flag-origin-mark').checked
+E('flag-live-borders').addEventListener 'change', (e)->
+  application.setShowLiveBorders E('flag-live-borders').checked
   
 E('btn-mode-edit').addEventListener 'click', (e) -> doSetPanMode false
 E('btn-mode-pan').addEventListener 'click', (e) -> doSetPanMode true

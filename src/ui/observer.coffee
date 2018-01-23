@@ -13,7 +13,10 @@ exports.FieldObserver = class FieldObserver
     cells = visibleNeighborhood @tiling, @minCellSize
     @cellOffsets = (c.asStack() for c in cells)
     @isDrawingHomePtr = true
+    @isDrawingLiveBorders = true
     @colorHomePtr = 'rgba(255,100,100,0.7)'
+    @colorEmptyBorder = 'rgb(128,128,128)'
+    @colorLiveBorder = 'rgb(192,192,192)'
     
     if center isnt unity
       @rebuildAt center
@@ -87,8 +90,11 @@ exports.FieldObserver = class FieldObserver
     #console.log  "New center at #{ newCenter}"
     @rebuildAt @tiling.appendRewrite @center, appendArray
     
-  canDraw: -> true        
-  draw: (cells, context) ->
+  canDraw: -> true
+  
+  draw: (cells, context, scale) ->
+    context.scale scale, scale    
+    context.lineWidth = 1.0/scale  
     #first borders
     #cells grouped by state
     state2cellIndexList = {}
@@ -112,10 +118,14 @@ exports.FieldObserver = class FieldObserver
         makeCellShapePoincare @tiling, mtx, context
         
       if state is 0
+        context.strokeStyle = @colorEmptyBorder
         context.stroke()
       else
         context.fillStyle = @getColorForState state
         context.fill()
+        if @isDrawingLiveBorders
+          context.strokeStyle = @colorLiveBorder
+          context.stroke()
     if @isDrawingHomePtr
       @drawHomePointer context
     #true because immediate-mode observer always finishes drawing.
