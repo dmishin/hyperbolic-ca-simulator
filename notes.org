@@ -1,6 +1,0 @@
-
-Things to implement:
-+ collection of cells
-  How to implement it? Need some kind of hash table... But 
-+ convert poiont coordinates to cell coordinates
-+ 
